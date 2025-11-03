@@ -1,6 +1,6 @@
 ---
 status: Normative specification
-version: 1.0.1
+version: 1.2.0
 scope: Agent persona, workflows, code standards, and repository interaction for k8s-generator Java 25 CLI development
 name: k8s-generator-java-architect
 description: This persona is a Java 25 + Maven expert specializing in CLI tool development with Picocli, JTE templates, immutable records, and functional design patterns. It creates maintainable, type-safe code for Kubernetes environment generation.
@@ -38,49 +38,8 @@ k8s-generator is a CLI tool that generates complete, working Kubernetes learning
 
 Note: Minimum JDK 21; target JDK 25.
 
-### Core Dependencies
-
-```xml
-<!-- CLI framework -->
-<dependency>
-    <groupId>info.picocli</groupId>
-    <artifactId>picocli</artifactId>
-    <version>4.7.5</version>
-</dependency>
-
-<!-- Template engine -->
-<dependency>
-    <groupId>gg.jte</groupId>
-    <artifactId>jte</artifactId>
-    <version>3.1.9</version>
-</dependency>
-
-<!-- IP/CIDR handling -->
-<dependency>
-    <groupId>com.github.seancfoley</groupId>
-    <artifactId>ipaddress</artifactId>
-    <version>5.4.0</version>
-</dependency>
-
-<!-- YAML parsing -->
-<dependency>
-    <groupId>com.fasterxml.jackson.dataformat</groupId>
-    <artifactId>jackson-dataformat-yaml</artifactId>
-    <version>2.15.2</version>
-</dependency>
-
-<!-- Testing -->
-<dependency>
-    <groupId>org.junit.jupiter</groupId>
-    <artifactId>junit-jupiter</artifactId>
-    <version>5.10.0</version>
-</dependency>
-<dependency>
-    <groupId>org.assertj</groupId>
-    <artifactId>assertj-core</artifactId>
-    <version>3.24.2</version>
-</dependency>
-```
+### Dependencies
+- Java 21+ (target 25), Maven. For current dependency set and versions, see doc/GENERATOR-ARCHITECTURE.md.
 
 ## Architecture Overview
 
@@ -104,78 +63,33 @@ CLI → Orchestrator → [Model ↔ InputParser ↔ Validation] → Rendering �
 - Provide an `Engine` interface with `id()` and render/orchestration hooks; register via an `EngineRegistry`.
 - New engines (e.g., k3s, microk8s) integrate via SPI without modifying core bricks.
 
-### Package Structure
+## Implementation Philosophy
 
-```
-src/main/java/com/k8s/generator/
-├── cli/
-│   └── K8sGenCommand.java              # Main Picocli entrypoint
-├── model/
-│   ├── ClusterSpec.java                # Immutable cluster configuration
-│   ├── VmConfig.java                   # VM definition record
-│   ├── ClusterType.java                # Enum for cluster types
-│   ├── SizeProfile.java                # Sizing presets
-│   └── (other records)
-├── parser/
-│   ├── CliArgsParser.java              # CLI flags → Model
-│   ├── YamlSpecParser.java             # YAML → Model
-│   └── DefaultsApplier.java            # Apply conventions
-├── validate/
-│   ├── StructuralValidator.java        # Required fields present
-│   ├── SemanticValidator.java          # Business rules
-│   ├── PolicyValidator.java            # Cross-cutting constraints
-│   ├── ValidationResult.java           # Error aggregation
-│   └── ValidationError.java            # Structured error record
-├── ip/
-│   ├── IpAllocator.java                # IP allocation interface
-│   ├── SequentialIpAllocator.java      # Sequential IP assignment
-│   └── CidrHelper.java                 # CIDR validation & overlap detection
-├── render/
-│   ├── JteRenderer.java                # JTE wrapper
-│   ├── ContextBuilder.java             # Builds template contexts
-│   └── VagrantfileContext.java         # Type-safe template context
-├── fs/
-│   ├── AtomicFileWriter.java           # Atomic file generation
-│   ├── SpecReader.java                 # YAML spec reader
-│   └── ResourceCopier.java             # Copy install_*.sh scripts
-└── app/
-    └── GeneratorOrchestrator.java      # Main pipeline orchestration
+- Ruthless simplicity: do the simplest thing that works now; avoid future‑proofing and unnecessary abstractions. Favor clarity over cleverness.
+- End‑to‑end thinking: deliver vertical slices that go from CLI → render → files, while preserving architectural integrity.
+- Decision heuristics: prefer reversible (two‑way door) decisions; evaluate value vs complexity; consider maintenance effort and integration cost.
+- Library vs custom:
+  - Start with small custom code for simple needs; adopt a library when requirements expand; re‑evaluate as needs evolve.
+  - Isolate integrations behind narrow interfaces to minimize lock‑in and enable swapping.
+- Complexity budget: embrace complexity for security, data integrity, core UX, and error visibility; aggressively simplify internal abstractions, generic “future‑proof” code, rare edge cases (optimize for the common path), framework usage, and state management.
+- Determinism & idempotence: same inputs → same outputs; generation and regeneration must be deterministic and idempotent.
+- Observability & errors: make failures obvious and actionable; avoid silent failures; craft clear, fix‑forward messages.
 
-src/main/resources/templates/
-├── engines/
-│   ├── kind/
-│   │   ├── vagrantfile.jte
-│   │   └── bootstrap.jte
-│   ├── minikube/
-│   │   ├── vagrantfile.jte
-│   │   └── bootstrap.jte
-│   ├── kubeadm/
-│   │   ├── vagrantfile.jte
-│   │   └── bootstrap/
-│   │       ├── master.jte
-│   │       └── worker.jte
-│   └── none/                           # Management machine
-│       ├── vagrantfile.jte
-│       └── bootstrap.jte
-└── partials/
-    └── common-setup.jte
-```
+## Modular Design Philosophy
 
-### CLI Cheat Sheet
+- Brick model: 6 bricks with stable connectors (typed contracts) that allow independent regeneration of a module without breaking others.
+- Stable contracts: small, explicit inputs/outputs per module; version contracts with SemVer; avoid cyclic dependencies; apply dependency inversion at boundaries.
+- Regeneration first: prefer regenerating a whole module from its blueprint (spec + tests) over piecemeal edits; keep `.k8s-generator.yaml` metadata accurate.
+- Parallel safe: design module build steps to run in isolation and in parallel where possible while preserving determinism.
+- Human role: act as architect and quality inspector—refine specifications, review behavior via tests, and iterate blueprints; let the generator assemble code.
+- Escape hatches: provide overrides/partials where necessary, but keep public contracts stable and minimal.
 
-- Canonical: `k8s-gen --module <mN> --type <type> <cluster-type> [modifiers]`
-- Required: `--module`, `--type`, `<cluster-type: mgmt|minikube|kind|kubeadm>`
-- Modifiers: `--size small|medium|large`, `--nodes 1m,2w` (kubeadm), `--azure`, `--out <dir>`, `--dry-run`
-- Examples:
-  - `k8s-gen --module m1 --type pt kind`
-  - `k8s-gen --module m2 --type exam-prep minikube --size large`
-  - `k8s-gen --module m7 --type exam kubeadm --nodes 1m,2w`
+### Package Layout
+- See doc/GENERATOR-ARCHITECTURE.md for the current package map and template locations. This file intentionally avoids hardcoding paths.
 
-### Naming Conventions
-
-- Cluster: `clu-<module>-<type>-<engine>`
-- Namespace: `ns-<module>-<type>`
-- Output directory: `<type>-<module>/`
+### CLI & Naming
+- CLI-first with smart defaults; YAML for complex scenarios. For commands and options, see doc/GENERATOR-ARCHITECTURE.md.
+- Naming policy: clusters `clu-<module>-<type>-<engine>`, namespaces `ns-<module>-<type>`. See docs for full rules and examples.
 
 ## Code Standards
 
@@ -189,281 +103,26 @@ src/main/resources/templates/
 6. **No Global State**: All state flows through method parameters and return values
 7. **SRP (Single Responsibility)**: Each class/method has one clear purpose
 
-### Record-Based Domain Model
+### Domain Model (Summary)
+- Immutable records; validate only basic structural constraints in compact constructors. See doc/GENERATOR-ARCHITECTURE.md for canonical models.
 
-```java
-package com.k8s.generator.model;
+### Validation Strategy (Summary)
+- Three layers: Structural (constructor), Semantic (collects all errors), Policy (cross-cluster). See doc/GENERATOR-ARCHITECTURE.md.
 
-import java.util.Objects;
-import java.util.Optional;
+### Validation Error Format
+- Use a structured `ValidationError` with field, level, message, suggestion. See doc/ARCHITECTURE-REVIEW-2025-11-03.md (P1) for the canonical record.
 
-/**
- * Immutable cluster specification.
- *
- * Validation:
- * - Structural validation in compact constructor (basic constraints)
- * - Semantic validation via ClusterValidator (business rules)
- * - Policy validation via TopologyValidator (cross-cutting)
- *
- * @param name Cluster name (must match [a-z][a-z0-9-]*)
- * @param type Cluster engine (kind, minikube, kubeadm, none)
- * @param firstIp Starting IP for sequential allocation
- * @param masters Number of master nodes (>= 1 for kubeadm)
- * @param workers Number of worker nodes (>= 0)
- */
-public record ClusterSpec(
-    String name,
-    ClusterType type,
-    Optional<String> firstIp,
-    int masters,
-    int workers
-) {
-    // Compact constructor: structural validation only
-    public ClusterSpec {
-        Objects.requireNonNull(name, "name is required");
-        Objects.requireNonNull(type, "type is required");
-        Objects.requireNonNull(firstIp, "firstIp must be present (use Optional.empty())");
+### Atomic File Generation (Summary)
+- All-or-nothing via temp dir and atomic move; idempotent; rollback on failure. See doc/ARCHITECTURE-REVIEW-2025-11-03.md (P0) for details.
 
-        if (masters < 0) {
-            throw new IllegalArgumentException("masters must be >= 0");
-        }
-        if (workers < 0) {
-            throw new IllegalArgumentException("workers must be >= 0");
-        }
-        if (masters == 0 && workers == 0) {
-            throw new IllegalArgumentException("at least one node required");
-        }
-    }
-}
-```
+### Regeneration Strategy (Summary)
+- Track `.k8s-generator.yaml` metadata; detect drift; default safe abort; `--force` to overwrite; future `--merge`. See doc/ARCHITECTURE-REVIEW-2025-11-03.md (P1).
 
-### Three-Layer Validation Strategy
+### Templates (Summary)
+- Use JTE with precompiled templates and typed contexts. Configure JTE Maven plugin for precompilation. See doc/GENERATOR-ARCHITECTURE.md.
 
-```java
-package com.k8s.generator.validate;
-
-import com.k8s.generator.model.ClusterSpec;
-import com.k8s.generator.validate.ValidationError;
-import com.k8s.generator.validate.ValidationError.ValidationLevel;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Pattern;
-
-/**
- * Semantic validator: business rules and cross-field constraints.
- *
- * Contract:
- * - Collects all errors (does not short-circuit)
- * - Returns ValidationResult with aggregated errors
- * - Side-effect free (pure function)
- */
-public class SemanticValidator {
-    private static final Pattern NAME_PATTERN = Pattern.compile("[a-z][a-z0-9-]*");
-
-    public ValidationResult validate(ClusterSpec spec, boolean isMultiCluster) {
-        var errors = new ArrayList<ValidationError>();
-
-        // Name format validation
-        if (!NAME_PATTERN.matcher(spec.name()).matches()) {
-            errors.add(new ValidationError(
-                "clusters[].name",
-                ValidationLevel.SEMANTIC,
-                String.format("Invalid cluster name '%s'", spec.name()),
-                "Name must match pattern: [a-z][a-z0-9-]* (e.g., 'staging', 'prod-1')"
-            ));
-        }
-
-        // Multi-cluster IP requirement
-        if (isMultiCluster && spec.firstIp().isEmpty()) {
-            errors.add(new ValidationError(
-                String.format("clusters[name='%s'].firstIp", spec.name()),
-                ValidationLevel.SEMANTIC,
-                "Multi-cluster configuration requires explicit firstIp for each cluster",
-                String.format("Add: firstIp: 192.168.56.X (non-overlapping with other clusters)")
-            ));
-        }
-
-        return ValidationResult.of(errors);
-    }
-}
-```
-
-### Standard ValidationError
-
-```java
-package com.k8s.generator.validate;
-
-/**
- * Standard validation error with structured information.
- *
- * @param field JSONPath-style field reference (e.g., "clusters[0].firstIp")
- * @param level Validation level (STRUCTURAL | SEMANTIC | POLICY)
- * @param message Human-readable error description
- * @param suggestion Optional fix guidance (nullable if no suggestion)
- */
-public record ValidationError(
-    String field,
-    ValidationLevel level,
-    String message,
-    String suggestion
-) {
-    public enum ValidationLevel {
-        STRUCTURAL,
-        SEMANTIC,
-        POLICY
-    }
-
-    @Override
-    public String toString() {
-        var sb = new StringBuilder();
-        sb.append(String.format("[%s] %s: %s%n", level, field, message));
-        if (suggestion != null) {
-            sb.append(String.format("  → %s%n", suggestion));
-        }
-        return sb.toString();
-    }
-}
-```
-
-### Atomic File Generation
-
-```java
-package com.k8s.generator.fs;
-
-import java.nio.file.Path;
-import java.util.Map;
-import com.k8s.generator.model.Result;
-
-/**
- * Writes all files atomically to ensure consistency.
- *
- * Contract Guarantees:
- * - Atomic: Either all files written or none (rollback on failure)
- * - Idempotent: Same input → identical output
- * - Safe: Target directory unchanged on any failure
- *
- * Algorithm:
- * 1. Write to temp directory
- * 2. Validate all files generated
- * 3. Move temp → target atomically
- * 4. On failure: delete temp, return Failure(error)
- *
- * @param outputDir Target directory
- * @param files Map of relative paths to contents
- * @return Success with final path, or Failure with error message
- */
-public interface AtomicFileWriter {
-    Result<Path, String> writeAll(Path outputDir, Map<Path, String> files);
-}
-```
-
-### Regeneration Strategy
-
-- Write `.k8s-generator.yaml` into the output directory with generator version, timestamp, spec hash, and per-file template + hash.
-- Default: fail if regeneratable files differ from recorded hashes; instruct users to use `--force` to overwrite.
-- Modes:
-  - Default (safe): abort on drift with actionable message
-  - `--force`: overwrite regeneratable files
-  - `--merge` (future): three-way merge
-
-Example metadata:
-
-```yaml
-generated:
-  version: 1.0.0
-  generator_version: 1.0.0-SNAPSHOT
-  timestamp: 2025-11-03T10:30:00Z
-  spec_hash: <sha256>
-  components:
-    - file: Vagrantfile
-      regeneratable: true
-      hash: <sha1>
-      template: engines/kind/vagrantfile.jte
-    - file: scripts/bootstrap.sh
-      regeneratable: true
-      hash: <sha1>
-      template: engines/kind/bootstrap.jte
-    - file: assets/custom-init.sh
-      regeneratable: false
-      note: "User script - never overwrite"
-```
-
-### JTE Template Usage
-
-```java
-package com.k8s.generator.render;
-
-import gg.jte.ContentType;
-import gg.jte.TemplateEngine;
-import gg.jte.TemplateOutput;
-import gg.jte.output.StringOutput;
-import java.nio.file.Path;
-
-/**
- * JTE template renderer with type-safe contexts.
- */
-public class JteRenderer {
-    private final TemplateEngine templateEngine;
-
-    public JteRenderer(Path templateRoot) {
-        this.templateEngine = TemplateEngine.createPrecompiled(
-            templateRoot,
-            ContentType.Plain
-        );
-    }
-
-    /**
-     * Renders template with type-safe context.
-     *
-     * @param templatePath Template path (e.g., "engines/kind/vagrantfile.jte")
-     * @param context Type-safe context object (e.g., VagrantfileContext)
-     * @return Rendered template as string
-     */
-    public <T> String render(String templatePath, T context) {
-        TemplateOutput output = new StringOutput();
-        templateEngine.render(templatePath, context, output);
-        return output.toString();
-    }
-}
-```
-
-Note: Use precompiled JTE templates (`TemplateEngine.createPrecompiled`). Configure the JTE Maven plugin to precompile templates during the build so templates are type-checked and available at runtime without on-the-fly compilation.
-
-### Error Handling Pattern
-
-```java
-package com.k8s.generator.model;
-
-/**
- * Result type for operations that can fail.
- *
- * @param <T> Success type
- * @param <E> Error type
- */
-public sealed interface Result<T, E> {
-    record Success<T, E>(T value) implements Result<T, E> {}
-    record Failure<T, E>(E error) implements Result<T, E> {}
-
-    static <T, E> Result<T, E> success(T value) {
-        return new Success<>(value);
-    }
-
-    static <T, E> Result<T, E> failure(E error) {
-        return new Failure<>(error);
-    }
-
-    default boolean isSuccess() {
-        return this instanceof Success;
-    }
-
-    default T orElseThrow(Function<E, RuntimeException> mapper) {
-        return switch (this) {
-            case Success<T, E> s -> s.value();
-            case Failure<T, E> f -> throw mapper.apply(f.error());
-        };
-    }
-}
-```
+### Error Handling (Summary)
+- Prefer a Result-style success/failure type (or equivalent) for operations that can fail. See doc/GENERATOR-ARCHITECTURE.md for the canonical pattern.
 
 ## Testing Standards
 
@@ -473,194 +132,11 @@ public sealed interface Result<T, E> {
 - **30% Integration Tests**: End-to-end pipeline, file I/O, template rendering
 - **10% E2E Tests**: CLI smoke tests, generated output validation
 
-### Unit Test Example
+### Tests (Summary)
+- Target split: 60% unit, 30% integration, 10% E2E. See doc/GENERATOR_CODE_PLAN.md for current suites and scenarios.
 
-```java
-package com.k8s.generator.validate;
-
-import com.k8s.generator.model.*;
-import com.k8s.generator.validate.ValidationError.ValidationLevel;
-import org.junit.jupiter.api.Test;
-import static org.assertj.core.api.Assertions.*;
-
-class SemanticValidatorTest {
-
-    private final SemanticValidator validator = new SemanticValidator();
-
-    @Test
-    void shouldRejectInvalidClusterName() {
-        // Given: cluster with uppercase name
-        var spec = new ClusterSpec(
-            "Invalid-Name",  // Invalid: uppercase
-            ClusterType.KIND,
-            Optional.empty(),
-            1,
-            0
-        );
-
-        // When: validate
-        var result = validator.validate(spec, false);
-
-        // Then: expect semantic error
-        assertThat(result.hasErrors()).isTrue();
-        assertThat(result.errors())
-            .hasSize(1)
-            .first()
-            .satisfies(error -> {
-                assertThat(error.field()).isEqualTo("clusters[].name");
-                assertThat(error.level()).isEqualTo(ValidationLevel.SEMANTIC);
-                assertThat(error.message()).contains("Invalid cluster name");
-            });
-    }
-
-    @Test
-    void shouldRequireFirstIpForMultiCluster() {
-        // Given: multi-cluster without firstIp
-        var spec = new ClusterSpec(
-            "staging",
-            ClusterType.KUBEADM,
-            Optional.empty(),  // Missing firstIp
-            1,
-            2
-        );
-
-        // When: validate as multi-cluster
-        var result = validator.validate(spec, true);
-
-        // Then: expect firstIp requirement error
-        assertThat(result.hasErrors()).isTrue();
-        assertThat(result.errors())
-            .anyMatch(e -> e.message().contains("requires explicit firstIp"));
-    }
-}
-```
-
-### Integration Test Example
-
-```java
-package com.k8s.generator.app;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import java.nio.file.Path;
-import static org.assertj.core.api.Assertions.*;
-
-class GeneratorOrchestratorIntegrationTest {
-
-    @Test
-    void shouldGenerateKindEnvironment(@TempDir Path tempDir) throws Exception {
-        // Given: simple kind request
-        var request = GenerationRequest.builder()
-            .module("m1")
-            .type("pt")
-            .clusterType("kind")
-            .outputDir(tempDir.resolve("pt-m1"))
-            .build();
-
-        var orchestrator = new GeneratorOrchestrator();
-
-        // When: generate
-        var result = orchestrator.generate(request);
-
-        // Then: files exist and are valid
-        assertThat(result.isSuccess()).isTrue();
-
-        Path outputDir = result.orElseThrow(e -> new RuntimeException(e));
-        assertThat(outputDir.resolve("Vagrantfile")).exists();
-        assertThat(outputDir.resolve("scripts/bootstrap.sh")).exists();
-        assertThat(outputDir.resolve(".gitignore")).exists();
-
-        // Verify Vagrantfile content
-        String vagrantfile = Files.readString(outputDir.resolve("Vagrantfile"));
-        assertThat(vagrantfile)
-            .contains("config.vm.box = \"ubuntu/jammy64\"")
-            .contains("192.168.56.10");
-    }
-}
-```
-
-## Documentation Standards
-
-All Java files must follow comprehensive JavaDoc standards:
-
-### Class-Level Documentation
-
-```java
-/**
- * Validates cluster specifications using three-layer strategy.
- *
- * <p>Validation Layers:
- * <ol>
- *   <li><b>Structural</b>: Non-null, basic type constraints (in record constructors)</li>
- *   <li><b>Semantic</b>: Business rules, cross-field validation (this class)</li>
- *   <li><b>Policy</b>: Cross-cluster constraints (TopologyValidator)</li>
- * </ol>
- *
- * <p>Contract Guarantees:
- * <ul>
- *   <li>Side-effect free: Does not modify input</li>
- *   <li>Error collection: Reports all errors, does not short-circuit</li>
- *   <li>Deterministic: Same input always produces same output</li>
- * </ul>
- *
- * <p>Example:
- * <pre>{@code
- * var validator = new SemanticValidator();
- * var spec = new ClusterSpec("staging", ClusterType.KIND, ...);
- * var result = validator.validate(spec, false);
- * if (result.hasErrors()) {
- *     result.errors().forEach(System.err::println);
- * }
- * }</pre>
- *
- * @see ClusterSpec
- * @see ValidationResult
- * @see TopologyValidator
- * @since 1.0.0
- */
-public class SemanticValidator {
-    // ...
-}
-```
-
-### Method-Level Documentation
-
-```java
-/**
- * Allocates sequential IPs from a CIDR block.
- *
- * <p>Algorithm:
- * <ol>
- *   <li>Parse CIDR and validate format</li>
- *   <li>Calculate network address + startOffset</li>
- *   <li>Generate count sequential IPs</li>
- *   <li>Skip reserved IPs (.1, .2, .5)</li>
- *   <li>Validate within subnet boundary</li>
- * </ol>
- *
- * <p>Edge Cases:
- * <ul>
- *   <li><b>/32 networks</b>: Only one IP available</li>
- *   <li><b>/30 networks</b>: Only 2 usable IPs (excluding network/broadcast)</li>
- *   <li><b>Offset overflow</b>: Fails if startOffset + count exceeds subnet</li>
- * </ul>
- *
- * @param cidr Base CIDR block (e.g., "192.168.56.0/24")
- * @param startOffset Offset from network address (typically 10)
- * @param count Number of IPs to allocate
- * @return Success with IP list, or Failure with error message
- * @throws IllegalArgumentException if cidr is null or invalid format
- *
- * @see <a href="https://seancfoley.github.io/IPAddress/">IPAddress Library</a>
- */
-public Result<List<String>, String> allocate(
-    String cidr,
-    int startOffset,
-    int count
-) {
-    // ...
-}
-```
+## Documentation Standards (Summary)
+- Follow comprehensive JavaDoc at class and method level (purpose, contracts, examples). See doc/GENERATOR-ARCHITECTURE.md for canonical examples.
 
 ## Commit Messages
 
@@ -713,57 +189,8 @@ com.k8s.generator.conversion to com.k8s.generator.parser
 
 ## Development Workflow
 
-### Build & Test
-
-```bash
-# Build
-mvn clean compile
-
-# Run tests
-mvn test                    # Unit tests only
-mvn verify                  # Unit + integration tests
-mvn verify -Pintegration    # Integration tests only
-
-# Package
-mvn package                 # Creates executable JAR
-
-# Run locally
-java -jar target/k8s-generator-1.0.0-SNAPSHOT.jar --help
-```
-
-### Phase Exit Criteria (MVP)
-
-- kind/minikube clusters boot successfully via generated Vagrantfile
-- Bootstrap scripts execute without errors
-- `doctor.sh` validates environment (all checks pass)
-- Integration tests pass for:
-  - kind single-node
-  - minikube single-node
-  - kind with custom sizing
-- CLI `--help` is complete and accurate
-- Documentation updated (README, architecture notes, CHANGELOG)
-
-### Code Quality Checks
-
-```bash
-# Spotbugs (static analysis)
-mvn spotbugs:check
-
-# Checkstyle (code style)
-mvn checkstyle:check
-
-# JaCoCo (test coverage)
-mvn jacoco:report
-# View: target/site/jacoco/index.html
-```
-
-### IDE Setup (IntelliJ IDEA)
-
-1. **Import Maven project**: File → Open → select pom.xml
-2. **Enable annotation processing**: Settings → Build → Compiler → Annotation Processors → Enable
-3. **Configure JTE plugin**: Install "jte" plugin from marketplace
-4. **Set Java 21+ SDK (minimum), target JDK 25**: File → Project Structure → Project SDK → 21 or higher
-5. **Code style**: Import `.editorconfig` (auto-detected)
+### Build, Test, IDE
+- For current build/test commands, quality checks, and IDE setup, see doc/README.md and doc/GENERATOR_CODE_PLAN.md. This file intentionally avoids duplicating operational details.
 
 ## Security Considerations
 
@@ -840,6 +267,8 @@ All repository documents must follow a consistent versioning and history policy 
 - [Jackson YAML Guide](https://github.com/FasterXML/jackson-dataformats-text/tree/master/yaml)
 - [JUnit 5 User Guide](https://junit.org/junit5/docs/current/user-guide/)
 - [AssertJ Documentation](https://assertj.github.io/doc/)
+- Implementation Philosophy (inspiration): https://github.com/microsoft/amplifier/blob/main/ai_context/IMPLEMENTATION_PHILOSOPHY.md
+- Modular Design Philosophy (inspiration): https://github.com/microsoft/amplifier/blob/main/ai_context/MODULAR_DESIGN_PHILOSOPHY.md
 
 ## Document History
 
@@ -847,3 +276,5 @@ All repository documents must follow a consistent versioning and history policy 
 |---------|------------|-------------|------------------------------------------------|
 | 1.0.0   | 2025-11-03 | repo-maint  | Initial k8s-generator agent specification      |
 | 1.0.1   | 2025-11-03 | repo-maint  | Align with /doc: atomic writer, ValidationError, regeneration, CLI cheat sheet, engines SPI, exit criteria, JDK/JTE notes |
+| 1.1.0   | 2025-11-03 | repo-maint  | Added Implementation & Modular Design philosophy sections (inspired by microsoft/amplifier) |
+| 1.2.0   | 2025-11-03 | repo-maint  | Simplified AGENTS.md: removed volatile implementation, package trees, code samples; added stable summaries and pointers to /doc |
