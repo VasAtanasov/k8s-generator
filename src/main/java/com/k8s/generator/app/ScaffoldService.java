@@ -12,7 +12,7 @@ import com.k8s.generator.parser.SpecConverter;
 import com.k8s.generator.parser.SpecToPlan;
 import com.k8s.generator.render.JteRenderer;
 import com.k8s.generator.render.Renderer;
-import com.k8s.generator.validate.StructuralValidator;
+import com.k8s.generator.validate.CompositeValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +57,7 @@ public final class ScaffoldService {
     private static final Logger log = LoggerFactory.getLogger(ScaffoldService.class);
 
     private final SpecConverter specConverter;
-    private final StructuralValidator validator;
+    private final CompositeValidator validator;
     private final PlanBuilder planBuilder;
     private final Renderer renderer;
     private final OutputWriter outputWriter;
@@ -69,7 +69,7 @@ public final class ScaffoldService {
     public ScaffoldService() {
         this(
                 new CliToSpec(),
-                new StructuralValidator(),
+                new CompositeValidator(),
                 new SpecToPlan(),
                 new JteRenderer(),
                 new OutputWriter(),
@@ -88,7 +88,7 @@ public final class ScaffoldService {
      * @param resourceCopier copies resource files
      */
     public ScaffoldService(SpecConverter specConverter,
-                           StructuralValidator validator,
+                           CompositeValidator validator,
                            PlanBuilder planBuilder,
                            Renderer renderer,
                            OutputWriter outputWriter,
@@ -115,9 +115,10 @@ public final class ScaffoldService {
 
             // 2. Validate spec (structural validation)
             log.debug("Validating GeneratorSpec: {}", spec);
-            var validationResult = validator.validate(spec.primaryCluster());
+            // Run full composite validation (structural + semantic + policy)
+            var validationResult = validator.validateAll(spec.clusters());
             if (validationResult.hasErrors()) {
-                log.error("[Validation] Spec validation failed:");
+                log.error("[Validation] Specification failed validation ({} error(s)):", validationResult.errorCount());
                 for (ValidationError error : validationResult.errors()) {
                     log.error("  {}", error.format());
                 }
@@ -130,6 +131,23 @@ public final class ScaffoldService {
 
             // 4. Determine output directory (fail on collision)
             Path outDir = determineOutDir(cmd, spec);
+
+            // 4a. DRY-RUN: print plan summary and exit success without writing
+            if (cmd.dryRun) {
+                log.info("DRY-RUN: No files will be written");
+                log.info("Module: {}  Type: {}  Engine: {}", spec.module().num(), spec.module().type(), plan.getEnv("CLUSTER_TYPE"));
+                log.info("Output directory (planned): {}", outDir);
+                log.info("Planned VMs ({}):", plan.vmCount());
+                for (var vm : plan.vms()) {
+                    log.info("  - {}  role={}  ip={}  cpus={}  mem={}MB",
+                        vm.name(), vm.role().name().toLowerCase(), vm.ip(), vm.getEffectiveCpus(), vm.getEffectiveMemoryMb());
+                }
+                log.info("Planned files:");
+                log.info("  - Vagrantfile");
+                log.info("  - scripts/bootstrap.sh");
+                log.info("  - .gitignore");
+                return 0;
+            }
             if (Files.exists(outDir)) {
                 log.error("[Validation] Output directory already exists: {} -> Use --out to target a different path", outDir);
                 return 2;

@@ -67,6 +67,11 @@ public class SequentialIpAllocator implements IpAllocator {
     private static final String DEFAULT_SUBNET = "192.168.56.0/24";
 
     /**
+     * Default base IP for management (NONE) clusters when firstIp is not specified.
+     */
+    private static final String MGMT_DEFAULT_BASE_IP = "192.168.56.5";
+
+    /**
      * Reserved IP addresses that should never be allocated.
      * These are typically: .1 (gateway), .2 (DNS), .5 (management placeholder).
      */
@@ -87,8 +92,10 @@ public class SequentialIpAllocator implements IpAllocator {
     public IpAllocator.Result<List<String>, String> allocate(ClusterSpec spec) {
         Objects.requireNonNull(spec, "spec cannot be null");
 
-        // 1. Determine base IP
-        String baseIp = spec.firstIp().orElse(DEFAULT_BASE_IP);
+        // 1. Determine base IP (mgmt has reserved default .5)
+        String baseIp = spec.firstIp().orElse(
+            spec.type() == ClusterType.NONE ? MGMT_DEFAULT_BASE_IP : DEFAULT_BASE_IP
+        );
 
         // 2. Validate base IP format
         var ipAddress = new IPAddressString(baseIp).getAddress();
@@ -101,8 +108,11 @@ public class SequentialIpAllocator implements IpAllocator {
         // 3. Calculate VM count based on cluster type
         int vmCount = calculateVmCount(spec);
 
-        // 4. Allocate sequential IPs
-        return allocateSequential(baseIp, vmCount, spec.name());
+        // 4. Allocate sequential IPs (skip reserved .5 except for mgmt)
+        Set<Integer> reserved = (spec.type() == ClusterType.NONE)
+            ? Set.of(1, 2)
+            : RESERVED_HOST_IDS;
+        return allocateSequential(baseIp, vmCount, spec.name(), reserved);
     }
 
     /**
@@ -199,7 +209,8 @@ public class SequentialIpAllocator implements IpAllocator {
     private IpAllocator.Result<List<String>, String> allocateSequential(
         String baseIp,
         int count,
-        String clusterName
+        String clusterName,
+        Set<Integer> reservedHostIds
     ) {
         var ipAddressString = new IPAddressString(baseIp);
         var ipAddress = ipAddressString.getAddress();
@@ -215,7 +226,7 @@ public class SequentialIpAllocator implements IpAllocator {
 
         int allocated = 0;
         int attempts = 0;
-        int maxAttempts = count + RESERVED_HOST_IDS.size() + 10; // Safety limit
+        int maxAttempts = count + reservedHostIds.size() + 10; // Safety limit
 
         while (allocated < count && attempts < maxAttempts) {
             attempts++;
@@ -234,8 +245,8 @@ public class SequentialIpAllocator implements IpAllocator {
                 );
             }
 
-            // Skip reserved IPs
-            if (!RESERVED_HOST_IDS.contains(hostId)) {
+            // Skip reserved IPs (except when caller excluded some, e.g., mgmt .5)
+            if (!reservedHostIds.contains(hostId)) {
                 allocatedIps.add(current.toCanonicalString());
                 allocated++;
             }

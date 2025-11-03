@@ -23,7 +23,7 @@ Vagrant.configure("2") do |config|
         node.vm.provision "bootstrap", type: :shell do |shell|
             shell.inline = "bash /vagrant/scripts/bootstrap.sh"
             shell.env = {
-            @for(Map.Entry<String, String> entry : envVars.entrySet())    "${entry.getKey()}" => "${entry.getValue()}"
+            @for(Map.Entry<String, String> entry : envVars.entrySet())    "${entry.getKey()}" => "${entry.getValue()}",
             @endfor
             }
         end

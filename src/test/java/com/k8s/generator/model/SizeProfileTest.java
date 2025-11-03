@@ -26,9 +26,9 @@ class SizeProfileTest {
 
     @ParameterizedTest
     @CsvSource({
-        "SMALL, 2, 2048",
-        "MEDIUM, 2, 4096",
-        "LARGE, 4, 8192"
+        "SMALL, 2, 4096",
+        "MEDIUM, 4, 8192",
+        "LARGE, 6, 12288"
     })
     void shouldHaveCorrectResourceAllocations(SizeProfile profile, int expectedCpus, int expectedMemory) {
         assertThat(profile.getCpus()).isEqualTo(expectedCpus);
@@ -89,18 +89,18 @@ class SizeProfileTest {
     @Test
     void shouldProvideMinimalResourcesForSmall() {
         assertThat(SizeProfile.SMALL.getCpus()).isEqualTo(2);
-        assertThat(SizeProfile.SMALL.getMemoryMb()).isEqualTo(2048);
+        assertThat(SizeProfile.SMALL.getMemoryMb()).isEqualTo(4096);
     }
 
     @Test
     void shouldProvideBalancedResourcesForMedium() {
-        assertThat(SizeProfile.MEDIUM.getCpus()).isEqualTo(2);
-        assertThat(SizeProfile.MEDIUM.getMemoryMb()).isEqualTo(4096);
+        assertThat(SizeProfile.MEDIUM.getCpus()).isEqualTo(4);
+        assertThat(SizeProfile.MEDIUM.getMemoryMb()).isEqualTo(8192);
     }
 
     @Test
     void shouldProvideGenerousResourcesForLarge() {
-        assertThat(SizeProfile.LARGE.getCpus()).isEqualTo(4);
-        assertThat(SizeProfile.LARGE.getMemoryMb()).isEqualTo(8192);
+        assertThat(SizeProfile.LARGE.getCpus()).isEqualTo(6);
+        assertThat(SizeProfile.LARGE.getMemoryMb()).isEqualTo(12288);
     }
 }

@@ -8,9 +8,9 @@ package com.k8s.generator.model;
  *
  * <p>Resource Allocations:
  * <ul>
- *   <li><b>SMALL</b>: 2 vCPUs, 2048 MB RAM - minimal Kubernetes requirements</li>
- *   <li><b>MEDIUM</b>: 2 vCPUs, 4096 MB RAM - comfortable for workloads</li>
- *   <li><b>LARGE</b>: 4 vCPUs, 8192 MB RAM - resource-intensive workloads</li>
+ *   <li><b>SMALL</b>: 2 vCPUs, 4096 MB RAM - minimal but practical baseline</li>
+ *   <li><b>MEDIUM</b>: 4 vCPUs, 8192 MB RAM - default for most scenarios</li>
+ *   <li><b>LARGE</b>: 6 vCPUs, 12288 MB RAM - heavier multi-node/multi-cluster labs</li>
  * </ul>
  *
  * <p>Usage Guidelines:
@@ -24,22 +24,22 @@ package com.k8s.generator.model;
  */
 public enum SizeProfile {
     /**
-     * Small profile: 2 vCPUs, 2048 MB RAM.
-     * Meets minimum Kubernetes requirements.
+     * Small profile: 2 vCPUs, 4096 MB RAM.
+     * Practical minimum for local development.
      */
-    SMALL(2, 2048),
+    SMALL(2, 4096),
 
     /**
-     * Medium profile: 2 vCPUs, 4096 MB RAM.
-     * Default profile, suitable for most learning scenarios.
+     * Medium profile: 4 vCPUs, 8192 MB RAM.
+     * Default profile per normative spec.
      */
-    MEDIUM(2, 4096),
+    MEDIUM(4, 8192),
 
     /**
-     * Large profile: 4 vCPUs, 8192 MB RAM.
-     * For resource-intensive workloads and performance testing.
+     * Large profile: 6 vCPUs, 12288 MB RAM.
+     * For resource-intensive and multi-cluster scenarios.
      */
-    LARGE(4, 8192);
+    LARGE(6, 12288);
 
     private final int cpus;
     private final int memoryMb;

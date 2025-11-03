@@ -13,13 +13,16 @@ import java.util.concurrent.Callable;
 @Command(
         name = "k8s-gen",
         mixinStandardHelpOptions = true,
-        version = "k8s-generator 0.1.0 (Phase 1)",
+        version = "k8s-generator 0.2.0",
         description = {
                 "Generate Kubernetes learning environments using convention-over-configuration.",
                 "",
                 "Examples:",
                 "  k8s-gen --module m1 --type pt kind",
-                "  k8s-gen --module m1 --type pt minikube --out pt-m1/"
+                "  k8s-gen --module m1 --type pt minikube --out pt-m1/",
+                "  k8s-gen --module m7 --type hw kubeadm --nodes 1m,2w --cni calico --size large",
+                "  k8s-gen --module m9 --type lab mgmt",
+                "  k8s-gen --module m1 --type pt kind --dry-run"
         }
 )
 public final class GenerateCommand implements Callable<Integer> {
@@ -35,6 +38,18 @@ public final class GenerateCommand implements Callable<Integer> {
 
     @Option(names = {"--out"}, description = "Output directory; default is <type>-<module>/")
     public String outDir;
+
+    @Option(names = {"--size"}, description = "Size profile: small|medium|large (default: medium)")
+    public String size;
+
+    @Option(names = {"--nodes"}, description = "Kubeadm nodes: N (means 1m,(N-1)w) or Xm,Yw (e.g., 1m,2w)")
+    public String nodes;
+
+    @Option(names = {"--cni"}, description = "Kubeadm CNI: calico|flannel|weave|cilium|antrea")
+    public String cni;
+
+    @Option(names = {"--dry-run"}, description = "Show planned VMs/files and exit without writing")
+    public boolean dryRun;
 
     @Override
     public Integer call() {
