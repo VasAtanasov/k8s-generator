@@ -201,6 +201,55 @@ com.k8s.generator.conversion to com.k8s.generator.parser
 - **Dependency scanning**: Run `mvn dependency-check:check` regularly
 - **Minimal dependencies**: Only include well-maintained, security-audited libraries
 
+## Bash Scripting Standards
+
+All bash scripts must adhere to the standards for robustness, idempotency, and style defined in the contributing guide.
+@doc/CONTRIBUTING_BASH.md
+
+Use shared helper functions from `/scripts/lib.sh` (strict mode, traps, logging, error handling, Kubernetes/Azure checks) when writing any optional scripts. Prefer enabling strict mode via `lib::strict` + `lib::setup_traps` after sourcing the library, instead of inlining `set -Eeuo pipefail` and `IFS=$'\n\t'` in each script.
+
+A standard header comment block should be included at the top of all new `assets/*.sh` scripts:
+
+
+```bash
+#!/usr/bin/env bash
+#
+# Purpose: <Brief, one-line description of the script's purpose.>
+# Usage: ./<script_name>.sh
+#
+```
+
+## Consistency and Idempotency
+
+When generating or modifying scripts, keep behavior and structure consistent across the repository:
+
+- Install scripts (install_*.sh):
+  - Use state-only idempotency checks at the start of `main()` and exit early when the tool is already present.
+  - Prefer helpers from `lib.sh`: `lib::cmd_exists`, `lib::pkg_installed`, `lib::systemd_active`.
+  - Do not use lock files or version-matching logic in install scripts. If an upgrade is needed, recreate the VM or run the installer explicitly.
+  - Keep a common flow: log header → idempotency check → install prerequisites → install tool → verify → success log.
+
+- Bootstrap scripts (templates under `scripts/templates/bootstrap/`):
+  - Prefer state checks for idempotency; use a coarse lock file only to mark overall success (create after completion) so re-provisioning is safe.
+  - Always support local hooks: `scripts/bootstrap.pre.local.sh`, `scripts/bootstrap.pre.d/*.sh`, `scripts/bootstrap.post.local.sh`, `scripts/bootstrap.post.d/*.sh`.
+  - Persist environment to `/etc/k8s-env` and, when applicable, `/etc/azure-env`; add `/etc/profile.d` entries so shells source them automatically.
+
+- Provisioners in Vagrantfile:
+- Prefer `shell.inline "bash /vagrant/scripts/bootstrap.sh"` so the bootstrap runs from the synced folder and can resolve local dependencies.
+- Templates also support `shell.path` (Vagrant upload) by falling back to `/vagrant/scripts` when resolving `lib.sh` and installers. Both styles work; inline is the recommended default for clarity.
+
+- Role/cluster semantics (generator policy):
+  - `minikube` and `aks` are always single-node management VMs; any `--role` input is ignored by design.
+  - `kubeadm` supports roles `bastion|master|worker`; generated bootstraps install prerequisites only (no `kubeadm init/join`), preserving the learning objective to do cluster bring-up manually. Master/worker templates print clear next-step commands.
+  - For `aks`, disallow heavy local cluster tools (e.g., `minikube`, `kube_binaries`, `kind`, `k3s`). For hybrid on a single VM, use `minikube` with `--azure` (using `azure_cli` via `--tools` is deprecated).
+
+- Safe customizations (never overwritten by generators):
+  - Local overrides file `Vagrantfile.local.rb` is loaded after the generated base file.
+  - Hook directories: `.pre.d` and `.post.d` are “directory-style” hooks; all `*.sh` files inside are executed (lexicographic order). “.d” stands for “directory”.
+
+Consistency is a must: new or updated generators must follow these conventions to keep modules predictable and easy to maintain.
+
+
 ## Documentation Standards
 
 All repository documents must follow a consistent versioning and history policy to keep guidance auditable and traceable.

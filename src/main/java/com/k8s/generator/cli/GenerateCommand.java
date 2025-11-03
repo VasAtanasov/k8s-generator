@@ -10,9 +10,18 @@ import java.util.concurrent.Callable;
 /**
  * Picocli command definition for the k8s-generator CLI.
  */
-@Command(name = "k8s-gen",
+@Command(
+        name = "k8s-gen",
         mixinStandardHelpOptions = true,
-        description = "Generate Kubernetes learning environments (Phase 1: kind|minikube)")
+        version = "k8s-generator 0.1.0 (Phase 1)",
+        description = {
+                "Generate Kubernetes learning environments using convention-over-configuration.",
+                "",
+                "Examples:",
+                "  k8s-gen --module m1 --type pt kind",
+                "  k8s-gen --module m1 --type pt minikube --out pt-m1/"
+        }
+)
 public final class GenerateCommand implements Callable<Integer> {
 
     @Option(names = {"--module"}, required = true, description = "Module number (e.g., m1, m7)")
@@ -32,4 +41,3 @@ public final class GenerateCommand implements Callable<Integer> {
         return new ScaffoldService().scaffold(this);
     }
 }
-
