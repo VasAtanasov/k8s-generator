@@ -264,6 +264,11 @@ class ClusterSpecTest {
         var vm1 = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.10",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
+        // Use ArrayList to avoid List.of() throwing NPE before our validation
+        var listWithNull = new java.util.ArrayList<VmConfig>();
+        listWithNull.add(vm1);
+        listWithNull.add(null);
+
         assertThatThrownBy(() -> new ClusterSpec(
             "staging",
             ClusterType.KUBEADM,
@@ -271,7 +276,7 @@ class ClusterSpecTest {
             1,
             0,
             SizeProfile.MEDIUM,
-            List.of(vm1, null)
+            listWithNull
         ))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("vms list contains null elements");

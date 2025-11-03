@@ -153,7 +153,7 @@ public record ClusterSpec(
 
     /**
      * Returns total node count (masters + workers).
-     * Note: For KIND/MINIKUBE/NONE, this returns 0 but they generate 1 VM with special role.
+     * Note: For KIND/MINIKUBE/NONE, this returns 0, but they generate 1 VM with special role.
      *
      * @return total nodes declared (may be 0 for single-VM engines)
      */

@@ -78,7 +78,12 @@ class ValidationResultTest {
             "field", ValidationLevel.SEMANTIC, "msg", "sugg"
         );
 
-        assertThatThrownBy(() -> ValidationResult.of(List.of(error, null)))
+        // Use ArrayList to avoid List.of() throwing NPE before our validation
+        var listWithNull = new ArrayList<ValidationError>();
+        listWithNull.add(error);
+        listWithNull.add(null);
+
+        assertThatThrownBy(() -> ValidationResult.of(listWithNull))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("errors list contains null elements");
     }

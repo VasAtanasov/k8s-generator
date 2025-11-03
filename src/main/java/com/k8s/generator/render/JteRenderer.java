@@ -5,7 +5,6 @@ import gg.jte.ContentType;
 import gg.jte.TemplateEngine;
 import gg.jte.output.StringOutput;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,9 +31,6 @@ public final class JteRenderer implements Renderer {
         params.put("moduleName", moduleName);
         params.put("vms", vms);
         params.put("envVars", envVars);
-        // Preserve insertion order (LinkedHashMap upstream) for stable, human-friendly layout
-        var ordered = new java.util.ArrayList<java.util.Map.Entry<String, String>>(envVars.entrySet());
-        params.put("envEntries", ordered);
         try {
             engine.render("Vagrantfile", params, output);
         } catch (RuntimeException e) {

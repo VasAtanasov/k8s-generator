@@ -85,24 +85,24 @@
 
             <!-- Precompile JTE templates into target/classes for runtime -->
             <plugin>
-              <groupId>gg.jte</groupId>
-              <artifactId>jte-maven-plugin</artifactId>
-              <version>${jte.version}</version>
-              <executions>
-                <execution>
-                  <id>jte-precompile</id>
-                  <phase>compile</phase>
-                  <goals>
-                    <goal>precompile</goal>
-                  </goals>
-                  <configuration>
-                    <sourceDirectory>${project.basedir}/src/main/resources/templates</sourceDirectory>
-                    <targetDirectory>${project.build.outputDirectory}</targetDirectory>
-                    <packageName>gg.jte.generated.precompiled</packageName>
-                    <contentType>Plain</contentType>
-                  </configuration>
-                </execution>
-              </executions>
+                <groupId>gg.jte</groupId>
+                <artifactId>jte-maven-plugin</artifactId>
+                <version>${jte.version}</version>
+                <executions>
+                    <execution>
+                        <id>jte-precompile</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>precompile</goal>
+                        </goals>
+                        <configuration>
+                            <sourceDirectory>${project.basedir}/src/main/resources/templates</sourceDirectory>
+                            <targetDirectory>${project.build.outputDirectory}</targetDirectory>
+                            <packageName>gg.jte.generated.precompiled</packageName>
+                            <contentType>Plain</contentType>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>

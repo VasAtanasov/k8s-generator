@@ -1,4 +1,6 @@
-@param java.util.Map<java.lang.String, java.lang.String> envVars
+@import java.util.Map
+
+@param Map<String, String> envVars
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -7,8 +9,7 @@ echo "[bootstrap] Starting bootstrap for $(hostname)"
 # Persist environment variables to /etc/k8s-env (idempotent)
 TMP_FILE="$(mktemp)"
 cat >"$TMP_FILE" <<EOF
-@for(java.util.Map.Entry<java.lang.String, java.lang.String> entry : envVars.entrySet())
-export ${entry.getKey()}="${entry.getValue()}"
+@for(Map.Entry<String, String> entry : envVars.entrySet())export ${entry.getKey()}="${entry.getValue()}"
 @endfor
 EOF
 if ! cmp -s "$TMP_FILE" /etc/k8s-env 2>/dev/null; then

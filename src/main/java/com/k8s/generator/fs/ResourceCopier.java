@@ -5,6 +5,9 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
+
+import static java.nio.file.attribute.PosixFilePermission.*;
 
 /**
  * Copies resource scripts from classpath to a target directory.
@@ -23,11 +26,11 @@ public final class ResourceCopier {
                     Path out = targetDir.resolve(name);
                     Files.copy(in, out);
                     try {
-                        Files.setPosixFilePermissions(out, java.util.Set.of(
-                            java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE,
-                            java.nio.file.attribute.PosixFilePermission.OWNER_READ,
-                            java.nio.file.attribute.PosixFilePermission.GROUP_READ,
-                            java.nio.file.attribute.PosixFilePermission.OTHERS_READ
+                        Files.setPosixFilePermissions(out, Set.of(
+                                OWNER_EXECUTE,
+                                OWNER_READ,
+                                GROUP_READ,
+                                OTHERS_READ
                         ));
                     } catch (UnsupportedOperationException ignored) {
                         // Windows/NTFS: ignore POSIX permission setting

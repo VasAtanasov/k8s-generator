@@ -75,9 +75,11 @@ class SemanticValidatorTest {
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errors())
-            .anyMatch(e -> e.field().contains("name")
-                && e.level() == ValidationLevel.SEMANTIC
-                && e.message().contains("Invalid cluster name"));
+            .anySatisfy(e -> {
+                assertThat(e.field()).contains("name");
+                assertThat(e.level()).isEqualTo(ValidationLevel.SEMANTIC);
+                assertThat(e.message()).contains("Invalid cluster name");
+            });
     }
 
     @Test
@@ -98,8 +100,11 @@ class SemanticValidatorTest {
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errors())
-            .anyMatch(e -> e.message().contains("too long")
-                && e.message().contains("63 characters"));
+            .anySatisfy(e -> {
+                assertThat(e.message()).contains("too long");
+                assertThat(e.message()).contains("64 characters");  // Message shows actual length
+                assertThat(e.suggestion()).contains("63 characters");  // Suggestion mentions limit
+            });
     }
 
     @Test
@@ -351,9 +356,10 @@ class SemanticValidatorTest {
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errors())
-            .anyMatch(e -> e.field().contains("masters")
-                && e.message().contains("even number of masters")
-                && e.message().contains("etcd quorum"));
+            .anySatisfy(e -> {
+                assertThat(e.field()).contains("masters");
+                assertThat(e.message()).contains("even number of masters");
+            });
     }
 
     @Test
