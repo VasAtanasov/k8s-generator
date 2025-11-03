@@ -24,8 +24,8 @@ class StructuralValidatorTest {
             1,
             2,
             SizeProfile.MEDIUM,
-            List.of()
-        );
+            List.of(),
+            Optional.of(CniType.CALICO));
 
         ValidationResult result = validator.validate(spec);
 
@@ -48,8 +48,8 @@ class StructuralValidatorTest {
             1,
             2,
             SizeProfile.MEDIUM,
-            List.of(master, worker1, worker2)
-        );
+            List.of(master, worker1, worker2),
+            Optional.of(CniType.CALICO));
 
         ValidationResult result = validator.validate(spec);
 
@@ -85,7 +85,8 @@ class StructuralValidatorTest {
             2,  // Declared 2 masters
             1,
             SizeProfile.MEDIUM,
-            List.of(master, worker)  // But only 1 master VM
+            List.of(master, worker),  // But only 1 master VM
+            Optional.of(CniType.CALICO)
         );
 
         ValidationResult result = validator.validate(spec);
@@ -111,7 +112,8 @@ class StructuralValidatorTest {
             1,
             3,  // Declared 3 workers
             SizeProfile.MEDIUM,
-            List.of(master, worker)  // But only 1 worker VM
+            List.of(master, worker),  // But only 1 worker VM
+            Optional.of(CniType.CALICO)
         );
 
         ValidationResult result = validator.validate(spec);
@@ -144,7 +146,8 @@ class StructuralValidatorTest {
             1,
             1,
             SizeProfile.MEDIUM,
-            List.of(master, worker)  // Don't include cluster/mgmt to match counts
+            List.of(master, worker),  // Don't include cluster/mgmt to match counts
+            Optional.of(CniType.CALICO)
         );
 
         ValidationResult result = validator.validate(spec);
@@ -166,8 +169,8 @@ class StructuralValidatorTest {
             2,
             0,
             SizeProfile.MEDIUM,
-            List.of(vm1, vm2)
-        );
+            List.of(vm1, vm2),
+            Optional.of(CniType.CALICO));
 
         ValidationResult result = validator.validate(spec);
 
@@ -196,8 +199,8 @@ class StructuralValidatorTest {
             1,
             3,
             SizeProfile.MEDIUM,
-            List.of(vm1, vm2, vm3, vm4)
-        );
+            List.of(vm1, vm2, vm3, vm4),
+            Optional.of(CniType.CALICO));
 
         ValidationResult result = validator.validate(spec);
 
@@ -221,8 +224,8 @@ class StructuralValidatorTest {
             3,  // Mismatched count
             0,
             SizeProfile.MEDIUM,
-            List.of(vm1, vm2)
-        );
+            List.of(vm1, vm2),
+            Optional.of(CniType.CALICO));
 
         ValidationResult result = validator.validate(spec);
 

@@ -68,33 +68,31 @@ public final class ScaffoldService {
      */
     public ScaffoldService() {
         this(
-            new CliToSpec(),
-            new StructuralValidator(),
-            new SpecToPlan(),
-            new JteRenderer(),
-            new OutputWriter(),
-            new ResourceCopier()
+                new CliToSpec(),
+                new StructuralValidator(),
+                new SpecToPlan(),
+                new JteRenderer(),
+                new OutputWriter(),
+                new ResourceCopier()
         );
     }
 
     /**
      * Creates ScaffoldService with custom brick implementations (for testing).
      *
-     * @param specConverter converts CLI to spec
-     * @param validator validates spec
-     * @param planBuilder builds execution plan
-     * @param renderer renders templates
-     * @param outputWriter writes output files
+     * @param specConverter  converts CLI to spec
+     * @param validator      validates spec
+     * @param planBuilder    builds execution plan
+     * @param renderer       renders templates
+     * @param outputWriter   writes output files
      * @param resourceCopier copies resource files
      */
-    public ScaffoldService(
-        SpecConverter specConverter,
-        StructuralValidator validator,
-        PlanBuilder planBuilder,
-        Renderer renderer,
-        OutputWriter outputWriter,
-        ResourceCopier resourceCopier
-    ) {
+    public ScaffoldService(SpecConverter specConverter,
+                           StructuralValidator validator,
+                           PlanBuilder planBuilder,
+                           Renderer renderer,
+                           OutputWriter outputWriter,
+                           ResourceCopier resourceCopier) {
         this.specConverter = specConverter;
         this.validator = validator;
         this.planBuilder = planBuilder;
@@ -140,10 +138,10 @@ public final class ScaffoldService {
             // 5. Render templates to files
             log.debug("Rendering templates with ScaffoldPlan");
             Map<String, String> files = renderer.render(
-                spec.module().num(),
-                spec.module().type(),
-                plan.vms(),
-                plan.envVars()
+                    spec.module().num(),
+                    spec.module().type(),
+                    plan.vms(),
+                    plan.envVars()
             );
 
             // 6. Write files atomically
@@ -153,18 +151,18 @@ public final class ScaffoldService {
             // 7. Copy install scripts (resources) and make executable
             log.debug("Copying install scripts to {}/scripts", outDir);
             resourceCopier.copyScripts(
-                List.of(
-                    "install_kubectl.sh",
-                    "install_docker.sh",
-                    "install_kind.sh"
-                ),
-                outDir.resolve("scripts")
+                    List.of(
+                            "install_kubectl.sh",
+                            "install_docker.sh",
+                            "install_kind.sh"
+                    ),
+                    outDir.resolve("scripts")
             );
 
             log.info("✓ Generated {} (engine={}) → {}",
-                plan.getEnv("CLUSTER_NAME"),
-                plan.getEnv("CLUSTER_TYPE"),
-                outDir
+                    plan.getEnv("CLUSTER_NAME"),
+                    plan.getEnv("CLUSTER_TYPE"),
+                    outDir
             );
             return 0;
 
@@ -182,7 +180,7 @@ public final class ScaffoldService {
     /**
      * Determines output directory from CLI or spec defaults.
      *
-     * @param cmd CLI command
+     * @param cmd  CLI command
      * @param spec generator spec
      * @return output directory path
      */

@@ -23,7 +23,8 @@ class ClusterSpecTest {
             3,
             5,
             SizeProfile.MEDIUM,
-            List.of()
+            List.of(),
+            Optional.of(CniType.CALICO)
         );
 
         assertThat(spec.name()).isEqualTo("staging");
@@ -44,7 +45,8 @@ class ClusterSpecTest {
             0,
             0,
             SizeProfile.SMALL,
-            List.of()
+            List.of(),
+            Optional.empty()
         );
 
         assertThat(spec.name()).isEqualTo("dev");
@@ -68,7 +70,8 @@ class ClusterSpecTest {
             1,
             1,
             SizeProfile.MEDIUM,
-            List.of(vm1, vm2)
+            List.of(vm1, vm2),
+            Optional.of(CniType.CALICO)
         );
 
         assertThat(spec.vms()).hasSize(2);
@@ -84,7 +87,8 @@ class ClusterSpecTest {
             1,
             1,
             SizeProfile.MEDIUM,
-            List.of()
+            List.of(),
+            Optional.of(CniType.CALICO)
         ))
             .isInstanceOf(NullPointerException.class)
             .hasMessageContaining("name is required");
@@ -99,7 +103,8 @@ class ClusterSpecTest {
             1,
             1,
             SizeProfile.MEDIUM,
-            List.of()
+            List.of(),
+            Optional.of(CniType.CALICO)
         ))
             .isInstanceOf(NullPointerException.class)
             .hasMessageContaining("type is required");
@@ -114,7 +119,8 @@ class ClusterSpecTest {
             1,
             1,
             SizeProfile.MEDIUM,
-            List.of()
+            List.of(),
+            Optional.of(CniType.CALICO)
         ))
             .isInstanceOf(NullPointerException.class)
             .hasMessageContaining("firstIp must be present");
@@ -129,7 +135,8 @@ class ClusterSpecTest {
             1,
             1,
             null,
-            List.of()
+            List.of(),
+            Optional.of(CniType.CALICO)
         ))
             .isInstanceOf(NullPointerException.class)
             .hasMessageContaining("sizeProfile is required");
@@ -144,7 +151,8 @@ class ClusterSpecTest {
             1,
             1,
             SizeProfile.MEDIUM,
-            null
+            null,
+            Optional.of(CniType.CALICO)
         ))
             .isInstanceOf(NullPointerException.class)
             .hasMessageContaining("vms list is required");
@@ -160,7 +168,8 @@ class ClusterSpecTest {
             1,
             1,
             SizeProfile.MEDIUM,
-            List.of()
+            List.of(),
+            Optional.of(CniType.CALICO)
         ))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("name cannot be blank");
@@ -175,7 +184,8 @@ class ClusterSpecTest {
             -1,
             1,
             SizeProfile.MEDIUM,
-            List.of()
+            List.of(),
+            Optional.of(CniType.CALICO)
         ))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("masters must be >= 0");
@@ -190,7 +200,8 @@ class ClusterSpecTest {
             1,
             -1,
             SizeProfile.MEDIUM,
-            List.of()
+            List.of(),
+            Optional.of(CniType.CALICO)
         ))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("workers must be >= 0");
@@ -205,7 +216,8 @@ class ClusterSpecTest {
             0,
             0,
             SizeProfile.MEDIUM,
-            List.of()
+            List.of(),
+            Optional.of(CniType.CALICO)
         ))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("KUBEADM cluster requires at least one node");
@@ -220,7 +232,8 @@ class ClusterSpecTest {
             0,
             0,
             SizeProfile.MEDIUM,
-            List.of()
+            List.of(),
+            Optional.empty()
         );
 
         assertThat(spec.masters()).isZero();
@@ -236,7 +249,8 @@ class ClusterSpecTest {
             0,
             0,
             SizeProfile.MEDIUM,
-            List.of()
+            List.of(),
+            Optional.empty()
         );
 
         assertThat(spec.masters()).isZero();
@@ -252,7 +266,8 @@ class ClusterSpecTest {
             0,
             0,
             SizeProfile.SMALL,
-            List.of()
+            List.of(),
+            Optional.empty()
         );
 
         assertThat(spec.masters()).isZero();
@@ -276,7 +291,8 @@ class ClusterSpecTest {
             1,
             0,
             SizeProfile.MEDIUM,
-            listWithNull
+            listWithNull,
+            Optional.of(CniType.CALICO)
         ))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("vms list contains null elements");
@@ -291,7 +307,8 @@ class ClusterSpecTest {
             3,
             5,
             SizeProfile.MEDIUM,
-            List.of()
+            List.of(),
+            Optional.of(CniType.CALICO)
         );
 
         assertThat(spec.totalNodes()).isEqualTo(8);
@@ -306,7 +323,8 @@ class ClusterSpecTest {
             0,
             0,
             SizeProfile.MEDIUM,
-            List.of()
+            List.of(),
+            Optional.empty()
         );
 
         assertThat(spec.totalNodes()).isZero();
@@ -321,7 +339,8 @@ class ClusterSpecTest {
             3,
             5,
             SizeProfile.LARGE,
-            List.of()
+            List.of(),
+            Optional.of(CniType.CALICO)
         );
 
         var singleMaster = new ClusterSpec(
@@ -331,7 +350,8 @@ class ClusterSpecTest {
             1,
             2,
             SizeProfile.MEDIUM,
-            List.of()
+            List.of(),
+            Optional.of(CniType.CALICO)
         );
 
         assertThat(haCluster.isHighAvailability()).isTrue();
@@ -350,7 +370,8 @@ class ClusterSpecTest {
             1,
             0,
             SizeProfile.MEDIUM,
-            List.of(vm)
+            List.of(vm),
+            Optional.of(CniType.CALICO)
         );
 
         var withoutVms = new ClusterSpec(
@@ -360,7 +381,8 @@ class ClusterSpecTest {
             1,
             0,
             SizeProfile.MEDIUM,
-            List.of()
+            List.of(),
+            Optional.of(CniType.CALICO)
         );
 
         assertThat(withVms.hasExplicitVms()).isTrue();
@@ -376,7 +398,8 @@ class ClusterSpecTest {
             1,
             0,
             SizeProfile.MEDIUM,
-            List.of()
+            List.of(),
+            Optional.of(CniType.CALICO)
         );
 
         var vm = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.10",
@@ -399,7 +422,8 @@ class ClusterSpecTest {
             1,
             0,
             SizeProfile.MEDIUM,
-            List.of()
+            List.of(),
+            Optional.of(CniType.CALICO)
         );
 
         assertThatThrownBy(() -> spec.withVms(null))
@@ -420,7 +444,8 @@ class ClusterSpecTest {
             1,
             0,
             SizeProfile.MEDIUM,
-            mutableList
+            mutableList,
+            Optional.of(CniType.CALICO)
         );
 
         // Modify original list
@@ -442,7 +467,8 @@ class ClusterSpecTest {
             1,
             0,
             SizeProfile.MEDIUM,
-            List.of(vm)
+            List.of(vm),
+            Optional.of(CniType.CALICO)
         );
 
         // Attempt to modify should fail

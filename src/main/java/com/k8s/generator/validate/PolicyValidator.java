@@ -17,14 +17,17 @@ import java.util.Set;
  * Validates constraints that span multiple clusters or require global context.
  * Operates on the entire topology rather than individual cluster specifications.
  *
- * <p>Validation Rules (Phase 1 - Basic):
+ * <p>Validation Rules (Phase 2):
  * <ul>
+ *   <li><b>CNI Requirements</b>: KUBEADM clusters MUST have CNI specified</li>
+ *   <li><b>CNI Restrictions</b>: KIND/MINIKUBE/NONE clusters MUST NOT have CNI</li>
+ *   <li><b>Master Node Requirements</b>: KUBEADM clusters MUST have masters >= 1</li>
  *   <li><b>Unique Cluster Names</b>: No two clusters can have the same name</li>
  *   <li><b>Total VM Limit</b>: Total VMs across all clusters should not exceed reasonable limits</li>
  *   <li><b>Naming Conflicts</b>: Detect potential hostname conflicts across clusters</li>
  * </ul>
  *
- * <p>Future Enhancements (Phase 2+):
+ * <p>Future Enhancements (Phase 3+):
  * <ul>
  *   <li><b>IP Overlap Detection</b>: Validate no IP ranges overlap between clusters</li>
  *   <li><b>Resource Limits</b>: Validate total CPU/memory allocation is reasonable</li>
@@ -70,6 +73,32 @@ public class PolicyValidator {
     private static final int MAX_VMS_PER_CLUSTER = 20;
 
     /**
+     * Validates policy constraints for a single cluster specification.
+     *
+     * <p>Single-Cluster Policy Rules (Phase 2):
+     * <ul>
+     *   <li>KUBEADM clusters MUST have CNI specified</li>
+     *   <li>KIND/MINIKUBE clusters MUST NOT have CNI (they bundle their own)</li>
+     *   <li>NONE (management) clusters MUST NOT have CNI (no Kubernetes)</li>
+     *   <li>KUBEADM clusters MUST have masters >= 1</li>
+     * </ul>
+     *
+     * @param cluster cluster specification to validate (must not be null)
+     * @return ValidationResult with policy errors (empty if valid)
+     * @throws NullPointerException if cluster is null
+     */
+    public ValidationResult validateSingle(ClusterSpec cluster) {
+        Objects.requireNonNull(cluster, "cluster cannot be null");
+
+        var errors = new ArrayList<ValidationError>();
+
+        validateCniRequirements(cluster, errors);
+        validateKubeadmMasterRequirement(cluster, errors);
+
+        return ValidationResult.of(errors);
+    }
+
+    /**
      * Validates policy constraints across multiple cluster specifications.
      *
      * @param clusters list of cluster specifications to validate (must not be null)
@@ -92,6 +121,85 @@ public class PolicyValidator {
         validateGlobalNamingConflicts(clusters, errors);
 
         return ValidationResult.of(errors);
+    }
+
+    /**
+     * Validates CNI requirements based on cluster type.
+     *
+     * <p>Rules:
+     * <ul>
+     *   <li>KUBEADM: CNI MUST be specified (required for networking)</li>
+     *   <li>KIND/MINIKUBE: CNI MUST NOT be specified (they bundle CNI)</li>
+     *   <li>NONE: CNI MUST NOT be specified (no Kubernetes cluster)</li>
+     * </ul>
+     */
+    private void validateCniRequirements(ClusterSpec cluster, List<ValidationError> errors) {
+        switch (cluster.type()) {
+            case KUBEADM -> {
+                if (cluster.cni().isEmpty()) {
+                    errors.add(new ValidationError(
+                        String.format("clusters[name='%s'].cni", cluster.name()),
+                        ValidationLevel.POLICY,
+                        "KUBEADM cluster requires CNI to be specified",
+                        String.format(
+                            "Add CNI specification for cluster '%s'. " +
+                            "Supported CNI types: CALICO, FLANNEL, WEAVE, CILIUM, ANTREA. " +
+                            "Example: --cni calico",
+                            cluster.name()
+                        )
+                    ));
+                }
+            }
+            case KIND, MINIKUBE -> {
+                if (cluster.cni().isPresent()) {
+                    errors.add(new ValidationError(
+                        String.format("clusters[name='%s'].cni", cluster.name()),
+                        ValidationLevel.POLICY,
+                        String.format(
+                            "%s cluster should not have CNI specified (uses bundled CNI)",
+                            cluster.type()
+                        ),
+                        String.format(
+                            "Remove CNI specification for %s cluster '%s'. " +
+                            "%s bundles its own CNI plugin.",
+                            cluster.type(), cluster.name(), cluster.type()
+                        )
+                    ));
+                }
+            }
+            case NONE -> {
+                if (cluster.cni().isPresent()) {
+                    errors.add(new ValidationError(
+                        String.format("clusters[name='%s'].cni", cluster.name()),
+                        ValidationLevel.POLICY,
+                        "Management (NONE) cluster cannot have CNI (no Kubernetes cluster)",
+                        String.format(
+                            "Remove CNI specification for management cluster '%s'. " +
+                            "Management VMs don't run Kubernetes clusters.",
+                            cluster.name()
+                        )
+                    ));
+                }
+            }
+        }
+    }
+
+    /**
+     * Validates that KUBEADM clusters have at least one master node.
+     */
+    private void validateKubeadmMasterRequirement(ClusterSpec cluster, List<ValidationError> errors) {
+        if (cluster.type() == com.k8s.generator.model.ClusterType.KUBEADM && cluster.masters() < 1) {
+            errors.add(new ValidationError(
+                String.format("clusters[name='%s'].masters", cluster.name()),
+                ValidationLevel.POLICY,
+                "KUBEADM cluster must have at least one master node",
+                String.format(
+                    "Specify master count for kubeadm cluster '%s'. " +
+                    "Example: --nodes 1m,2w (1 master, 2 workers)",
+                    cluster.name()
+                )
+            ));
+        }
     }
 
     /**
@@ -136,8 +244,8 @@ public class PolicyValidator {
             ));
         }
 
-        // Warn if approaching limits
-        if (totalVms > DEFAULT_MAX_TOTAL_VMS * 0.8) {
+        // Warn if approaching limits (>= 80%)
+        if (totalVms >= DEFAULT_MAX_TOTAL_VMS * 0.8) {
             errors.add(new ValidationError(
                 "topology.global",
                 ValidationLevel.POLICY,
@@ -222,19 +330,29 @@ public class PolicyValidator {
     /**
      * Predicts VM names that will be generated for a cluster.
      * Used for detecting potential naming conflicts before generation.
+     *
+     * <p>Naming Convention:
+     * <ul>
+     *   <li>KIND/MINIKUBE: "{cluster-name}" (single VM named after cluster)</li>
+     *   <li>NONE: "{cluster-name}" (management VM named after cluster)</li>
+     *   <li>KUBEADM: "{cluster-name}-master-{n}", "{cluster-name}-worker-{n}"</li>
+     * </ul>
      */
     private Set<String> predictVmNames(ClusterSpec cluster) {
         var names = new HashSet<String>();
 
         switch (cluster.type()) {
-            case KIND, MINIKUBE -> names.add("cluster-1");
-            case NONE -> names.add("management-1");
+            case KIND, MINIKUBE, NONE -> {
+                // Single VM: use cluster name directly
+                names.add(cluster.name());
+            }
             case KUBEADM -> {
+                // Multi-node: prefix with cluster name to avoid conflicts
                 for (int i = 1; i <= cluster.masters(); i++) {
-                    names.add("master-" + i);
+                    names.add(cluster.name() + "-master-" + i);
                 }
                 for (int i = 1; i <= cluster.workers(); i++) {
-                    names.add("worker-" + i);
+                    names.add(cluster.name() + "-worker-" + i);
                 }
             }
         }

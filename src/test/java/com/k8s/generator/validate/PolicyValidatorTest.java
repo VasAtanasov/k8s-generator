@@ -31,7 +31,8 @@ class PolicyValidatorTest {
             1,
             2,
             SizeProfile.MEDIUM,
-            List.of()
+            List.of(),
+            Optional.of(CniType.CALICO)
         );
 
         ValidationResult result = validator.validate(List.of(cluster));
@@ -48,7 +49,8 @@ class PolicyValidatorTest {
             1,
             2,
             SizeProfile.MEDIUM,
-            List.of()
+            List.of(),
+            Optional.of(CniType.CALICO)
         );
         var cluster2 = new ClusterSpec(
             "prod",
@@ -57,7 +59,8 @@ class PolicyValidatorTest {
             3,
             5,
             SizeProfile.LARGE,
-            List.of()
+            List.of(),
+            Optional.of(CniType.CALICO)
         );
 
         ValidationResult result = validator.validate(List.of(cluster1, cluster2));
@@ -74,7 +77,8 @@ class PolicyValidatorTest {
             1,
             2,
             SizeProfile.MEDIUM,
-            List.of()
+            List.of(),
+            Optional.of(CniType.CALICO)
         );
         var cluster2 = new ClusterSpec(
             "staging",  // Duplicate name
@@ -83,7 +87,8 @@ class PolicyValidatorTest {
             0,
             0,
             SizeProfile.SMALL,
-            List.of()
+            List.of(),
+            Optional.empty()
         );
 
         ValidationResult result = validator.validate(List.of(cluster1, cluster2));
@@ -98,10 +103,10 @@ class PolicyValidatorTest {
 
     @Test
     void shouldDetectMultipleDuplicateNames() {
-        var cluster1 = new ClusterSpec("dev", ClusterType.KIND, Optional.empty(), 0, 0, SizeProfile.SMALL, List.of());
-        var cluster2 = new ClusterSpec("dev", ClusterType.KIND, Optional.empty(), 0, 0, SizeProfile.SMALL, List.of());
-        var cluster3 = new ClusterSpec("prod", ClusterType.KUBEADM, Optional.empty(), 1, 1, SizeProfile.MEDIUM, List.of());
-        var cluster4 = new ClusterSpec("prod", ClusterType.KUBEADM, Optional.empty(), 1, 1, SizeProfile.MEDIUM, List.of());
+        var cluster1 = new ClusterSpec("dev", ClusterType.KIND, Optional.empty(), 0, 0, SizeProfile.SMALL, List.of(), Optional.empty());
+        var cluster2 = new ClusterSpec("dev", ClusterType.KIND, Optional.empty(), 0, 0, SizeProfile.SMALL, List.of(), Optional.empty());
+        var cluster3 = new ClusterSpec("prod", ClusterType.KUBEADM, Optional.empty(), 1, 1, SizeProfile.MEDIUM, List.of(), Optional.of(CniType.CALICO));
+        var cluster4 = new ClusterSpec("prod", ClusterType.KUBEADM, Optional.empty(), 1, 1, SizeProfile.MEDIUM, List.of(), Optional.of(CniType.CALICO));
 
         ValidationResult result = validator.validate(List.of(cluster1, cluster2, cluster3, cluster4));
 
@@ -122,7 +127,8 @@ class PolicyValidatorTest {
                 2,
                 4,  // 6 VMs per cluster
                 SizeProfile.MEDIUM,
-                List.of()
+                List.of(),
+                Optional.of(CniType.CALICO)
             ))
             .toList();
 
@@ -137,10 +143,10 @@ class PolicyValidatorTest {
     @Test
     void shouldWarnWhenApproachingTotalVmLimit() {
         // Create clusters totaling 41 VMs (80% of 50)
-        var cluster1 = new ClusterSpec("cluster1", ClusterType.KUBEADM, Optional.empty(), 3, 10, SizeProfile.MEDIUM, List.of());
-        var cluster2 = new ClusterSpec("cluster2", ClusterType.KUBEADM, Optional.empty(), 3, 10, SizeProfile.MEDIUM, List.of());
-        var cluster3 = new ClusterSpec("cluster3", ClusterType.KUBEADM, Optional.empty(), 3, 10, SizeProfile.MEDIUM, List.of());
-        var cluster4 = new ClusterSpec("cluster4", ClusterType.KIND, Optional.empty(), 0, 0, SizeProfile.SMALL, List.of());  // +2 = 41 total
+        var cluster1 = new ClusterSpec("cluster1", ClusterType.KUBEADM, Optional.empty(), 3, 10, SizeProfile.MEDIUM, List.of(), Optional.of(CniType.CALICO));
+        var cluster2 = new ClusterSpec("cluster2", ClusterType.KUBEADM, Optional.empty(), 3, 10, SizeProfile.MEDIUM, List.of(), Optional.of(CniType.CALICO));
+        var cluster3 = new ClusterSpec("cluster3", ClusterType.KUBEADM, Optional.empty(), 3, 10, SizeProfile.MEDIUM, List.of(), Optional.of(CniType.CALICO));
+        var cluster4 = new ClusterSpec("cluster4", ClusterType.KIND, Optional.empty(), 0, 0, SizeProfile.SMALL, List.of(), Optional.empty());  // +2 = 41 total
 
         ValidationResult result = validator.validate(List.of(cluster1, cluster2, cluster3, cluster4));
 
@@ -158,7 +164,8 @@ class PolicyValidatorTest {
             5,
             20,  // 25 VMs total (exceeds per-cluster limit of 20)
             SizeProfile.LARGE,
-            List.of()
+            List.of(),
+            Optional.of(CniType.CALICO)
         );
 
         ValidationResult result = validator.validate(List.of(largeCluster));
@@ -178,7 +185,8 @@ class PolicyValidatorTest {
             5,
             15,  // 20 VMs total (exactly at limit)
             SizeProfile.LARGE,
-            List.of()
+            List.of(),
+            Optional.of(CniType.CALICO)
         );
 
         ValidationResult result = validator.validate(List.of(cluster));
@@ -200,7 +208,8 @@ class PolicyValidatorTest {
             1,
             0,
             SizeProfile.MEDIUM,
-            List.of(vm1)
+            List.of(vm1),
+            Optional.of(CniType.CALICO)
         );
         var cluster2 = new ClusterSpec(
             "prod",
@@ -209,7 +218,8 @@ class PolicyValidatorTest {
             1,
             0,
             SizeProfile.MEDIUM,
-            List.of(vm2)
+            List.of(vm2),
+            Optional.of(CniType.CALICO)
         );
 
         ValidationResult result = validator.validate(List.of(cluster1, cluster2));
@@ -223,17 +233,19 @@ class PolicyValidatorTest {
 
     @Test
     void shouldDetectConflictBetweenExplicitAndPredictedNames() {
-        var vm = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.20",
+        // Explicit VM with same name that cluster1 will generate
+        var vm = new VmConfig("staging-master-1", NodeRole.MASTER, "192.168.56.20",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
         var cluster1 = new ClusterSpec(
             "staging",
             ClusterType.KUBEADM,
             Optional.of("192.168.56.10"),
-            1,  // Will generate "master-1"
+            1,  // Will generate "staging-master-1"
             0,
             SizeProfile.MEDIUM,
-            List.of()  // No explicit VMs, will be generated
+            List.of(),  // No explicit VMs, will be generated
+            Optional.of(CniType.CALICO)
         );
         var cluster2 = new ClusterSpec(
             "prod",
@@ -242,14 +254,16 @@ class PolicyValidatorTest {
             1,
             0,
             SizeProfile.MEDIUM,
-            List.of(vm)  // Explicit "master-1"
+            List.of(vm),  // Explicit "staging-master-1" conflicts with cluster1's predicted name
+            Optional.of(CniType.CALICO)
         );
 
         ValidationResult result = validator.validate(List.of(cluster1, cluster2));
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errors())
-            .anyMatch(e -> e.message().contains("VM name conflict"));
+            .anyMatch(e -> e.message().contains("VM name conflict")
+                && e.message().contains("staging-master-1"));
     }
 
     @Test
@@ -261,7 +275,8 @@ class PolicyValidatorTest {
             0,
             0,
             SizeProfile.SMALL,
-            List.of()
+            List.of(),
+            Optional.empty()
         );
 
         ValidationResult result = validator.validate(List.of(cluster));
@@ -279,7 +294,8 @@ class PolicyValidatorTest {
             0,
             0,
             SizeProfile.SMALL,
-            List.of()
+            List.of(),
+            Optional.empty()
         );
 
         ValidationResult result = validator.validate(List.of(cluster));
@@ -297,7 +313,8 @@ class PolicyValidatorTest {
             0,
             0,
             SizeProfile.SMALL,
-            List.of()
+            List.of(),
+            Optional.empty()
         );
 
         ValidationResult result = validator.validate(List.of(cluster));
@@ -319,11 +336,11 @@ class PolicyValidatorTest {
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
         var cluster1 = new ClusterSpec("dup", ClusterType.KUBEADM, Optional.empty(),
-            10, 15, SizeProfile.LARGE, List.of());  // Exceeds per-cluster limit
+            10, 15, SizeProfile.LARGE, List.of(), Optional.of(CniType.CALICO));  // Exceeds per-cluster limit
         var cluster2 = new ClusterSpec("dup", ClusterType.KUBEADM, Optional.empty(),  // Duplicate name
-            10, 15, SizeProfile.LARGE, List.of());
+            10, 15, SizeProfile.LARGE, List.of(), Optional.of(CniType.CALICO));
         var cluster3 = new ClusterSpec("other", ClusterType.KUBEADM, Optional.empty(),
-            1, 0, SizeProfile.MEDIUM, List.of(vm));
+            1, 0, SizeProfile.MEDIUM, List.of(vm), Optional.of(CniType.CALICO));
 
         ValidationResult result = validator.validate(List.of(cluster1, cluster2, cluster3));
 

@@ -1,0 +1,271 @@
+package com.k8s.generator.ip;
+
+import com.k8s.generator.model.ClusterSpec;
+import com.k8s.generator.model.ClusterType;
+import inet.ipaddr.IPAddress;
+import inet.ipaddr.IPAddressString;
+
+import java.util.*;
+
+/**
+ * Sequential IP allocator using ipaddress library for validation and arithmetic.
+ *
+ * <p>Implementation Details:
+ * <ul>
+ *   <li><b>Base IP</b>: 192.168.56.10 (if not specified in ClusterSpec)</li>
+ *   <li><b>Reserved IPs</b>: .1 (gateway), .2 (DNS), .5 (management) - never assigned</li>
+ *   <li><b>Subnet boundary</b>: IPs must be ≤ .254 (255 is broadcast)</li>
+ *   <li><b>Validation</b>: Uses ipaddress library for IP parsing and validation</li>
+ * </ul>
+ *
+ * <p>Allocation Algorithm:
+ * <pre>
+ * 1. Determine base IP from ClusterSpec.firstIp() or use default
+ * 2. Calculate VM count:
+ *    - KIND/MINIKUBE/NONE: 1 VM
+ *    - KUBEADM: masters + workers VMs
+ * 3. Generate sequential IPs starting from base:
+ *    - Increment IP address for each VM
+ *    - Skip reserved IPs (.1, .2, .5)
+ *    - Validate each IP ≤ .254
+ * 4. Return allocated IPs or error message
+ * </pre>
+ *
+ * <p>Example Allocations:
+ * <pre>
+ * // Single KIND cluster (default IP)
+ * ClusterSpec: KIND, firstIp=empty
+ * Result: ["192.168.56.10"]
+ *
+ * // Kubeadm 1m,2w (explicit IP)
+ * ClusterSpec: KUBEADM, firstIp=192.168.56.20, masters=1, workers=2
+ * Result: ["192.168.56.20", "192.168.56.21", "192.168.56.22"]
+ *
+ * // Edge case: Skip reserved .5
+ * ClusterSpec: KIND, firstIp=192.168.56.4
+ * Result: ["192.168.56.4"]  // .5 would be skipped if needed
+ *
+ * // Boundary violation
+ * ClusterSpec: KUBEADM, firstIp=192.168.56.253, masters=3, workers=0
+ * Result: Failure("IP allocation exceeds subnet boundary...")
+ * </pre>
+ *
+ * @see IpAllocator
+ * @see ClusterSpec
+ * @since 1.0.0 (Phase 2)
+ */
+public class SequentialIpAllocator implements IpAllocator {
+
+    /**
+     * Default base IP for single-cluster mode when firstIp not specified.
+     */
+    private static final String DEFAULT_BASE_IP = "192.168.56.10";
+
+    /**
+     * Default subnet (used for multi-cluster overlap detection).
+     */
+    private static final String DEFAULT_SUBNET = "192.168.56.0/24";
+
+    /**
+     * Reserved IP addresses that should never be allocated.
+     * These are typically: .1 (gateway), .2 (DNS), .5 (management placeholder).
+     */
+    private static final Set<Integer> RESERVED_HOST_IDS = Set.of(1, 2, 5);
+
+    /**
+     * Maximum host ID in /24 subnet (255 is broadcast, 254 is last usable).
+     */
+    private static final int MAX_HOST_ID = 254;
+
+    /**
+     * Allocates IP addresses for a single cluster.
+     *
+     * @param spec cluster specification
+     * @return Result with allocated IPs or error message
+     */
+    @Override
+    public IpAllocator.Result<List<String>, String> allocate(ClusterSpec spec) {
+        Objects.requireNonNull(spec, "spec cannot be null");
+
+        // 1. Determine base IP
+        String baseIp = spec.firstIp().orElse(DEFAULT_BASE_IP);
+
+        // 2. Validate base IP format
+        var ipAddress = new IPAddressString(baseIp).getAddress();
+        if (ipAddress == null) {
+            return IpAllocator.Result.failure(
+                String.format("Invalid IP address format: '%s'", baseIp)
+            );
+        }
+
+        // 3. Calculate VM count based on cluster type
+        int vmCount = calculateVmCount(spec);
+
+        // 4. Allocate sequential IPs
+        return allocateSequential(baseIp, vmCount, spec.name());
+    }
+
+    /**
+     * Allocates IPs for multiple clusters with overlap detection.
+     *
+     * @param clusters list of cluster specifications
+     * @return Result with map of cluster name to IPs, or error
+     */
+    @Override
+    public IpAllocator.Result<Map<String, List<String>>, String> allocateMulti(List<ClusterSpec> clusters) {
+        Objects.requireNonNull(clusters, "clusters cannot be null");
+
+        if (clusters.isEmpty()) {
+            return IpAllocator.Result.success(Map.of());
+        }
+
+        // Phase 2: Multi-cluster requires explicit firstIp for each cluster
+        // This validation is also done by SemanticValidator, but we check here too
+        for (ClusterSpec cluster : clusters) {
+            if (cluster.firstIp().isEmpty()) {
+                return IpAllocator.Result.failure(
+                    String.format(
+                        "Multi-cluster configuration requires explicit firstIp for cluster '%s'",
+                        cluster.name()
+                    )
+                );
+            }
+        }
+
+        // Allocate IPs for each cluster
+        var allocations = new LinkedHashMap<String, List<String>>();
+        var allAllocatedIps = new HashSet<String>();
+
+        for (ClusterSpec cluster : clusters) {
+            var result = allocate(cluster);
+            if (result.isFailure()) {
+                return IpAllocator.Result.failure(
+                    String.format("Failed to allocate IPs for cluster '%s': %s",
+                        cluster.name(), result.getError())
+                );
+            }
+
+            List<String> ips = result.orElseThrow();
+
+            // Check for overlaps
+            for (String ip : ips) {
+                if (allAllocatedIps.contains(ip)) {
+                    return IpAllocator.Result.failure(
+                        String.format(
+                            "IP address overlap detected: '%s' is used by multiple clusters",
+                            ip
+                        )
+                    );
+                }
+                allAllocatedIps.add(ip);
+            }
+
+            allocations.put(cluster.name(), ips);
+        }
+
+        return IpAllocator.Result.success(allocations);
+    }
+
+    /**
+     * Calculates expected VM count for a cluster based on its type.
+     *
+     * @param spec cluster specification
+     * @return number of VMs to allocate IPs for
+     */
+    private int calculateVmCount(ClusterSpec spec) {
+        return switch (spec.type()) {
+            case KIND, MINIKUBE, NONE -> 1;
+            case KUBEADM -> spec.masters() + spec.workers();
+        };
+    }
+
+    /**
+     * Allocates sequential IPs starting from base address.
+     *
+     * <p>Algorithm:
+     * <ol>
+     *   <li>Parse base IP using ipaddress library</li>
+     *   <li>Extract host ID (last octet)</li>
+     *   <li>Generate count sequential IPs, skipping reserved IDs</li>
+     *   <li>Validate each IP ≤ .254 (subnet boundary)</li>
+     *   <li>Return list of IP strings or error</li>
+     * </ol>
+     *
+     * @param baseIp starting IP address (e.g., "192.168.56.10")
+     * @param count number of IPs to allocate
+     * @param clusterName cluster name (for error messages)
+     * @return Result with IP list or error message
+     */
+    private IpAllocator.Result<List<String>, String> allocateSequential(
+        String baseIp,
+        int count,
+        String clusterName
+    ) {
+        var ipAddressString = new IPAddressString(baseIp);
+        var ipAddress = ipAddressString.getAddress();
+
+        if (ipAddress == null) {
+            return IpAllocator.Result.failure(
+                String.format("Invalid IP address: '%s'", baseIp)
+            );
+        }
+
+        var allocatedIps = new ArrayList<String>();
+        IPAddress current = ipAddress;
+
+        int allocated = 0;
+        int attempts = 0;
+        int maxAttempts = count + RESERVED_HOST_IDS.size() + 10; // Safety limit
+
+        while (allocated < count && attempts < maxAttempts) {
+            attempts++;
+
+            // Extract last octet (host ID)
+            int hostId = getLastOctet(current);
+
+            // Check subnet boundary
+            if (hostId > MAX_HOST_ID) {
+                return IpAllocator.Result.failure(
+                    String.format(
+                        "IP allocation for cluster '%s' exceeds subnet boundary (last octet > 254). " +
+                        "Started at %s, needed %d IPs, reached %s",
+                        clusterName, baseIp, count, current.toCanonicalString()
+                    )
+                );
+            }
+
+            // Skip reserved IPs
+            if (!RESERVED_HOST_IDS.contains(hostId)) {
+                allocatedIps.add(current.toCanonicalString());
+                allocated++;
+            }
+
+            // Increment to next IP
+            current = current.increment(1);
+        }
+
+        if (allocated < count) {
+            return IpAllocator.Result.failure(
+                String.format(
+                    "Failed to allocate %d IPs for cluster '%s' (only allocated %d)",
+                    count, clusterName, allocated
+                )
+            );
+        }
+
+        return IpAllocator.Result.success(allocatedIps);
+    }
+
+    /**
+     * Extracts the last octet (host ID) from an IP address.
+     *
+     * @param ipAddress the IP address
+     * @return last octet value (0-255)
+     */
+    private int getLastOctet(IPAddress ipAddress) {
+        var bytes = ipAddress.getBytes();
+        // For IPv4, bytes.length is 4, last octet is at index 3
+        // Need to convert to unsigned int (byte is signed in Java)
+        return bytes[bytes.length - 1] & 0xFF;
+    }
+}

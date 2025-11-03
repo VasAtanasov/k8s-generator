@@ -34,6 +34,13 @@
             <version>${jte.version}</version>
         </dependency>
 
+        <!-- IP/CIDR handling -->
+        <dependency>
+            <groupId>com.github.seancfoley</groupId>
+            <artifactId>ipaddress</artifactId>
+            <version>5.4.0</version>
+        </dependency>
+
         <!-- Testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>

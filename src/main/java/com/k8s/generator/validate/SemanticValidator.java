@@ -59,10 +59,15 @@ import java.util.regex.Pattern;
 public class SemanticValidator {
 
     /**
-     * Regex pattern for valid cluster names.
-     * Format: [a-z][a-z0-9-]* (starts with lowercase letter, then alphanumeric or hyphens)
+     * Regex pattern for valid cluster names (follows Kubernetes DNS-1123 label convention).
+     * Format: [a-z]([a-z0-9-]*[a-z0-9])?
+     * Rules:
+     * - Must start with lowercase letter
+     * - Must end with lowercase letter or digit (not hyphen)
+     * - May contain lowercase letters, digits, and hyphens in between
+     * - Single character names are allowed (e.g., "a")
      */
-    private static final Pattern NAME_PATTERN = Pattern.compile("^[a-z][a-z0-9-]*$");
+    private static final Pattern NAME_PATTERN = Pattern.compile("^[a-z]([a-z0-9-]*[a-z0-9])?$");
 
     /**
      * Regex pattern for basic IPv4 validation.
