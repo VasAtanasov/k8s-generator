@@ -3,109 +3,193 @@ package com.k8s.generator.app;
 import com.k8s.generator.cli.GenerateCommand;
 import com.k8s.generator.fs.OutputWriter;
 import com.k8s.generator.fs.ResourceCopier;
-import com.k8s.generator.model.ClusterType;
-import com.k8s.generator.model.SizeProfile;
-import com.k8s.generator.model.VmConfig;
-import com.k8s.generator.render.Renderer;
+import com.k8s.generator.model.GeneratorSpec;
+import com.k8s.generator.model.ScaffoldPlan;
+import com.k8s.generator.model.ValidationError;
+import com.k8s.generator.parser.CliToSpec;
+import com.k8s.generator.parser.PlanBuilder;
+import com.k8s.generator.parser.SpecConverter;
+import com.k8s.generator.parser.SpecToPlan;
 import com.k8s.generator.render.JteRenderer;
+import com.k8s.generator.render.Renderer;
+import com.k8s.generator.validate.StructuralValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 
 /**
- * Orchestrates Phase 1 flow: CLI → plan → render → write → copy resources.
+ * Orchestrates Phase 1 scaffold generation flow using bricks-and-studs architecture.
+ *
+ * <p>Architecture Flow:
+ * <pre>
+ * GenerateCommand → SpecConverter → GeneratorSpec → Validator → PlanBuilder → ScaffoldPlan → Renderer → Files
+ * </pre>
+ *
+ * <p>Brick Responsibilities:
+ * <ol>
+ *   <li><b>SpecConverter (Parser)</b>: CLI args → GeneratorSpec</li>
+ *   <li><b>StructuralValidator (Validation)</b>: GeneratorSpec validation</li>
+ *   <li><b>PlanBuilder (Parser)</b>: GeneratorSpec → ScaffoldPlan</li>
+ *   <li><b>Renderer (Rendering)</b>: ScaffoldPlan → template files</li>
+ *   <li><b>OutputWriter (I/O)</b>: Write files atomically</li>
+ *   <li><b>ResourceCopier (I/O)</b>: Copy install scripts</li>
+ * </ol>
+ *
+ * <p>Exit Codes:
+ * <ul>
+ *   <li><b>0</b>: Success</li>
+ *   <li><b>1</b>: Internal error (unexpected exception)</li>
+ *   <li><b>2</b>: Validation error (user input issue)</li>
+ * </ul>
+ *
+ * @see GenerateCommand
+ * @see SpecConverter
+ * @see StructuralValidator
+ * @see PlanBuilder
+ * @see Renderer
+ * @since 1.0.0
  */
 public final class ScaffoldService {
     private static final Logger log = LoggerFactory.getLogger(ScaffoldService.class);
 
+    private final SpecConverter specConverter;
+    private final StructuralValidator validator;
+    private final PlanBuilder planBuilder;
+    private final Renderer renderer;
+    private final OutputWriter outputWriter;
+    private final ResourceCopier resourceCopier;
+
+    /**
+     * Creates ScaffoldService with default brick implementations.
+     */
+    public ScaffoldService() {
+        this(
+            new CliToSpec(),
+            new StructuralValidator(),
+            new SpecToPlan(),
+            new JteRenderer(),
+            new OutputWriter(),
+            new ResourceCopier()
+        );
+    }
+
+    /**
+     * Creates ScaffoldService with custom brick implementations (for testing).
+     *
+     * @param specConverter converts CLI to spec
+     * @param validator validates spec
+     * @param planBuilder builds execution plan
+     * @param renderer renders templates
+     * @param outputWriter writes output files
+     * @param resourceCopier copies resource files
+     */
+    public ScaffoldService(
+        SpecConverter specConverter,
+        StructuralValidator validator,
+        PlanBuilder planBuilder,
+        Renderer renderer,
+        OutputWriter outputWriter,
+        ResourceCopier resourceCopier
+    ) {
+        this.specConverter = specConverter;
+        this.validator = validator;
+        this.planBuilder = planBuilder;
+        this.renderer = renderer;
+        this.outputWriter = outputWriter;
+        this.resourceCopier = resourceCopier;
+    }
+
+    /**
+     * Scaffolds a learning environment from CLI command.
+     *
+     * @param cmd Picocli command with user inputs
+     * @return exit code (0=success, 1=internal error, 2=validation error)
+     */
     public int scaffold(GenerateCommand cmd) {
         try {
-            // 1) Parse and validate CLI inputs (structural checks only)
-            var module = cmd.module;
-            var type = cmd.type;
-            if (!module.matches("m\\d+")) {
-                log.error("[Structural] Invalid module '{}' -> Expected: mN (e.g., m1, m7)", module);
-                return 2;
-            }
-            if (!type.matches("[a-z][a-z0-9-]*")) {
-                log.error("[Structural] Invalid type '{}' -> Pattern: [a-z][a-z0-9-]* (e.g., pt, exam-prep)", type);
-                return 2;
-            }
+            // 1. Convert CLI arguments to GeneratorSpec
+            log.debug("Converting CLI arguments to GeneratorSpec");
+            GeneratorSpec spec = specConverter.convert(cmd);
 
-            var engine = parseEngine(cmd.clusterType);
-            if (engine == null) {
-                log.error("[Structural] Unsupported cluster-type '{}' -> Phase 1 supports: kind|minikube", cmd.clusterType);
+            // 2. Validate spec (structural validation)
+            log.debug("Validating GeneratorSpec: {}", spec);
+            var validationResult = validator.validate(spec.primaryCluster());
+            if (validationResult.hasErrors()) {
+                log.error("[Validation] Spec validation failed:");
+                for (ValidationError error : validationResult.errors()) {
+                    log.error("  {}", error.format());
+                }
                 return 2;
             }
 
-            // 2) Determine output directory (fail on collision if not overridden)
-            Path out = determineOutDir(cmd.outDir, module, type);
-            if (Files.exists(out)) {
-                log.error("[Structural] Output directory already exists: {} -> Use --out to target a different path", out);
+            // 3. Build ScaffoldPlan (allocate IPs, generate VMs, build env vars)
+            log.debug("Building ScaffoldPlan from validated spec");
+            ScaffoldPlan plan = planBuilder.build(spec);
+
+            // 4. Determine output directory (fail on collision)
+            Path outDir = determineOutDir(cmd, spec);
+            if (Files.exists(outDir)) {
+                log.error("[Validation] Output directory already exists: {} -> Use --out to target a different path", outDir);
                 return 2;
             }
 
-            // 3) Build minimal plan (single VM, default IP 192.168.56.10)
-            String clusterName = String.format("clu-%s-%s-%s", module, type, engine.name().toLowerCase(Locale.ROOT));
-            String namespace = String.format("ns-%s-%s", module, type);
-            String ip = "192.168.56.10";
-            SizeProfile profile = SizeProfile.MEDIUM;
+            // 5. Render templates to files
+            log.debug("Rendering templates with ScaffoldPlan");
+            Map<String, String> files = renderer.render(
+                spec.module().num(),
+                spec.module().type(),
+                plan.vms(),
+                plan.envVars()
+            );
 
-            // Use role "cluster" for single-node engines
-            VmConfig vm = new VmConfig(sanitizeVmName(module + "-" + type), "cluster", ip, profile, Optional.empty(), Optional.empty());
-            List<VmConfig> vms = List.of(vm);
+            // 6. Write files atomically
+            log.debug("Writing files atomically to {}", outDir);
+            outputWriter.writeFiles(files, outDir);
 
-            Map<String, String> env = new java.util.LinkedHashMap<>();
-            env.put("CLUSTER_NAME", clusterName);
-            env.put("NAMESPACE_DEFAULT", namespace);
-            env.put("CLUSTER_TYPE", engine.name().toLowerCase(Locale.ROOT));
+            // 7. Copy install scripts (resources) and make executable
+            log.debug("Copying install scripts to {}/scripts", outDir);
+            resourceCopier.copyScripts(
+                List.of(
+                    "install_kubectl.sh",
+                    "install_docker.sh",
+                    "install_kind.sh"
+                ),
+                outDir.resolve("scripts")
+            );
 
-            // 4) Render files via JTE (no fallback per requirements)
-            Renderer renderer = new JteRenderer();
-            Map<String, String> files = renderer.render(module, type, vms, env);
-
-            // 5) Write files atomically
-            new OutputWriter().writeFiles(files, out);
-
-            // 6) Copy install scripts (resources) and make executable
-            new ResourceCopier().copyScripts(List.of(
-                "install_kubectl.sh",
-                "install_docker.sh",
-                "install_kind.sh"
-            ), out.resolve("scripts"));
-
-            log.info("✓ Generated {} (engine={}) → {}", clusterName, engine.name().toLowerCase(Locale.ROOT), out);
+            log.info("✓ Generated {} (engine={}) → {}",
+                plan.getEnv("CLUSTER_NAME"),
+                plan.getEnv("CLUSTER_TYPE"),
+                outDir
+            );
             return 0;
+
+        } catch (IllegalArgumentException e) {
+            // User input validation error (e.g., unsupported cluster type in Phase 1)
+            log.error("[Validation] {}", e.getMessage());
+            return 2;
         } catch (Exception e) {
-            log.error("[Internal] Unexpected error", e);
+            // Unexpected internal error
+            log.error("[Internal] Unexpected error during scaffold generation", e);
             return 1;
         }
     }
 
-    private static ClusterType parseEngine(String clusterType) {
-        String v = clusterType == null ? "" : clusterType.trim().toLowerCase(Locale.ROOT);
-        return switch (v) {
-            case "kind" -> ClusterType.KIND;
-            case "minikube" -> ClusterType.MINIKUBE;
-            default -> null; // Phase 1 limits
-        };
-    }
-
-    private static Path determineOutDir(String outOpt, String module, String type) {
-        if (outOpt != null && !outOpt.isBlank()) {
-            return Path.of(outOpt);
+    /**
+     * Determines output directory from CLI or spec defaults.
+     *
+     * @param cmd CLI command
+     * @param spec generator spec
+     * @return output directory path
+     */
+    private static Path determineOutDir(GenerateCommand cmd, GeneratorSpec spec) {
+        if (cmd.outDir != null && !cmd.outDir.isBlank()) {
+            return Path.of(cmd.outDir);
         }
-        return Path.of(String.format("%s-%s", type, module));
-    }
-
-    private static String sanitizeVmName(String base) {
-        return base.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9-]", "-");
+        return Path.of(spec.module().defaultOutputDir());
     }
 }

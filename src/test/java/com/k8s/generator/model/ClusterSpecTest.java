@@ -56,9 +56,9 @@ class ClusterSpecTest {
 
     @Test
     void shouldCreateClusterWithExplicitVms() {
-        var vm1 = new VmConfig("master-1", "master", "192.168.56.10",
+        var vm1 = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.10",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var vm2 = new VmConfig("worker-1", "worker", "192.168.56.11",
+        var vm2 = new VmConfig("worker-1", NodeRole.WORKER, "192.168.56.11",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
         var spec = new ClusterSpec(
@@ -261,7 +261,7 @@ class ClusterSpecTest {
 
     @Test
     void shouldRejectVmsListContainingNulls() {
-        var vm1 = new VmConfig("master-1", "master", "192.168.56.10",
+        var vm1 = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.10",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
         assertThatThrownBy(() -> new ClusterSpec(
@@ -335,7 +335,7 @@ class ClusterSpecTest {
 
     @Test
     void shouldDetectExplicitVms() {
-        var vm = new VmConfig("master-1", "master", "192.168.56.10",
+        var vm = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.10",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
         var withVms = new ClusterSpec(
@@ -374,7 +374,7 @@ class ClusterSpecTest {
             List.of()
         );
 
-        var vm = new VmConfig("master-1", "master", "192.168.56.10",
+        var vm = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.10",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
         var updated = original.withVms(List.of(vm));
 
@@ -404,7 +404,7 @@ class ClusterSpecTest {
 
     @Test
     void shouldMakeDefensiveCopyOfVmsList() {
-        var vm = new VmConfig("master-1", "master", "192.168.56.10",
+        var vm = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.10",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
         var mutableList = new java.util.ArrayList<>(List.of(vm));
 
@@ -427,7 +427,7 @@ class ClusterSpecTest {
 
     @Test
     void shouldReturnImmutableVmsList() {
-        var vm = new VmConfig("master-1", "master", "192.168.56.10",
+        var vm = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.10",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
         var spec = new ClusterSpec(

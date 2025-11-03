@@ -188,9 +188,9 @@ class PolicyValidatorTest {
 
     @Test
     void shouldDetectVmNameConflictAcrossClusters() {
-        var vm1 = new VmConfig("master-1", "master", "192.168.56.10",
+        var vm1 = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.10",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var vm2 = new VmConfig("master-1", "master", "192.168.56.20",  // Same name
+        var vm2 = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.20",  // Same name
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
         var cluster1 = new ClusterSpec(
@@ -223,7 +223,7 @@ class PolicyValidatorTest {
 
     @Test
     void shouldDetectConflictBetweenExplicitAndPredictedNames() {
-        var vm = new VmConfig("master-1", "master", "192.168.56.20",
+        var vm = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.20",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
         var cluster1 = new ClusterSpec(
@@ -315,7 +315,7 @@ class PolicyValidatorTest {
 
     @Test
     void shouldCollectAllPolicyErrors() {
-        var vm = new VmConfig("master-1", "master", "192.168.56.10",
+        var vm = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.10",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
         var cluster1 = new ClusterSpec("dup", ClusterType.KUBEADM, Optional.empty(),

@@ -1,6 +1,7 @@
 package com.k8s.generator.validate;
 
 import com.k8s.generator.model.ClusterSpec;
+import com.k8s.generator.model.NodeRole;
 import com.k8s.generator.model.ValidationError;
 import com.k8s.generator.model.ValidationLevel;
 
@@ -90,8 +91,8 @@ public class StructuralValidator {
      * Only applicable for KUBEADM clusters.
      */
     private void validateVmCountConsistency(ClusterSpec spec, List<ValidationError> errors) {
-        long masterCount = spec.vms().stream().filter(vm -> "master".equals(vm.role())).count();
-        long workerCount = spec.vms().stream().filter(vm -> "worker".equals(vm.role())).count();
+        long masterCount = spec.vms().stream().filter(vm -> vm.role() == NodeRole.MASTER).count();
+        long workerCount = spec.vms().stream().filter(vm -> vm.role() == NodeRole.WORKER).count();
 
         if (masterCount != spec.masters()) {
             errors.add(new ValidationError(
@@ -116,21 +117,16 @@ public class StructuralValidator {
 
     /**
      * Validates that VM roles are valid and consistent with cluster type.
+     * Note: With NodeRole enum, role validation is already guaranteed by the type system.
+     * This method is kept for potential future semantic validations (e.g., cluster type vs role).
      */
     private void validateVmRoles(ClusterSpec spec, List<ValidationError> errors) {
-        var validRoles = List.of("master", "worker", "cluster", "management");
-
-        for (int i = 0; i < spec.vms().size(); i++) {
-            var vm = spec.vms().get(i);
-            if (!validRoles.contains(vm.role())) {
-                errors.add(new ValidationError(
-                    String.format("clusters[name='%s'].vms[%d].role", spec.name(), i),
-                    ValidationLevel.STRUCTURAL,
-                    String.format("Invalid VM role: '%s'", vm.role()),
-                    String.format("Valid roles: %s", String.join(", ", validRoles))
-                ));
-            }
-        }
+        // With NodeRole enum, structural validation is handled by the type system.
+        // Future semantic validations could check:
+        // - KIND/MINIKUBE should only have CLUSTER role VMs
+        // - KUBEADM should only have MASTER/WORKER role VMs
+        // - NONE should only have MANAGEMENT role VMs
+        // These are semantic rules, not structural, so they belong in SemanticValidator.
     }
 
     /**

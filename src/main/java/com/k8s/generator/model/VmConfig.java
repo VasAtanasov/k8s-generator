@@ -17,12 +17,12 @@ import java.util.Optional;
  *   <li><b>Resource Defaults</b>: Size profile determines CPU/memory if not explicitly set</li>
  * </ul>
  *
- * <p>VM Roles:
+ * <p>VM Roles (NodeRole enum):
  * <ul>
- *   <li><b>master</b>: Kubernetes control plane node (API server, etcd, scheduler, controller)</li>
- *   <li><b>worker</b>: Kubernetes worker node (runs application workloads)</li>
- *   <li><b>cluster</b>: Single-node cluster (kind/minikube, hosts entire cluster)</li>
- *   <li><b>management</b>: Management machine (no k8s, just kubectl/helm/tools)</li>
+ *   <li><b>MASTER</b>: Kubernetes control plane node (API server, etcd, scheduler, controller)</li>
+ *   <li><b>WORKER</b>: Kubernetes worker node (runs application workloads)</li>
+ *   <li><b>CLUSTER</b>: Single-node cluster (kind/minikube, hosts entire cluster)</li>
+ *   <li><b>MANAGEMENT</b>: Management machine (no k8s, just kubectl/helm/tools)</li>
  * </ul>
  *
  * <p>Example Usage:
@@ -30,7 +30,7 @@ import java.util.Optional;
  * // Kubeadm master node
  * var master = new VmConfig(
  *     "master-1",
- *     "master",
+ *     NodeRole.MASTER,
  *     "192.168.56.10",
  *     SizeProfile.MEDIUM,
  *     Optional.empty(),  // Use MEDIUM profile defaults (2 CPU, 4096 MB)
@@ -40,7 +40,7 @@ import java.util.Optional;
  * // Worker node with custom resources
  * var worker = new VmConfig(
  *     "worker-1",
- *     "worker",
+ *     NodeRole.WORKER,
  *     "192.168.56.11",
  *     SizeProfile.LARGE,
  *     Optional.of(4),    // Override: 4 CPUs
@@ -49,19 +49,20 @@ import java.util.Optional;
  * }</pre>
  *
  * @param name VM hostname (e.g., "master-1", "worker-2", "cluster-1")
- * @param role VM role (master, worker, cluster, management)
+ * @param role VM role (MASTER, WORKER, CLUSTER, MANAGEMENT)
  * @param ip IP address for this VM (e.g., "192.168.56.10")
  * @param sizeProfile Base size profile (determines defaults for CPU/memory)
  * @param cpuOverride Optional CPU count override (if present, overrides sizeProfile)
  * @param memoryMbOverride Optional memory override in MB (if present, overrides sizeProfile)
  *
+ * @see NodeRole
  * @see SizeProfile
  * @see ClusterSpec
  * @since 1.0.0
  */
 public record VmConfig(
     String name,
-    String role,
+    NodeRole role,
     String ip,
     SizeProfile sizeProfile,
     Optional<Integer> cpuOverride,
@@ -90,9 +91,6 @@ public record VmConfig(
 
         if (name.isBlank()) {
             throw new IllegalArgumentException("name cannot be blank");
-        }
-        if (role.isBlank()) {
-            throw new IllegalArgumentException("role cannot be blank");
         }
         if (ip.isBlank()) {
             throw new IllegalArgumentException("ip cannot be blank");
@@ -134,36 +132,46 @@ public record VmConfig(
     /**
      * Checks if this VM is a master node.
      *
-     * @return true if role is "master"
+     * @return true if role is NodeRole.MASTER
      */
     public boolean isMaster() {
-        return "master".equals(role);
+        return role == NodeRole.MASTER;
     }
 
     /**
      * Checks if this VM is a worker node.
      *
-     * @return true if role is "worker"
+     * @return true if role is NodeRole.WORKER
      */
     public boolean isWorker() {
-        return "worker".equals(role);
+        return role == NodeRole.WORKER;
     }
 
     /**
      * Checks if this VM is a cluster node (kind/minikube single-node).
      *
-     * @return true if role is "cluster"
+     * @return true if role is NodeRole.CLUSTER
      */
     public boolean isCluster() {
-        return "cluster".equals(role);
+        return role == NodeRole.CLUSTER;
     }
 
     /**
      * Checks if this VM is a management machine.
      *
-     * @return true if role is "management"
+     * @return true if role is NodeRole.MANAGEMENT
      */
     public boolean isManagement() {
-        return "management".equals(role);
+        return role == NodeRole.MANAGEMENT;
+    }
+
+    /**
+     * Returns the role name in lowercase for template rendering.
+     * Used by JTE templates for conditional logic and naming.
+     *
+     * @return role name (e.g., "master", "worker", "cluster", "management")
+     */
+    public String roleName() {
+        return role.name().toLowerCase();
     }
 }

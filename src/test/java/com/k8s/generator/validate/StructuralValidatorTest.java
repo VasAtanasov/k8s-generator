@@ -34,11 +34,11 @@ class StructuralValidatorTest {
 
     @Test
     void shouldAcceptValidClusterWithMatchingVms() {
-        var master = new VmConfig("master-1", "master", "192.168.56.10",
+        var master = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.10",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var worker1 = new VmConfig("worker-1", "worker", "192.168.56.11",
+        var worker1 = new VmConfig("worker-1", NodeRole.WORKER, "192.168.56.11",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var worker2 = new VmConfig("worker-2", "worker", "192.168.56.12",
+        var worker2 = new VmConfig("worker-2", NodeRole.WORKER, "192.168.56.12",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
         var spec = new ClusterSpec(
@@ -73,9 +73,9 @@ class StructuralValidatorTest {
 
     @Test
     void shouldRejectMismatchedMasterCount() {
-        var master = new VmConfig("master-1", "master", "192.168.56.10",
+        var master = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.10",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var worker = new VmConfig("worker-1", "worker", "192.168.56.11",
+        var worker = new VmConfig("worker-1", NodeRole.WORKER, "192.168.56.11",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
         var spec = new ClusterSpec(
@@ -99,9 +99,9 @@ class StructuralValidatorTest {
 
     @Test
     void shouldRejectMismatchedWorkerCount() {
-        var master = new VmConfig("master-1", "master", "192.168.56.10",
+        var master = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.10",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var worker = new VmConfig("worker-1", "worker", "192.168.56.11",
+        var worker = new VmConfig("worker-1", NodeRole.WORKER, "192.168.56.11",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
         var spec = new ClusterSpec(
@@ -123,39 +123,18 @@ class StructuralValidatorTest {
                 && e.message().contains("workers=3"));
     }
 
-    @Test
-    void shouldRejectInvalidVmRole() {
-        var vm = new VmConfig("node-1", "invalid-role", "192.168.56.10",
-            SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-
-        var spec = new ClusterSpec(
-            "staging",
-            ClusterType.KUBEADM,
-            Optional.of("192.168.56.10"),
-            0,
-            0,
-            SizeProfile.MEDIUM,
-            List.of(vm)
-        );
-
-        ValidationResult result = validator.validate(spec);
-
-        assertThat(result.hasErrors()).isTrue();
-        assertThat(result.errors())
-            .anyMatch(e -> e.field().contains("vms[0].role")
-                && e.message().contains("Invalid VM role")
-                && e.message().contains("invalid-role"));
-    }
+    // Test removed: With NodeRole enum, invalid roles are prevented at compile time
+    // Type safety eliminates the need for runtime validation of role values
 
     @Test
     void shouldAcceptAllValidRoles() {
-        var master = new VmConfig("master-1", "master", "192.168.56.10",
+        var master = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.10",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var worker = new VmConfig("worker-1", "worker", "192.168.56.11",
+        var worker = new VmConfig("worker-1", NodeRole.WORKER, "192.168.56.11",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var cluster = new VmConfig("cluster-1", "cluster", "192.168.56.12",
+        var cluster = new VmConfig("cluster-1", NodeRole.CLUSTER, "192.168.56.12",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var mgmt = new VmConfig("mgmt-1", "management", "192.168.56.13",
+        var mgmt = new VmConfig("mgmt-1", NodeRole.MANAGEMENT, "192.168.56.13",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
         var spec = new ClusterSpec(
@@ -175,9 +154,9 @@ class StructuralValidatorTest {
 
     @Test
     void shouldRejectDuplicateVmNames() {
-        var vm1 = new VmConfig("master-1", "master", "192.168.56.10",
+        var vm1 = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.10",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var vm2 = new VmConfig("master-1", "master", "192.168.56.11",
+        var vm2 = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.11",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
         var spec = new ClusterSpec(
@@ -201,13 +180,13 @@ class StructuralValidatorTest {
 
     @Test
     void shouldDetectMultipleDuplicates() {
-        var vm1 = new VmConfig("node-1", "master", "192.168.56.10",
+        var vm1 = new VmConfig("node-1", NodeRole.MASTER, "192.168.56.10",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var vm2 = new VmConfig("node-1", "worker", "192.168.56.11",
+        var vm2 = new VmConfig("node-1", NodeRole.WORKER, "192.168.56.11",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var vm3 = new VmConfig("node-2", "worker", "192.168.56.12",
+        var vm3 = new VmConfig("node-2", NodeRole.WORKER, "192.168.56.12",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var vm4 = new VmConfig("node-2", "worker", "192.168.56.13",
+        var vm4 = new VmConfig("node-2", NodeRole.WORKER, "192.168.56.13",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
         var spec = new ClusterSpec(
@@ -230,9 +209,9 @@ class StructuralValidatorTest {
 
     @Test
     void shouldCollectAllErrorsNotShortCircuit() {
-        var vm1 = new VmConfig("dup", "invalid-role", "192.168.56.10",
+        var vm1 = new VmConfig("dup", NodeRole.MASTER, "192.168.56.10",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var vm2 = new VmConfig("dup", "master", "192.168.56.11",
+        var vm2 = new VmConfig("dup", NodeRole.MASTER, "192.168.56.11",
             SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
         var spec = new ClusterSpec(
@@ -248,7 +227,7 @@ class StructuralValidatorTest {
         ValidationResult result = validator.validate(spec);
 
         assertThat(result.hasErrors()).isTrue();
-        // Should have multiple errors: count mismatch, invalid role, duplicate name
+        // Should have multiple errors: count mismatch, duplicate name
         assertThat(result.errorCount()).isGreaterThan(1);
     }
 }
