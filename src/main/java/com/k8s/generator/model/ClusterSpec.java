@@ -70,33 +70,30 @@ import java.util.Optional;
  * );
  * }</pre>
  *
- * @param name Cluster name (must match [a-z][a-z0-9-]*, validated by SemanticValidator)
- * @param type Cluster engine type (kind, minikube, kubeadm, none)
- * @param firstIp Starting IP for sequential allocation (empty = use default 192.168.56.10)
- * @param masters Number of master nodes (0 for kind/minikube/none, 1+ for kubeadm)
- * @param workers Number of worker nodes (0+ for kubeadm, 0 for kind/minikube/none)
+ * @param name        Cluster name (must match [a-z][a-z0-9-]*, validated by SemanticValidator)
+ * @param type        Cluster engine type (kind, minikube, kubeadm, none)
+ * @param firstIp     Starting IP for sequential allocation (empty = use default 192.168.56.10)
+ * @param masters     Number of master nodes (0 for kind/minikube/none, 1+ for kubeadm)
+ * @param workers     Number of worker nodes (0+ for kubeadm, 0 for kind/minikube/none)
  * @param sizeProfile Default size profile for all VMs in this cluster
- * @param vms Explicit VM configurations (empty = orchestrator generates from masters/workers)
- * @param cni CNI plugin type (required for KUBEADM, empty for KIND/MINIKUBE/NONE)
- *
+ * @param vms         Explicit VM configurations (empty = orchestrator generates from masters/workers)
+ * @param cni         CNI plugin type (required for KUBEADM, empty for KIND/MINIKUBE/NONE)
  * @see ClusterType
  * @see VmConfig
  * @see SizeProfile
  * @see CniType
- * @see com.k8s.generator.validate.SemanticValidator
- * @see com.k8s.generator.validate.PolicyValidator
+ * @see com.k8s.generator.validate.CompositeValidator
  * @since 1.0.0
  */
 public record ClusterSpec(
-    String name,
-    ClusterType type,
-    Optional<String> firstIp,
-    int masters,
-    int workers,
-    SizeProfile sizeProfile,
-    List<VmConfig> vms,
-    Optional<CniType> cni
-) {
+        String name,
+        ClusterType type,
+        Optional<String> firstIp,
+        int masters,
+        int workers,
+        SizeProfile sizeProfile,
+        List<VmConfig> vms,
+        Optional<CniType> cni) {
     /**
      * Compact constructor with structural validation.
      *
@@ -146,7 +143,7 @@ public record ClusterSpec(
         // (KIND/MINIKUBE/NONE allow zero masters+workers, they use "cluster"/"management" role)
         if (type == ClusterType.KUBEADM && masters == 0 && workers == 0) {
             throw new IllegalArgumentException(
-                "KUBEADM cluster requires at least one node (masters + workers > 0)"
+                    "KUBEADM cluster requires at least one node (masters + workers > 0)"
             );
         }
 

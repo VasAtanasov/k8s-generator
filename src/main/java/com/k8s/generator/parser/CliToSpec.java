@@ -68,7 +68,7 @@ public final class CliToSpec implements SpecConverter {
      *
      * @param cmd Picocli command object (must not be null)
      * @return GeneratorSpec with defaults applied
-     * @throws NullPointerException if cmd is null
+     * @throws NullPointerException     if cmd is null
      * @throws IllegalArgumentException if cluster type is unsupported or data is invalid
      */
     @Override
@@ -80,7 +80,7 @@ public final class CliToSpec implements SpecConverter {
 
         // 1. Parse and create ModuleInfo
         // This will throw IllegalArgumentException if format is invalid
-        ModuleInfo module = new ModuleInfo(cmd.module, cmd.type);
+        ModuleInfo module = ModuleInfo.of(cmd.module, cmd.type);
 
         // 2. Parse cluster type (kind|minikube|kubeadm|mgmt)
         ClusterType clusterType = parseClusterType(cmd.clusterType);
@@ -89,52 +89,50 @@ public final class CliToSpec implements SpecConverter {
         String clusterName = buildClusterName(module, clusterType);
 
         // 4. Resolve size profile
-        SizeProfile sizeProfile = resolveSize(cmd.size);
-
-        // 5. Resolve nodes and CNI based on cluster type
-        int masters = 0;
-        int workers = 0;
-        Optional<CniType> cni = Optional.empty();
-
-        switch (clusterType) {
-            case KIND, MINIKUBE -> {
-                // Single-node engines: no masters/workers, no CNI
-                masters = 0;
-                workers = 0;
-                cni = Optional.empty();
-            }
-            case KUBEADM -> {
-                int[] nw = parseNodes(cmd.nodes);
-                masters = nw[0];
-                workers = nw[1];
-                cni = parseCni(cmd.cni);
-            }
-            case NONE -> {
-                // Management VM: no nodes, no CNI
-                masters = 0;
-                workers = 0;
-                cni = Optional.empty();
-            }
-        }
-
-        ClusterSpec cluster = new ClusterSpec(
-            clusterName,
-            clusterType,
-            Optional.empty(),
-            masters,
-            workers,
-            sizeProfile,
-            List.of(),
-            cni
-        );
+        ClusterSpec cluster = getClusterSpec(cmd, clusterType, clusterName);
 
         // 5. Create single-cluster spec (Phase 1 MVP)
         return new GeneratorSpec(module, List.of(cluster));
     }
 
+    private ClusterSpec getClusterSpec(final GenerateCommand cmd,
+                                       final ClusterType clusterType,
+                                       final String clusterName) {
+        SizeProfile sizeProfile = resolveSize(cmd.size);
+
+        // 5. Resolve nodes and CNI based on cluster type
+        Spec spec = switch (clusterType) {
+            // Single-node engines: no masters/workers, no CNI
+            case KIND, MINIKUBE -> Spec.empty();
+            case KUBEADM -> {
+                int[] nw = parseNodes(cmd.nodes);
+                yield new Spec(nw[0], nw[1], parseCni(cmd.cni));
+            }
+            // Management VM: no nodes, no CNI
+            case NONE -> Spec.empty();
+        };
+
+        return new ClusterSpec(
+                clusterName,
+                clusterType,
+                Optional.empty(),
+                spec.masters(),
+                spec.workers(),
+                sizeProfile,
+                List.of(),
+                spec.cniType()
+        );
+    }
+
+    private record Spec(int masters, int workers, Optional<CniType> cniType) {
+        static Spec empty() {
+            return new Spec(0, 0, Optional.empty());
+        }
+    }
+
     /**
      * Parses cluster type from CLI string.
-     *
+     * <p>
      * Supports kind, minikube, kubeadm, and mgmt (maps to NONE).
      *
      * @param clusterType cluster type string (case-insensitive)
@@ -150,10 +148,10 @@ public final class CliToSpec implements SpecConverter {
             case "kubeadm" -> ClusterType.KUBEADM;
             case "mgmt", "none" -> ClusterType.NONE;
             default -> throw new IllegalArgumentException(
-                String.format(
-                    "Unsupported cluster type: '%s'. Supported: kind, minikube, kubeadm, mgmt",
-                    clusterType
-                )
+                    String.format(
+                            "Unsupported cluster type: '%s'. Supported: kind, minikube, kubeadm, mgmt",
+                            clusterType
+                    )
             );
         };
     }
@@ -167,16 +165,16 @@ public final class CliToSpec implements SpecConverter {
      *   <li>module=m7, type=exam-prep, engine=minikube → "clu-m7-exam-prep-minikube"</li>
      * </ul>
      *
-     * @param module module info
+     * @param module      module info
      * @param clusterType cluster engine type
      * @return cluster name
      */
     private String buildClusterName(ModuleInfo module, ClusterType clusterType) {
         return String.format(
-            "clu-%s-%s-%s",
-            module.num(),
-            module.type(),
-            clusterType.name().toLowerCase(Locale.ROOT)
+                "clu-%s-%s-%s",
+                module.num(),
+                module.type(),
+                clusterType.name().toLowerCase(Locale.ROOT)
         );
     }
 
@@ -191,10 +189,10 @@ public final class CliToSpec implements SpecConverter {
             return Optional.of(CniType.valueOf(cniToken.trim().toUpperCase(Locale.ROOT)));
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException(
-                String.format(
-                    "Invalid CNI type: '%s'. Valid values: calico, flannel, weave, cilium, antrea",
-                    cniToken
-                )
+                    String.format(
+                            "Invalid CNI type: '%s'. Valid values: calico, flannel, weave, cilium, antrea",
+                            cniToken
+                    )
             );
         }
     }
@@ -224,7 +222,7 @@ public final class CliToSpec implements SpecConverter {
                 workers = Integer.parseInt(part.substring(0, part.length() - 1));
             } else if (!part.isBlank()) {
                 throw new IllegalArgumentException(
-                    String.format("Invalid --nodes segment: '%s'. Use N or Xm,Yw (e.g., 1m,2w)", part)
+                        String.format("Invalid --nodes segment: '%s'. Use N or Xm,Yw (e.g., 1m,2w)", part)
                 );
             }
         }

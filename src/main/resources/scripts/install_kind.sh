@@ -22,7 +22,6 @@ source "${BASE_DIR}/lib.sh"
 lib::strict
 lib::setup_traps
 
-# --- Main Logic ---
 main() {
     lib::header "Installing kind (Kubernetes in Docker)"
 

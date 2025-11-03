@@ -43,20 +43,20 @@ import java.util.regex.Pattern;
  * // → Namespace: "ns-m7-exam-prep"
  * }</pre>
  *
- * @param num Module number (must match "m\d+", e.g., "m1", "m7")
+ * @param num  Module number (must match "m\d+", e.g., "m1", "m7")
  * @param type Module type (must match "[a-z][a-z0-9-]*", e.g., "pt", "exam-prep")
- *
  * @see GeneratorSpec
  * @since 1.0.0
  */
-public record ModuleInfo(
-    String num,
-    String type
-) {
-    /** Pattern for valid module numbers: m1, m7, m12, etc. */
+public record ModuleInfo(String num, String type) {
+    /**
+     * Pattern for valid module numbers: m1, m7, m12, etc.
+     */
     private static final Pattern MODULE_NUM_PATTERN = Pattern.compile("m\\d+");
 
-    /** Pattern for valid types: lowercase start, alphanumeric + hyphens */
+    /**
+     * Pattern for valid types: lowercase start, alphanumeric + hyphens
+     */
     private static final Pattern TYPE_PATTERN = Pattern.compile("[a-z][a-z0-9-]*");
 
     /**
@@ -86,21 +86,25 @@ public record ModuleInfo(
         // Pattern validation
         if (!MODULE_NUM_PATTERN.matcher(num).matches()) {
             throw new IllegalArgumentException(
-                String.format(
-                    "Invalid module number '%s' - must match pattern 'm\\d+' (e.g., m1, m7, m12)",
-                    num
-                )
+                    String.format(
+                            "Invalid module number '%s' - must match pattern 'm\\d+' (e.g., m1, m7, m12)",
+                            num
+                    )
             );
         }
 
         if (!TYPE_PATTERN.matcher(type).matches()) {
             throw new IllegalArgumentException(
-                String.format(
-                    "Invalid module type '%s' - must match pattern '[a-z][a-z0-9-]*' (lowercase start, alphanumeric + hyphens)",
-                    type
-                )
+                    String.format(
+                            "Invalid module type '%s' - must match pattern '[a-z][a-z0-9-]*' (lowercase start, alphanumeric + hyphens)",
+                            type
+                    )
             );
         }
+    }
+
+    public static ModuleInfo of(String num, String type) {
+        return new ModuleInfo(num, type);
     }
 
     /**

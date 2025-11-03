@@ -4,6 +4,7 @@ import com.k8s.generator.model.ClusterSpec;
 import com.k8s.generator.model.ValidationError;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -66,8 +67,7 @@ import java.util.Objects;
  * @see ValidationResult
  * @since 1.0.0 (Phase 2)
  */
-public class CompositeValidator {
-
+public class CompositeValidator implements ClusterSpecValidator {
     private final StructuralValidator structural;
     private final SemanticValidator semantic;
     private final PolicyValidator policy;
@@ -83,36 +83,19 @@ public class CompositeValidator {
      * Creates CompositeValidator with custom validator implementations (for testing).
      *
      * @param structural structural validator
-     * @param semantic semantic validator
-     * @param policy policy validator
+     * @param semantic   semantic validator
+     * @param policy     policy validator
      */
-    public CompositeValidator(
-        StructuralValidator structural,
-        SemanticValidator semantic,
-        PolicyValidator policy
-    ) {
+    public CompositeValidator(StructuralValidator structural,
+                              SemanticValidator semantic,
+                              PolicyValidator policy) {
         this.structural = Objects.requireNonNull(structural, "structural validator is required");
         this.semantic = Objects.requireNonNull(semantic, "semantic validator is required");
         this.policy = Objects.requireNonNull(policy, "policy validator is required");
     }
 
-    /**
-     * Validates a single cluster specification through all three layers.
-     *
-     * <p>Validation Flow:
-     * <ol>
-     *   <li>Run structural validation (record constraints)</li>
-     *   <li>If structural passes, run semantic validation (business rules)</li>
-     *   <li>Always run policy validation (cross-cutting constraints)</li>
-     *   <li>Aggregate all errors</li>
-     * </ol>
-     *
-     * @param spec cluster specification to validate
-     * @param isMultiCluster true if this cluster is part of multi-cluster topology
-     * @return ValidationResult with aggregated errors (empty if valid)
-     * @throws NullPointerException if spec is null
-     */
-    public ValidationResult validate(ClusterSpec spec, boolean isMultiCluster) {
+    @Override
+    public ValidationResult validate(ClusterSpec spec) {
         Objects.requireNonNull(spec, "spec cannot be null");
 
         // Layer 1: Structural validation
@@ -122,40 +105,27 @@ public class CompositeValidator {
         // Layer 2: Semantic validation (only if structural passed)
         // This prevents cascading errors from invalid structure
         if (structuralResult.isValid()) {
-            var semanticResult = semantic.validate(spec, isMultiCluster);
+            var semanticResult = semantic.validate(spec);
             errors.addAll(semanticResult.errors());
         }
 
         // Layer 3: Policy validation (always run - independent of other layers)
         // Policy rules like CNI requirements can be checked regardless of structural/semantic errors
-        var policyResult = policy.validateSingle(spec);
+        var policyResult = policy.validate(spec);
         errors.addAll(policyResult.errors());
 
         return ValidationResult.of(errors);
     }
 
-    /**
-     * Validates multiple clusters (topology-level validation).
-     *
-     * <p>This method:
-     * <ol>
-     *   <li>Validates each cluster individually using validate(cluster, true)</li>
-     *   <li>Runs topology-level policy validation (e.g., IP overlaps, name conflicts)</li>
-     *   <li>Aggregates all errors</li>
-     * </ol>
-     *
-     * @param clusters list of cluster specifications
-     * @return ValidationResult with all errors (empty if valid)
-     * @throws NullPointerException if clusters is null
-     */
-    public ValidationResult validateAll(java.util.List<ClusterSpec> clusters) {
+    @Override
+    public ValidationResult validate(List<ClusterSpec> clusters) {
         Objects.requireNonNull(clusters, "clusters cannot be null");
 
         var errors = new ArrayList<ValidationError>();
 
         // Validate each cluster individually
         for (ClusterSpec cluster : clusters) {
-            var result = validate(cluster, clusters.size() > 1);
+            var result = validate(cluster);
             errors.addAll(result.errors());
         }
 

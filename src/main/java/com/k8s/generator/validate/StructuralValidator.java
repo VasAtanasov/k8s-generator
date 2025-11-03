@@ -7,7 +7,6 @@ import com.k8s.generator.model.ValidationLevel;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Structural validator: enforces basic type safety and non-null constraints.
@@ -50,7 +49,7 @@ import java.util.Objects;
  * @see SemanticValidator
  * @since 1.0.0
  */
-public class StructuralValidator {
+public class StructuralValidator implements ClusterSpecValidator {
 
     /**
      * Validates structural constraints of a cluster specification.
@@ -68,10 +67,10 @@ public class StructuralValidator {
         // Null check (should not happen if using record constructors, but defensive)
         if (spec == null) {
             errors.add(new ValidationError(
-                "cluster",
-                ValidationLevel.STRUCTURAL,
-                "Cluster specification is null",
-                "Ensure ClusterSpec object is properly constructed"
+                    "cluster",
+                    ValidationLevel.STRUCTURAL,
+                    "Cluster specification is null",
+                    "Ensure ClusterSpec object is properly constructed"
             ));
             return ValidationResult.of(errors);
         }
@@ -81,6 +80,16 @@ public class StructuralValidator {
             validateVmCountConsistency(spec, errors);
             validateVmRoles(spec, errors);
             validateUniqueVmNames(spec, errors);
+        }
+
+        return ValidationResult.of(errors);
+    }
+
+    @Override
+    public ValidationResult validate(List<ClusterSpec> clusters) {
+        var errors = new ArrayList<ValidationError>();
+        for (ClusterSpec cluster : clusters) {
+            errors.addAll(validate(cluster).errors());
         }
 
         return ValidationResult.of(errors);
@@ -96,21 +105,21 @@ public class StructuralValidator {
 
         if (masterCount != spec.masters()) {
             errors.add(new ValidationError(
-                String.format("clusters[name='%s'].vms", spec.name()),
-                ValidationLevel.STRUCTURAL,
-                String.format("VM list contains %d master(s) but masters=%d declared",
-                    masterCount, spec.masters()),
-                String.format("Ensure VMs list has exactly %d VM(s) with role='master'", spec.masters())
+                    String.format("clusters[name='%s'].vms", spec.name()),
+                    ValidationLevel.STRUCTURAL,
+                    String.format("VM list contains %d master(s) but masters=%d declared",
+                            masterCount, spec.masters()),
+                    String.format("Ensure VMs list has exactly %d VM(s) with role='master'", spec.masters())
             ));
         }
 
         if (workerCount != spec.workers()) {
             errors.add(new ValidationError(
-                String.format("clusters[name='%s'].vms", spec.name()),
-                ValidationLevel.STRUCTURAL,
-                String.format("VM list contains %d worker(s) but workers=%d declared",
-                    workerCount, spec.workers()),
-                String.format("Ensure VMs list has exactly %d VM(s) with role='worker'", spec.workers())
+                    String.format("clusters[name='%s'].vms", spec.name()),
+                    ValidationLevel.STRUCTURAL,
+                    String.format("VM list contains %d worker(s) but workers=%d declared",
+                            workerCount, spec.workers()),
+                    String.format("Ensure VMs list has exactly %d VM(s) with role='worker'", spec.workers())
             ));
         }
     }
@@ -138,10 +147,10 @@ public class StructuralValidator {
             var vm = spec.vms().get(i);
             if (names.contains(vm.name())) {
                 errors.add(new ValidationError(
-                    String.format("clusters[name='%s'].vms[%d].name", spec.name(), i),
-                    ValidationLevel.STRUCTURAL,
-                    String.format("Duplicate VM name: '%s'", vm.name()),
-                    "Ensure all VM names within a cluster are unique"
+                        String.format("clusters[name='%s'].vms[%d].name", spec.name(), i),
+                        ValidationLevel.STRUCTURAL,
+                        String.format("Duplicate VM name: '%s'", vm.name()),
+                        "Ensure all VM names within a cluster are unique"
                 ));
             }
             names.add(vm.name());

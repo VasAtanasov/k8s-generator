@@ -59,9 +59,8 @@ import java.util.Objects;
  * );
  * }</pre>
  *
- * @param module Module metadata (module number + type)
+ * @param module   Module metadata (module number + type)
  * @param clusters List of cluster specifications (1+ required, Phase 1 = exactly 1)
- *
  * @see ModuleInfo
  * @see ClusterSpec
  * @see ScaffoldPlan
@@ -69,9 +68,8 @@ import java.util.Objects;
  * @since 1.0.0
  */
 public record GeneratorSpec(
-    ModuleInfo module,
-    List<ClusterSpec> clusters
-) {
+        ModuleInfo module,
+        List<ClusterSpec> clusters) {
     /**
      * Compact constructor with structural validation.
      *
@@ -151,7 +149,7 @@ public record GeneratorSpec(
     public ClusterSpec primaryCluster() {
         if (!isSingleCluster()) {
             throw new IllegalStateException(
-                "primaryCluster() called on multi-cluster spec with " + clusters.size() + " clusters"
+                    "primaryCluster() called on multi-cluster spec with " + clusters.size() + " clusters"
             );
         }
         return clusters.get(0);

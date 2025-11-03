@@ -325,7 +325,7 @@ class PolicyValidatorTest {
 
     @Test
     void shouldRejectNullClusterList() {
-        assertThatThrownBy(() -> validator.validate(null))
+        assertThatThrownBy(() -> validator.validate((List<ClusterSpec>) null))
             .isInstanceOf(NullPointerException.class)
             .hasMessageContaining("clusters cannot be null");
     }

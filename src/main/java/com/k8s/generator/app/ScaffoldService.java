@@ -12,7 +12,9 @@ import com.k8s.generator.parser.SpecConverter;
 import com.k8s.generator.parser.SpecToPlan;
 import com.k8s.generator.render.JteRenderer;
 import com.k8s.generator.render.Renderer;
+import com.k8s.generator.validate.ClusterSpecValidator;
 import com.k8s.generator.validate.CompositeValidator;
+import com.k8s.generator.validate.StructuralValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +34,7 @@ import java.util.Map;
  * <p>Brick Responsibilities:
  * <ol>
  *   <li><b>SpecConverter (Parser)</b>: CLI args → GeneratorSpec</li>
- *   <li><b>StructuralValidator (Validation)</b>: GeneratorSpec validation</li>
+ *   <li><b>ClusterSpecValidator (Validation)</b>: GeneratorSpec validation</li>
  *   <li><b>PlanBuilder (Parser)</b>: GeneratorSpec → ScaffoldPlan</li>
  *   <li><b>Renderer (Rendering)</b>: ScaffoldPlan → template files</li>
  *   <li><b>OutputWriter (I/O)</b>: Write files atomically</li>
@@ -57,7 +59,7 @@ public final class ScaffoldService {
     private static final Logger log = LoggerFactory.getLogger(ScaffoldService.class);
 
     private final SpecConverter specConverter;
-    private final CompositeValidator validator;
+    private final ClusterSpecValidator validator;
     private final PlanBuilder planBuilder;
     private final Renderer renderer;
     private final OutputWriter outputWriter;
@@ -77,6 +79,10 @@ public final class ScaffoldService {
         );
     }
 
+    public static ScaffoldService create() {
+        return new ScaffoldService();
+    }
+
     /**
      * Creates ScaffoldService with custom brick implementations (for testing).
      *
@@ -88,7 +94,7 @@ public final class ScaffoldService {
      * @param resourceCopier copies resource files
      */
     public ScaffoldService(SpecConverter specConverter,
-                           CompositeValidator validator,
+                           ClusterSpecValidator validator,
                            PlanBuilder planBuilder,
                            Renderer renderer,
                            OutputWriter outputWriter,
@@ -116,7 +122,7 @@ public final class ScaffoldService {
             // 2. Validate spec (structural validation)
             log.debug("Validating GeneratorSpec: {}", spec);
             // Run full composite validation (structural + semantic + policy)
-            var validationResult = validator.validateAll(spec.clusters());
+            var validationResult = validator.validate(spec.clusters());
             if (validationResult.hasErrors()) {
                 log.error("[Validation] Specification failed validation ({} error(s)):", validationResult.errorCount());
                 for (ValidationError error : validationResult.errors()) {
@@ -172,7 +178,8 @@ public final class ScaffoldService {
                     List.of(
                             "install_kubectl.sh",
                             "install_docker.sh",
-                            "install_kind.sh"
+                            "install_kind.sh",
+                            "lib.sh"
                     ),
                     outDir.resolve("scripts")
             );

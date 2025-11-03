@@ -22,11 +22,8 @@ source "${BASE_DIR}/lib.sh"
 lib::strict
 lib::setup_traps
 
-# --- Idempotency: state + lock ---
-
-# --- Main Logic ---
 main() {
-    lib::log "Starting Docker installation..."
+    lib::header "Starting Docker installation..."
 
     # Idempotency: state (binary + daemon active)
     if lib::cmd_exists docker && systemctl is-active --quiet docker; then

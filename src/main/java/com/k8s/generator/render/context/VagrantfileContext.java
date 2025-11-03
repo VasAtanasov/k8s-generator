@@ -11,6 +11,5 @@ import java.util.Map;
 public record VagrantfileContext(
     String moduleName,
     List<VmConfig> vms,
-    Map<String, String> envVars
-) {}
+    Map<String, String> envVars) {}
 

@@ -22,7 +22,7 @@ class GenerateCommandSmokeTest {
         cmd.clusterType = "kind";
         cmd.outDir = out.toString();
 
-        int code = new ScaffoldService().scaffold(cmd);
+        int code = ScaffoldService.create().scaffold(cmd);
 
         assertThat(code).isEqualTo(0);
         assertThat(Files.exists(out.resolve("Vagrantfile"))).isTrue();
@@ -45,7 +45,7 @@ class GenerateCommandSmokeTest {
         cmd.clusterType = "minikube";
         cmd.outDir = out.toString();
 
-        int code = new ScaffoldService().scaffold(cmd);
+        int code = ScaffoldService.create().scaffold(cmd);
 
         assertThat(code).isEqualTo(0);
         assertThat(Files.exists(out.resolve("Vagrantfile"))).isTrue();

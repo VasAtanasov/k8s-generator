@@ -22,11 +22,8 @@ source "${BASE_DIR}/lib.sh"
 lib::strict
 lib::setup_traps
 
-# --- Idempotency: state + lock ---
-
-# --- Main Logic ---
 main() {
-    lib::log "Starting Azure CLI installation..."
+    lib::header "Starting Azure CLI installation..."
 
     # Idempotency: binary present → skip
     if lib::cmd_exists az; then

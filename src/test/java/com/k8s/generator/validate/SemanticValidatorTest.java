@@ -31,7 +31,7 @@ class SemanticValidatorTest {
                 List.of(),
                 Optional.of(CniType.CALICO));
 
-        ValidationResult result = validator.validate(spec, false);
+        ValidationResult result = validator.validate(spec);
 
         assertThat(result.isValid()).isTrue();
     }
@@ -52,7 +52,7 @@ class SemanticValidatorTest {
                 List.of(),
                 Optional.of(CniType.CALICO));
 
-        ValidationResult result = validator.validate(spec, false);
+        ValidationResult result = validator.validate(spec);
 
         assertThat(result.isValid()).isTrue();
     }
@@ -80,7 +80,7 @@ class SemanticValidatorTest {
                 List.of(),
                 Optional.of(CniType.CALICO));
 
-        ValidationResult result = validator.validate(spec, false);
+        ValidationResult result = validator.validate(spec);
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errors()).anySatisfy(e -> {
@@ -104,7 +104,7 @@ class SemanticValidatorTest {
                 List.of(),
                 Optional.of(CniType.CALICO));
 
-        ValidationResult result = validator.validate(spec, false);
+        ValidationResult result = validator.validate(spec);
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errors()).anySatisfy(e -> {
@@ -126,7 +126,7 @@ class SemanticValidatorTest {
                 List.of(),
                 Optional.empty());
 
-        ValidationResult result = validator.validate(spec, false);
+        ValidationResult result = validator.validate(spec);
 
         assertThat(result.isValid()).isTrue();
     }
@@ -143,7 +143,7 @@ class SemanticValidatorTest {
                 List.of(),
                 Optional.empty());
 
-        ValidationResult result = validator.validate(spec, false);
+        ValidationResult result = validator.validate(spec);
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errors())
@@ -163,7 +163,7 @@ class SemanticValidatorTest {
                 List.of(),
                 Optional.empty());
 
-        ValidationResult result = validator.validate(spec, false);
+        ValidationResult result = validator.validate(spec);
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errors())
@@ -183,7 +183,7 @@ class SemanticValidatorTest {
                 List.of(),
                 Optional.empty());
 
-        ValidationResult result = validator.validate(spec, false);
+        ValidationResult result = validator.validate(spec);
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errorCount()).isEqualTo(2);  // Both masters and workers wrong
@@ -201,7 +201,7 @@ class SemanticValidatorTest {
                 List.of(),
                 Optional.empty());
 
-        ValidationResult result = validator.validate(spec, false);
+        ValidationResult result = validator.validate(spec);
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errors())
@@ -220,7 +220,7 @@ class SemanticValidatorTest {
                 List.of(),
                 Optional.of(CniType.CALICO));
 
-        ValidationResult result = validator.validate(spec, false);
+        ValidationResult result = validator.validate(spec);
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errors())
@@ -240,7 +240,7 @@ class SemanticValidatorTest {
                 List.of(),
                 Optional.of(CniType.CALICO));
 
-        ValidationResult result = validator.validate(spec, false);
+        ValidationResult result = validator.validate(spec);
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errors())
@@ -259,7 +259,7 @@ class SemanticValidatorTest {
                 List.of(),
                 Optional.of(CniType.CALICO));
 
-        ValidationResult result = validator.validate(spec, false);
+        ValidationResult result = validator.validate(spec);
 
         assertThat(result.isValid()).isTrue();
     }
@@ -280,7 +280,7 @@ class SemanticValidatorTest {
                 List.of(),
                 Optional.of(CniType.CALICO));
 
-        ValidationResult result = validator.validate(spec, false);
+        ValidationResult result = validator.validate(spec);
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errors())
@@ -303,7 +303,7 @@ class SemanticValidatorTest {
                 List.of(),
                 Optional.of(CniType.CALICO));
 
-        ValidationResult result = validator.validate(spec, false);
+        ValidationResult result = validator.validate(spec);
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errors())
@@ -312,7 +312,7 @@ class SemanticValidatorTest {
 
     @Test
     void shouldRequireFirstIpForMultiCluster() {
-        var spec = new ClusterSpec(
+        var spec1 = new ClusterSpec(
                 "staging",
                 ClusterType.KUBEADM,
                 Optional.empty(),  // Missing firstIp in multi-cluster
@@ -322,7 +322,17 @@ class SemanticValidatorTest {
                 List.of(),
                 Optional.of(CniType.CALICO));
 
-        ValidationResult result = validator.validate(spec, true);  // isMultiCluster=true
+        var spec2 = new ClusterSpec(
+                "prod",
+                ClusterType.KUBEADM,
+                Optional.empty(),  // Missing firstIp in multi-cluster
+                1,
+                1,
+                SizeProfile.MEDIUM,
+                List.of(),
+                Optional.of(CniType.CALICO));
+
+        ValidationResult result = validator.validate(List.of(spec1, spec2));
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errors())
@@ -342,7 +352,7 @@ class SemanticValidatorTest {
                 List.of(),
                 Optional.of(CniType.CALICO));
 
-        ValidationResult result = validator.validate(spec, false);  // isMultiCluster=false
+        ValidationResult result = validator.validate(spec);  // isMultiCluster=false
 
         assertThat(result.isValid()).isTrue();
     }
@@ -359,7 +369,7 @@ class SemanticValidatorTest {
                 List.of(),
                 Optional.of(CniType.CALICO));
 
-        ValidationResult result = validator.validate(spec, false);
+        ValidationResult result = validator.validate(spec);
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errors())
@@ -381,7 +391,7 @@ class SemanticValidatorTest {
                 List.of(),
                 Optional.of(CniType.CALICO));
 
-        ValidationResult result = validator.validate(spec, false);
+        ValidationResult result = validator.validate(spec);
 
         assertThat(result.isValid()).isTrue();
     }
@@ -398,7 +408,7 @@ class SemanticValidatorTest {
                 List.of(),
                 Optional.of(CniType.CALICO));
 
-        ValidationResult result = validator.validate(spec, false);
+        ValidationResult result = validator.validate(spec);
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errors())
@@ -417,21 +427,22 @@ class SemanticValidatorTest {
                 List.of(),
                 Optional.of(CniType.CALICO));
 
-        ValidationResult result = validator.validate(spec, false);
+        ValidationResult result = validator.validate(spec);
 
         assertThat(result.isValid()).isTrue();
     }
 
     @Test
     void shouldRejectNullSpec() {
-        assertThatThrownBy(() -> validator.validate(null, false))
+        ClusterSpec spec = null;
+        assertThatThrownBy(() -> validator.validate(spec))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("spec cannot be null");
     }
 
     @Test
     void shouldCollectAllErrors() {
-        var spec = new ClusterSpec(
+        var spec1 = new ClusterSpec(
                 "Invalid-Name",  // Invalid name
                 ClusterType.KIND,
                 Optional.of("invalid-ip"),  // Invalid IP
@@ -441,7 +452,17 @@ class SemanticValidatorTest {
                 List.of(),
                 Optional.empty());
 
-        ValidationResult result = validator.validate(spec, true);  // Multi-cluster without firstIp
+        var spec2 = new ClusterSpec(
+                "prod",
+                ClusterType.KUBEADM,
+                Optional.empty(),  // Missing firstIp in multi-cluster
+                1,
+                1,
+                SizeProfile.MEDIUM,
+                List.of(),
+                Optional.of(CniType.CALICO));
+
+        ValidationResult result = validator.validate(List.of(spec1, spec2));  // Multi-cluster without firstIp
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errorCount()).isGreaterThan(1);  // Multiple errors collected

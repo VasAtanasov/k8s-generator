@@ -22,11 +22,8 @@ source "${BASE_DIR}/lib.sh"
 lib::strict
 lib::setup_traps
 
-# --- Idempotency: state + lock ---
-
-# --- Main Logic ---
 main() {
-    lib::log "Starting kubectl installation..."
+    lib::header "Starting kubectl installation..."
 
     # Idempotency: binary present → skip
     if lib::cmd_exists kubectl; then

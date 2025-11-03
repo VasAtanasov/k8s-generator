@@ -4,11 +4,7 @@ import com.k8s.generator.model.ClusterSpec;
 import com.k8s.generator.model.ValidationError;
 import com.k8s.generator.model.ValidationLevel;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Policy validator: enforces cross-cutting constraints and global topology rules.
@@ -59,7 +55,7 @@ import java.util.Set;
  * @see SemanticValidator
  * @since 1.0.0
  */
-public class PolicyValidator {
+public class PolicyValidator implements ClusterSpecValidator {
 
     /**
      * Default maximum total VMs allowed across all clusters.
@@ -87,7 +83,7 @@ public class PolicyValidator {
      * @return ValidationResult with policy errors (empty if valid)
      * @throws NullPointerException if cluster is null
      */
-    public ValidationResult validateSingle(ClusterSpec cluster) {
+    public ValidationResult validate(ClusterSpec cluster) {
         Objects.requireNonNull(cluster, "cluster cannot be null");
 
         var errors = new ArrayList<ValidationError>();
@@ -138,46 +134,46 @@ public class PolicyValidator {
             case KUBEADM -> {
                 if (cluster.cni().isEmpty()) {
                     errors.add(new ValidationError(
-                        String.format("clusters[name='%s'].cni", cluster.name()),
-                        ValidationLevel.POLICY,
-                        "KUBEADM cluster requires CNI to be specified",
-                        String.format(
-                            "Add CNI specification for cluster '%s'. " +
-                            "Supported CNI types: CALICO, FLANNEL, WEAVE, CILIUM, ANTREA. " +
-                            "Example: --cni calico",
-                            cluster.name()
-                        )
+                            String.format("clusters[name='%s'].cni", cluster.name()),
+                            ValidationLevel.POLICY,
+                            "KUBEADM cluster requires CNI to be specified",
+                            String.format(
+                                    "Add CNI specification for cluster '%s'. " +
+                                            "Supported CNI types: CALICO, FLANNEL, WEAVE, CILIUM, ANTREA. " +
+                                            "Example: --cni calico",
+                                    cluster.name()
+                            )
                     ));
                 }
             }
             case KIND, MINIKUBE -> {
                 if (cluster.cni().isPresent()) {
                     errors.add(new ValidationError(
-                        String.format("clusters[name='%s'].cni", cluster.name()),
-                        ValidationLevel.POLICY,
-                        String.format(
-                            "%s cluster should not have CNI specified (uses bundled CNI)",
-                            cluster.type()
-                        ),
-                        String.format(
-                            "Remove CNI specification for %s cluster '%s'. " +
-                            "%s bundles its own CNI plugin.",
-                            cluster.type(), cluster.name(), cluster.type()
-                        )
+                            String.format("clusters[name='%s'].cni", cluster.name()),
+                            ValidationLevel.POLICY,
+                            String.format(
+                                    "%s cluster should not have CNI specified (uses bundled CNI)",
+                                    cluster.type()
+                            ),
+                            String.format(
+                                    "Remove CNI specification for %s cluster '%s'. " +
+                                            "%s bundles its own CNI plugin.",
+                                    cluster.type(), cluster.name(), cluster.type()
+                            )
                     ));
                 }
             }
             case NONE -> {
                 if (cluster.cni().isPresent()) {
                     errors.add(new ValidationError(
-                        String.format("clusters[name='%s'].cni", cluster.name()),
-                        ValidationLevel.POLICY,
-                        "Management (NONE) cluster cannot have CNI (no Kubernetes cluster)",
-                        String.format(
-                            "Remove CNI specification for management cluster '%s'. " +
-                            "Management VMs don't run Kubernetes clusters.",
-                            cluster.name()
-                        )
+                            String.format("clusters[name='%s'].cni", cluster.name()),
+                            ValidationLevel.POLICY,
+                            "Management (NONE) cluster cannot have CNI (no Kubernetes cluster)",
+                            String.format(
+                                    "Remove CNI specification for management cluster '%s'. " +
+                                            "Management VMs don't run Kubernetes clusters.",
+                                    cluster.name()
+                            )
                     ));
                 }
             }
@@ -190,14 +186,14 @@ public class PolicyValidator {
     private void validateKubeadmMasterRequirement(ClusterSpec cluster, List<ValidationError> errors) {
         if (cluster.type() == com.k8s.generator.model.ClusterType.KUBEADM && cluster.masters() < 1) {
             errors.add(new ValidationError(
-                String.format("clusters[name='%s'].masters", cluster.name()),
-                ValidationLevel.POLICY,
-                "KUBEADM cluster must have at least one master node",
-                String.format(
-                    "Specify master count for kubeadm cluster '%s'. " +
-                    "Example: --nodes 1m,2w (1 master, 2 workers)",
-                    cluster.name()
-                )
+                    String.format("clusters[name='%s'].masters", cluster.name()),
+                    ValidationLevel.POLICY,
+                    "KUBEADM cluster must have at least one master node",
+                    String.format(
+                            "Specify master count for kubeadm cluster '%s'. " +
+                                    "Example: --nodes 1m,2w (1 master, 2 workers)",
+                            cluster.name()
+                    )
             ));
         }
     }
@@ -217,10 +213,10 @@ public class PolicyValidator {
 
         for (String duplicate : duplicates) {
             errors.add(new ValidationError(
-                "clusters[].name",
-                ValidationLevel.POLICY,
-                String.format("Duplicate cluster name: '%s'", duplicate),
-                "Ensure all cluster names are unique across the topology"
+                    "clusters[].name",
+                    ValidationLevel.POLICY,
+                    String.format("Duplicate cluster name: '%s'", duplicate),
+                    "Ensure all cluster names are unique across the topology"
             ));
         }
     }
@@ -230,28 +226,28 @@ public class PolicyValidator {
      */
     private void validateTotalVmLimit(List<ClusterSpec> clusters, List<ValidationError> errors) {
         int totalVms = clusters.stream()
-            .mapToInt(this::calculateExpectedVmCount)
-            .sum();
+                .mapToInt(this::calculateExpectedVmCount)
+                .sum();
 
         if (totalVms > DEFAULT_MAX_TOTAL_VMS) {
             errors.add(new ValidationError(
-                "topology.global",
-                ValidationLevel.POLICY,
-                String.format("Total VM count exceeds recommended limit: %d VMs (limit: %d)",
-                    totalVms, DEFAULT_MAX_TOTAL_VMS),
-                String.format("Consider reducing cluster count or node counts (current: %d clusters, %d total VMs)",
-                    clusters.size(), totalVms)
+                    "topology.global",
+                    ValidationLevel.POLICY,
+                    String.format("Total VM count exceeds recommended limit: %d VMs (limit: %d)",
+                            totalVms, DEFAULT_MAX_TOTAL_VMS),
+                    String.format("Consider reducing cluster count or node counts (current: %d clusters, %d total VMs)",
+                            clusters.size(), totalVms)
             ));
         }
 
         // Warn if approaching limits (>= 80%)
         if (totalVms >= DEFAULT_MAX_TOTAL_VMS * 0.8) {
             errors.add(new ValidationError(
-                "topology.global",
-                ValidationLevel.POLICY,
-                String.format("Total VM count approaching limit: %d VMs (80%% of limit: %d)",
-                    totalVms, DEFAULT_MAX_TOTAL_VMS),
-                "Monitor system resources. Consider using smaller size profiles or fewer nodes."
+                    "topology.global",
+                    ValidationLevel.POLICY,
+                    String.format("Total VM count approaching limit: %d VMs (80%% of limit: %d)",
+                            totalVms, DEFAULT_MAX_TOTAL_VMS),
+                    "Monitor system resources. Consider using smaller size profiles or fewer nodes."
             ));
         }
     }
@@ -264,11 +260,11 @@ public class PolicyValidator {
             int vmCount = calculateExpectedVmCount(cluster);
             if (vmCount > MAX_VMS_PER_CLUSTER) {
                 errors.add(new ValidationError(
-                    String.format("clusters[name='%s']", cluster.name()),
-                    ValidationLevel.POLICY,
-                    String.format("Cluster '%s' exceeds recommended VM limit: %d VMs (limit: %d)",
-                        cluster.name(), vmCount, MAX_VMS_PER_CLUSTER),
-                    "Consider splitting into multiple smaller clusters or reducing node counts"
+                        String.format("clusters[name='%s']", cluster.name()),
+                        ValidationLevel.POLICY,
+                        String.format("Cluster '%s' exceeds recommended VM limit: %d VMs (limit: %d)",
+                                cluster.name(), vmCount, MAX_VMS_PER_CLUSTER),
+                        "Consider splitting into multiple smaller clusters or reducing node counts"
                 ));
             }
         }
@@ -304,10 +300,10 @@ public class PolicyValidator {
 
         for (String conflict : conflicts) {
             errors.add(new ValidationError(
-                "topology.global.vmNames",
-                ValidationLevel.POLICY,
-                String.format("VM name conflict detected: '%s' used in multiple clusters", conflict),
-                "Consider using cluster-specific VM naming (e.g., '{cluster-name}-master-1')"
+                    "topology.global.vmNames",
+                    ValidationLevel.POLICY,
+                    String.format("VM name conflict detected: '%s' used in multiple clusters", conflict),
+                    "Consider using cluster-specific VM naming (e.g., '{cluster-name}-master-1')"
             ));
         }
     }

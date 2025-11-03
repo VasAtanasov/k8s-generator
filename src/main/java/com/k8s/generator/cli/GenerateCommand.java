@@ -53,6 +53,6 @@ public final class GenerateCommand implements Callable<Integer> {
 
     @Override
     public Integer call() {
-        return new ScaffoldService().scaffold(this);
+        return ScaffoldService.create().scaffold(this);
     }
 }

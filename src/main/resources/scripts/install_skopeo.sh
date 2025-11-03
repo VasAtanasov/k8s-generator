@@ -22,9 +22,6 @@ source "${BASE_DIR}/lib.sh"
 lib::strict
 lib::setup_traps
 
-# --- Idempotency: state + lock ---
-
-# --- Main Logic ---
 main() {
     lib::log "Starting Skopeo installation..."
 

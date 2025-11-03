@@ -103,10 +103,11 @@
                             <goal>precompile</goal>
                         </goals>
                         <configuration>
-                            <sourceDirectory>${project.basedir}/src/main/resources/templates</sourceDirectory>
+                            <sourceDirectory>${project.basedir}/src/main/jte</sourceDirectory>
                             <targetDirectory>${project.build.outputDirectory}</targetDirectory>
                             <packageName>gg.jte.generated.precompiled</packageName>
                             <contentType>Plain</contentType>
+                            <binaryStaticContent>true</binaryStaticContent>
                         </configuration>
                     </execution>
                 </executions>

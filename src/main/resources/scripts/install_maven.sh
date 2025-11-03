@@ -22,11 +22,8 @@ source "${BASE_DIR}/lib.sh"
 lib::strict
 lib::setup_traps
 
-# --- Idempotency: state + lock ---
-
-# --- Main Logic ---
 main() {
-    lib::log "Starting Apache Maven installation..."
+    lib::header "Starting Apache Maven installation..."
 
     # Idempotency: binary present → skip
     if lib::cmd_exists mvn; then

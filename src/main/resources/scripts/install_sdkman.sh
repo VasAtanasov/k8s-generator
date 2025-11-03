@@ -236,7 +236,6 @@ show_installed_sdks() {
     fi
 }
 
-# --- Main Logic ---
 main() {
     lib::header "SDKMAN! Installation"
 

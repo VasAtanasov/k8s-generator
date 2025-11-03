@@ -22,13 +22,6 @@ source "${BASE_DIR}/lib.sh"
 lib::strict
 lib::setup_traps
 
-# --- Idempotency: state + lock ---
-# State check: all three packages installed → skip
-if lib::pkg_installed kubeadm && lib::pkg_installed kubelet && lib::pkg_installed kubectl; then
-    lib::success "kubeadm/kubelet/kubectl already installed, skipping..."
-    exit 0
-fi
-
 main() {
     lib::header "Installing kubeadm, kubelet, and kubectl"
 

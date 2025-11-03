@@ -58,7 +58,8 @@ class StructuralValidatorTest {
 
     @Test
     void shouldRejectNullSpec() {
-        ValidationResult result = validator.validate(null);
+        ClusterSpec spec = null;
+        ValidationResult result = validator.validate(spec);
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errors())

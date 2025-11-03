@@ -22,9 +22,8 @@ source "${BASE_DIR}/lib.sh"
 lib::strict
 lib::setup_traps
 
-# --- Main Logic ---
 main() {
-    lib::log "Starting installation of base packages..."
+    lib::header "Starting installation of base packages..."
 
     export DEBIAN_FRONTEND=noninteractive
     lib::apt_update_once
