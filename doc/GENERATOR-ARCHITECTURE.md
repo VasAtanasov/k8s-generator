@@ -1,10 +1,10 @@
 ---
 status: Normative specification for the k8s-generator CLI.
-version: 1.16.1
+version: 1.16.2
 scope: Defines CLI behavior, inputs/outputs, conventions, and validation.
 ---
 
-# k8s-generator: Specification (v1.16.1)
+# k8s-generator: Specification (v1.16.2)
 
 ## Quick Reference
 
@@ -2149,21 +2149,22 @@ if (overlaps(pod, svc)) {
 
 | Version | Date       | Author | Changes |
 |---------|------------|--------|---------|
-| 1.0.0   | 2025-10-31 | spec-owner | Initial normative baseline |
-| 1.1.0   | 2025-10-31 | spec-owner | IP allocation policy added (single-cluster default, multi-cluster first_ip requirement), reserved mgmt IP, validations, examples |
-| 1.2.0   | 2025-10-31 | spec-owner | Module+type composite workspace identifier; output directory collision policy and CLI notes |
-| 1.3.0   | 2025-10-31 | spec-owner | Context Building Algorithm added (ordering, env scoping, naming, pseudocode) |
-| 1.4.0   | 2025-10-31 | spec-owner | Future: Multi-Cluster Network Separation section (scope clarification) |
-| 1.5.0   | 2025-10-31 | spec-owner | Terminology unified (Management Machine); Terminology: Cluster-Type vs Engine section; taxonomy/mapping/examples synchronized |
-| 1.6.0   | 2025-10-31 | spec-owner | YAML schema completed: version field, required/optional markers, minimum viable examples |
-| 1.7.0   | 2025-10-31 | spec-owner | Restored `management.tools` (mgmt-only extras) with clear scope; clusters remain engine-immutable |
-| 1.8.0   | 2025-10-31 | spec-owner | Azure usage clarified: user responsibilities, bootstrap.env.local example, precedence, and WARN semantics for missing values |
-| 1.9.0   | 2025-10-31 | spec-owner | Validation error format specified (structure, levels, exit codes, aggregation behavior) |
-| 1.10.0  | 2025-10-31 | spec-owner | Provisioner SPI moved to deferred note; removed `--list-provisioners` reference from CLI; kept manual scripts only |
-| 1.11.0  | 2025-10-31 | spec-owner | CIDR validation documented; ipaddress library usage clarified; CidrHelper responsibility stated (no auto-allocation) |
-| 1.12.0  | 2025-10-31 | spec-owner | Vagrant box defaults added (ubuntu/jammy64), overrides (per-cluster and global), and warning policy for non-ubuntu boxes |
-| 1.13.0  | 2025-10-31 | spec-owner | Quick Reference added; Generated .gitignore contents specified; Common Errors reference section included |
-| 1.14.0  | 2025-10-31 | spec-owner | Visual Decision Tree added; Style and Naming guidelines clarified |
-| 1.15.0  | 2025-10-31 | spec-owner | Consistency fixes: corrected CLI command examples (k8s-gen), tool name regex note, and YAML note mapping module.num to --module |
-| 1.16.0  | 2025-11-02 | spec-owner | Hybrid Architecture: CLI-First with Optional Spec Export |
+| 1.16.2  | 2025-11-04 | repo-maint | History table reordered to descending version per policy |
 | 1.16.1  | 2025-11-03 | repo-maint | Semver normalization of version fields; updated YAML examples to 1.0.0; aligned frontmatter/title to 1.16.1 |
+| 1.16.0  | 2025-11-02 | spec-owner | Hybrid Architecture: CLI-First with Optional Spec Export |
+| 1.15.0  | 2025-10-31 | spec-owner | Consistency fixes: corrected CLI command examples (k8s-gen), tool name regex note, and YAML note mapping module.num to --module |
+| 1.14.0  | 2025-10-31 | spec-owner | Visual Decision Tree added; Style and Naming guidelines clarified |
+| 1.13.0  | 2025-10-31 | spec-owner | Quick Reference added; Generated .gitignore contents specified; Common Errors reference section included |
+| 1.12.0  | 2025-10-31 | spec-owner | Vagrant box defaults added (ubuntu/jammy64), overrides (per-cluster and global), and warning policy for non-ubuntu boxes |
+| 1.11.0  | 2025-10-31 | spec-owner | CIDR validation documented; ipaddress library usage clarified; CidrHelper responsibility stated (no auto-allocation) |
+| 1.10.0  | 2025-10-31 | spec-owner | Provisioner SPI moved to deferred note; removed `--list-provisioners` reference from CLI; kept manual scripts only |
+| 1.9.0   | 2025-10-31 | spec-owner | Validation error format specified (structure, levels, exit codes, aggregation behavior) |
+| 1.8.0   | 2025-10-31 | spec-owner | Azure usage clarified: user responsibilities, bootstrap.env.local example, precedence, and WARN semantics for missing values |
+| 1.7.0   | 2025-10-31 | spec-owner | Restored `management.tools` (mgmt-only extras) with clear scope; clusters remain engine-immutable |
+| 1.6.0   | 2025-10-31 | spec-owner | YAML schema completed: version field, required/optional markers, minimum viable examples |
+| 1.5.0   | 2025-10-31 | spec-owner | Terminology unified (Management Machine); Terminology: Cluster-Type vs Engine section; taxonomy/mapping/examples synchronized |
+| 1.4.0   | 2025-10-31 | spec-owner | Future: Multi-Cluster Network Separation section (scope clarification) |
+| 1.3.0   | 2025-10-31 | spec-owner | Context Building Algorithm added (ordering, env scoping, naming, pseudocode) |
+| 1.2.0   | 2025-10-31 | spec-owner | Module+type composite workspace identifier; output directory collision policy and CLI notes |
+| 1.1.0   | 2025-10-31 | spec-owner | IP allocation policy added (single-cluster default, multi-cluster first_ip requirement), reserved mgmt IP, validations, examples |
+| 1.0.0   | 2025-10-31 | spec-owner | Initial normative baseline |

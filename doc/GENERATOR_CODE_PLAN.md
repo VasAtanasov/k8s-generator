@@ -1,6 +1,6 @@
 ---
 status: Planning document
-version: 1.1.0
+version: 1.2.0
 scope: Implementation plan for the k8s-generator CLI (architecture, phases, files)
 ---
 
@@ -116,7 +116,7 @@ k8s-gen --spec m7.yaml --out test-output/
 - **Exports**: Annotated command class with options
 - **Dependencies**: model.spec.*, Picocli
 - **Key Methods**:
-  - CLI option definitions (`--module`, `--type`, engine, `--out`)
+  - CLI option definitions (`--module`, `--type`, engine, `--out`, `--azure`)
   - Input validation (module format, type format)
 - **Tests**: `tests/cli/GenerateCommandTest.java`
 
@@ -135,6 +135,13 @@ public class GenerateCommand implements Callable<Integer> {
 
     @Option(names = {"--out"}, description = "Output directory")
     String outDir;
+
+    @Option(names = {"--azure"}, description = "Enable Azure integration (installs CLI)")
+    boolean azure = false;
+
+    // Future-proofing for other providers could look like:
+    // @Option(names = {"--provider"}, description = "Enable cloud provider integration (e.g., aws, gcp)")
+    // List<String> providers;
 
     @Override
     public Integer call() {
@@ -173,7 +180,7 @@ public ModuleInfo {
 **`src/main/java/com/k8s/generator/model/plan/ScaffoldPlan.java`**
 - **Purpose**: Template-ready plan with allocated IPs
 - **Exports**: `ScaffoldPlan` record
-- **Key Fields**: `ModuleInfo module, List<VmConfig> vms, Map<String, String> envVars`
+- **Key Fields**: `ModuleInfo module, List<VmConfig> vms, Map<String, String> envVars, Set<String> providers`
 
 **`src/main/java/com/k8s/generator/model/plan/VmConfig.java`**
 - **Purpose**: VM configuration
@@ -211,6 +218,7 @@ public interface SpecConverter {
 - **Key Logic**:
   - Parse CLI args to ModuleInfo
   - Create single ClusterSpec from CLI args
+  - If `--azure` is true, create a `ManagementSpec` with `providers` containing "azure".
   - Apply defaults (e.g., medium size if not specified)
   - Pure transformation - NO validation (Picocli handles structure, Validator handles business rules)
 
@@ -232,6 +240,7 @@ public interface PlanBuilder {
   - Allocate IPs (use 192.168.56.10 for single-cluster MVP)
   - Build VmConfig list
   - Create environment variables map
+  - Populate `providers` set from `GeneratorSpec`
   - Pure transformation - assumes validated spec
 
 #### Brick 4: Validation (Quality Gates)
@@ -277,7 +286,7 @@ public interface Renderer {
 - **Key Logic**:
   - Initialize JTE engine
   - Render Vagrantfile.jte with plan context
-  - Render bootstrap.sh.jte with plan context
+  - Render bootstrap.sh.jte, passing provider info for conditional generation of files like `/etc/azure-env`.
   - Render .gitignore.jte
   - Return Map<filename, content>
 
@@ -311,11 +320,12 @@ public interface Renderer {
 
 **`src/main/java/com/k8s/generator/io/ResourceCopier.java`**
 - **Purpose**: Copy install scripts from resources
-- **Exports**: `copyScripts(List<String> scriptNames, Path outDir)`
+- **Exports**: `copyScripts(ScaffoldPlan plan, Path outDir)`
 - **Dependencies**: Java NIO, ClassLoader
 - **Key Logic**:
+  - Determine required scripts based on engine and providers in the plan.
   - Copy scripts from `src/main/resources/scripts/` to `{outDir}/scripts/`
-  - For kind MVP: `install_kubectl.sh`, `install_docker.sh`, `install_kind.sh`
+  - Example scripts: `install_kubectl.sh`, `install_docker.sh`, `install_kind.sh`, `install_azure_cli.sh`
 
 #### Orchestrator
 
@@ -347,7 +357,7 @@ public int scaffold(GenerateCommand cmd) {
     new OutputWriter().writeFiles(files, outDir);
 
     // 6. Copy scripts
-    new ResourceCopier().copyScripts(List.of("install_kubectl.sh", "install_docker.sh", "install_kind.sh"), outDir);
+    new ResourceCopier().copyScripts(plan, outDir);
 
     return 0; // Success
 }
@@ -417,13 +427,6 @@ public static void main(String[] args) {
 - [ ] All tests passing (make check)
 
 ---
-
-## Document History
-
-| Version | Date       | Author     | Changes                                                         |
-|---------|------------|------------|-----------------------------------------------------------------|
-| 1.1.0   | 2025-11-04 | repo-maint | Updated implementation status: Phase 1 & 2 complete (296 tests), added status summary table |
-| 1.0.0   | 2025-11-03 | repo-maint | Added YAML frontmatter and Document History per AGENTS.md rules |
 
 ## Phase 2: kubeadm + Full Validation
 
@@ -557,7 +560,8 @@ public List<ValidationError> validate(GeneratorSpec spec) {
 
 **`src/main/java/com/k8s/generator/model/spec/ManagementSpec.java`**
 - **Purpose**: Management VM specification
-- **Exports**: Record with name, tools, aggregate_kubeconfigs flag
+- **Exports**: Record with name, tools, aggregate_kubeconfigs flag, and cloud providers
+- **Key Fields**: `String name, List<String> tools, boolean aggregateKubeconfigs, Optional<List<String>> providers`
 
 ### Files to Modify
 
@@ -1337,3 +1341,14 @@ When approved, proceed to implementation:
 ```
 
 Phase 4 will implement the plan incrementally, with authorization required for each commit.
+
+---
+
+## Document History
+
+| Version | Date       | Author     | Changes                                                         |
+|---------|------------|------------|-----------------------------------------------------------------|
+| 1.2.0   | 2025-11-04 | repo-maint | Added cloud provider integration details (Azure) to code plan |
+| 1.1.1   | 2025-11-04 | repo-maint | Moved Document History to final section; bumped version; minor compliance/formatting fixes |
+| 1.1.0   | 2025-11-04 | repo-maint | Updated implementation status: Phase 1 & 2 complete (296 tests), added status summary table |
+| 1.0.0   | 2025-11-03 | repo-maint | Added YAML frontmatter and Document History per AGENTS.md rules |

@@ -1,6 +1,6 @@
 ---
 status: Planning document
-version: 1.0.0
+version: 1.1.1
 scope: High-level DDD plan and phased roadmap for the k8s-generator CLI
 ---
 
@@ -296,6 +296,13 @@ public record ClusterSpec(
     Optional<VmOverrides> vmOverrides
 ) {}
 
+public record ManagementSpec(
+    String name,
+    List<String> tools,
+    boolean aggregateKubeconfigs,
+    Optional<List<String>> providers // For cloud integration like 'azure'
+) {}
+
 public record NodeCounts(int masters, int workers) {
     public NodeCounts {
         if (masters < 1) throw new IllegalArgumentException("At least 1 master required");
@@ -311,7 +318,8 @@ public record NodeCounts(int masters, int workers) {
 public record ScaffoldPlan(
     ModuleInfo module,
     List<VmConfig> vms,              // Ordered: mgmt, then masters, then workers
-    Map<String, String> envVars      // Module-level environment variables
+    Map<String, String> envVars,     // Module-level environment variables
+    Set<String> providers            // e.g., {"azure"}
 ) {}
 
 public record VmConfig(
@@ -944,4 +952,6 @@ Verify: SemanticValidator still works (depends on interface)
 
 | Version | Date       | Author     | Changes                                                         |
 |---------|------------|------------|-----------------------------------------------------------------|
+| 1.1.1   | 2025-11-04 | repo-maint | History sorted descending; prepended new entry per policy |
+| 1.1.0   | 2025-11-04 | repo-maint | Added high-level details for cloud provider integration (Azure) |
 | 1.0.0   | 2025-11-03 | repo-maint | Added YAML frontmatter and Document History per AGENTS.md rules |

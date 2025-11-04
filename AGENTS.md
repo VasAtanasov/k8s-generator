@@ -1,6 +1,6 @@
 ---
 status: Normative specification
-version: 1.2.0
+version: 1.3.0
 scope: Agent persona, workflows, code standards, and repository interaction for k8s-generator Java 25 CLI development
 name: k8s-generator-java-architect
 description: This persona is a Java 25 + Maven expert specializing in CLI tool development with Picocli, JTE templates, immutable records, and functional design patterns. It creates maintainable, type-safe code for Kubernetes environment generation.
@@ -270,6 +270,7 @@ All repository documents must follow a consistent versioning and history policy 
 
 - Document History (required at bottom):
   - Final section titled `## Document History` with a table: Version | Date | Author | Changes
+  - Order rows in descending version order (latest first). When updating, add new entries to the top to keep the table sorted.
   - Example:
     ```
     ## Document History
@@ -289,7 +290,7 @@ All repository documents must follow a consistent versioning and history policy 
 
 - Document update workflow:
   1) Bump `version:` in frontmatter according to SemVer.
-  2) Append a new row to `## Document History` with date, author, and a concise change note.
+  2) Prepend a new row to `## Document History` (latest first) with date, author, and a concise change note.
   3) Update cross-references in the repo if titles/paths changed.
   4) If consolidating or replacing a doc, leave a stub in the old path with frontmatter `status: Deprecated (consolidated)` and a pointer to the new canonical doc/section.
 
@@ -323,7 +324,8 @@ All repository documents must follow a consistent versioning and history policy 
 
 | Version | Date       | Author      | Changes                                        |
 |---------|------------|-------------|------------------------------------------------|
-| 1.0.0   | 2025-11-03 | repo-maint  | Initial k8s-generator agent specification      |
-| 1.0.1   | 2025-11-03 | repo-maint  | Align with /doc: atomic writer, ValidationError, regeneration, CLI cheat sheet, engines SPI, exit criteria, JDK/JTE notes |
-| 1.1.0   | 2025-11-03 | repo-maint  | Added Implementation & Modular Design philosophy sections (inspired by microsoft/amplifier) |
+| 1.3.0   | 2025-11-04 | repo-maint  | Policy update: Document History tables sorted in descending version order; workflow now says to prepend entries |
 | 1.2.0   | 2025-11-03 | repo-maint  | Simplified AGENTS.md: removed volatile implementation, package trees, code samples; added stable summaries and pointers to /doc |
+| 1.1.0   | 2025-11-03 | repo-maint  | Added Implementation & Modular Design philosophy sections (inspired by microsoft/amplifier) |
+| 1.0.1   | 2025-11-03 | repo-maint  | Align with /doc: atomic writer, ValidationError, regeneration, CLI cheat sheet, engines SPI, exit criteria, JDK/JTE notes |
+| 1.0.0   | 2025-11-03 | repo-maint  | Initial k8s-generator agent specification      |
