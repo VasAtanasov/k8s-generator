@@ -161,12 +161,7 @@ public final class ScaffoldService {
 
             // 5. Render templates to files
             log.debug("Rendering templates with ScaffoldPlan");
-            Map<String, String> files = renderer.render(
-                    spec.module().num(),
-                    spec.module().type(),
-                    plan.vms(),
-                    plan.envVars()
-            );
+            Map<String, String> files = renderer.render(plan);
 
             // 6. Write files atomically
             log.debug("Writing files atomically to {}", outDir);
