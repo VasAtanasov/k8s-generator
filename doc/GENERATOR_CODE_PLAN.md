@@ -1,6 +1,6 @@
 ---
 status: Planning document
-version: 1.2.0
+version: 1.4.0
 scope: Implementation plan for the k8s-generator CLI (architecture, phases, files)
 ---
 
@@ -309,14 +309,32 @@ public interface Renderer {
 #### Brick 6: I/O (File Operations)
 
 **`src/main/java/com/k8s/generator/io/OutputWriter.java`**
-- **Purpose**: Write files to disk
-- **Exports**: `writeFiles(Map<String, String> files, Path outDir)`
+- **Purpose**: Write rendered files and scaffold hook directories.
+- **Exports**: `writeFiles(Map<String, String> files, Path outDir)`, `scaffoldHooks(Path outDir)`
 - **Dependencies**: Java NIO
 - **Key Logic**:
-  - Create output directory if needed
-  - Check for collisions (fail if exists)
-  - Write each file
-  - Set executable permissions on scripts
+  - `writeFiles`:
+    - Create output directory if needed.
+    - Check for collisions (fail if exists).
+    - Write each file from the input map.
+    - Set executable permissions on scripts.
+  - `scaffoldHooks`:
+    - **Create directories** if they don't exist:
+      - `scripts/bootstrap.pre.d/common`
+      - `scripts/bootstrap.post.d/common`
+      - `scripts/env/cluster`
+      - `scripts/env/role`
+      - `scripts/env/cluster-role`
+    - **Create stub files** if they don't exist:
+      - `scripts/bootstrap.env.local` (with example content)
+      - `scripts/bootstrap.pre.local.sh` (with shebang, `set -Eeuo pipefail`, `echo` statement, and executable permissions)
+      - `scripts/bootstrap.post.local.sh` (with shebang, `set -Eeuo pipefail`, `echo` statement, and executable permissions)
+    - **Create `README.md` files** with explanatory content in each of the following directories if they don't exist:
+      - `scripts/bootstrap.pre.d`
+      - `scripts/bootstrap.post.d`
+      - `scripts/env/cluster`
+      - `scripts/env/role`
+      - `scripts/env/cluster-role`
 
 **`src/main/java/com/k8s/generator/io/ResourceCopier.java`**
 - **Purpose**: Copy install scripts from resources
@@ -354,10 +372,14 @@ public int scaffold(GenerateCommand cmd) {
 
     // 5. Write files
     Path outDir = determineOutDir(cmd, spec);
-    new OutputWriter().writeFiles(files, outDir);
+    OutputWriter writer = new OutputWriter();
+    writer.writeFiles(files, outDir);
 
     // 6. Copy scripts
     new ResourceCopier().copyScripts(plan, outDir);
+
+    // 7. Scaffold hooks
+    writer.scaffoldHooks(outDir);
 
     return 0; // Success
 }
@@ -1348,6 +1370,8 @@ Phase 4 will implement the plan incrementally, with authorization required for e
 
 | Version | Date       | Author     | Changes                                                         |
 |---------|------------|------------|-----------------------------------------------------------------|
+| 1.4.0   | 2025-11-04 | repo-maint | Expanded hook scaffolding details in I/O brick to match shell script |
+| 1.3.0   | 2025-11-04 | repo-maint | Added bootstrap hook scaffolding to I/O brick in code plan |
 | 1.2.0   | 2025-11-04 | repo-maint | Added cloud provider integration details (Azure) to code plan |
 | 1.1.1   | 2025-11-04 | repo-maint | Moved Document History to final section; bumped version; minor compliance/formatting fixes |
 | 1.1.0   | 2025-11-04 | repo-maint | Updated implementation status: Phase 1 & 2 complete (296 tests), added status summary table |
