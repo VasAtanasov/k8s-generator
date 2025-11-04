@@ -26,7 +26,7 @@ main() {
     lib::header "Starting installation of base packages..."
 
     export DEBIAN_FRONTEND=noninteractive
-    lib::apt_update_once
+    lib::ensure_apt_updated
 
     # Let apt and our helpers handle idempotency
     lib::ensure_packages jq curl yq tree git vim tmux wget zip unzip w3m tar gpg bash-completion || true

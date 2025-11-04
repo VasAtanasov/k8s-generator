@@ -33,7 +33,7 @@ main() {
 
     export DEBIAN_FRONTEND=noninteractive
 
-    lib::apt_update_once
+    lib::ensure_apt_updated
     lib::ensure_packages maven || true
 
     lib::log "Verifying installation..."

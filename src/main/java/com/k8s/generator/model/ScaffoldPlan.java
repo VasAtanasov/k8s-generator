@@ -71,10 +71,9 @@ import java.util.Objects;
  * );
  * }</pre>
  *
- * @param module Module metadata (module number + type)
- * @param vms List of VMs to provision (1+ required, with allocated IPs)
+ * @param module  Module metadata (module number + type)
+ * @param vms     List of VMs to provision (1+ required, with allocated IPs)
  * @param envVars Environment variables for bootstrap scripts
- *
  * @see ModuleInfo
  * @see VmConfig
  * @see NodeRole
@@ -83,10 +82,9 @@ import java.util.Objects;
  * @since 1.0.0
  */
 public record ScaffoldPlan(
-    ModuleInfo module,
-    List<VmConfig> vms,
-    Map<String, String> envVars
-) {
+        ModuleInfo module,
+        List<VmConfig> vms,
+        Map<String, String> envVars) {
     /**
      * Compact constructor with structural validation.
      *

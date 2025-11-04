@@ -37,7 +37,7 @@ main() {
     lib::ensure_packages ca-certificates curl apt-transport-https gnupg || true
 
     lib::log "Installing Skopeo..."
-    lib::apt_update_once
+    lib::ensure_apt_updated
     lib::ensure_packages skopeo || true
 
     lib::log "Verifying installation..."

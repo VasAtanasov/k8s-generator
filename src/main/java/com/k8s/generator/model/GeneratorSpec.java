@@ -152,7 +152,7 @@ public record GeneratorSpec(
                     "primaryCluster() called on multi-cluster spec with " + clusters.size() + " clusters"
             );
         }
-        return clusters.get(0);
+        return clusters.getFirst();
     }
 
     /**

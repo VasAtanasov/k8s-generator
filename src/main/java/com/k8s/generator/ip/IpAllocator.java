@@ -84,7 +84,6 @@ public interface IpAllocator {
      * @param spec cluster specification (must not be null)
      * @return Result containing list of allocated IPs, or error message if allocation fails
      * @throws NullPointerException if spec is null
-     *
      * @see ClusterSpec
      */
     Result<List<String>, String> allocate(ClusterSpec spec);

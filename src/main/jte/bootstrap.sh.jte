@@ -24,9 +24,8 @@ EOS
 chmod 0644 /etc/profile.d/50-k8s-env.sh'
 
 # Install minimal toolchain for kind/minikube path
-chmod +x scripts/install_*.sh || true
-if [ -x scripts/install_docker.sh ]; then scripts/install_docker.sh; fi
-if [ -x scripts/install_kubectl.sh ]; then scripts/install_kubectl.sh; fi
-if [ -x scripts/install_kind.sh ]; then scripts/install_kind.sh; fi
+if [ -x /vagrant/scripts/install_docker.sh ]; then /vagrant/scripts/install_docker.sh; fi
+if [ -x /vagrant/scripts/install_kubectl.sh ]; then /vagrant/scripts/install_kubectl.sh; fi
+if [ -x /vagrant/scripts/install_kind.sh ]; then /vagrant/scripts/install_kind.sh; fi
 
 echo "[bootstrap] Completed"

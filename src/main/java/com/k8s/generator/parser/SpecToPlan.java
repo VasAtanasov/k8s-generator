@@ -1,8 +1,8 @@
 package com.k8s.generator.parser;
 
-import com.k8s.generator.model.*;
 import com.k8s.generator.ip.IpAllocator;
 import com.k8s.generator.ip.SequentialIpAllocator;
+import com.k8s.generator.model.*;
 
 import java.util.*;
 
@@ -118,7 +118,7 @@ public final class SpecToPlan implements PlanBuilder {
      *
      * @param spec validated GeneratorSpec (must not be null)
      * @return ScaffoldPlan ready for template rendering
-     * @throws NullPointerException if spec is null
+     * @throws NullPointerException  if spec is null
      * @throws IllegalStateException if spec contains unsupported cluster types or IP allocation fails
      */
     @Override
@@ -128,8 +128,8 @@ public final class SpecToPlan implements PlanBuilder {
         // Phase 2: Only single-cluster mode supported (multi-cluster is Phase 3)
         if (!spec.isSingleCluster()) {
             throw new IllegalStateException(
-                "Multi-cluster mode not yet supported in Phase 2. " +
-                "Spec contains " + spec.clusterCount() + " clusters."
+                    "Multi-cluster mode not yet supported in Phase 2. " +
+                            "Spec contains " + spec.clusterCount() + " clusters."
             );
         }
 
@@ -139,7 +139,7 @@ public final class SpecToPlan implements PlanBuilder {
         var ipResult = ipAllocator.allocate(cluster);
         if (ipResult.isFailure()) {
             throw new IllegalStateException(
-                "IP allocation failed: " + ipResult.getError()
+                    "IP allocation failed: " + ipResult.getError()
             );
         }
         List<String> allocatedIps = ipResult.orElseThrow();
@@ -164,7 +164,7 @@ public final class SpecToPlan implements PlanBuilder {
      *   <li>NONE: 1 VM with NodeRole.MANAGEMENT</li>
      * </ul>
      *
-     * @param cluster cluster specification
+     * @param cluster      cluster specification
      * @param allocatedIps list of IPs allocated by IpAllocator
      * @return list of VmConfig with assigned IPs
      * @throws IllegalStateException if IP count doesn't match expected VM count
@@ -174,8 +174,8 @@ public final class SpecToPlan implements PlanBuilder {
             case KIND, MINIKUBE -> {
                 if (allocatedIps.size() != 1) {
                     throw new IllegalStateException(
-                        String.format("Expected 1 IP for %s cluster, got %d",
-                            cluster.type(), allocatedIps.size())
+                            String.format("Expected 1 IP for %s cluster, got %d",
+                                    cluster.type(), allocatedIps.size())
                     );
                 }
                 yield List.of(createSingleNodeVm(cluster, allocatedIps.get(0)));
@@ -184,8 +184,8 @@ public final class SpecToPlan implements PlanBuilder {
             case NONE -> {
                 if (allocatedIps.size() != 1) {
                     throw new IllegalStateException(
-                        String.format("Expected 1 IP for NONE (management) cluster, got %d",
-                            allocatedIps.size())
+                            String.format("Expected 1 IP for NONE (management) cluster, got %d",
+                                    allocatedIps.size())
                     );
                 }
                 yield List.of(createManagementVm(cluster, allocatedIps.get(0)));
@@ -206,17 +206,17 @@ public final class SpecToPlan implements PlanBuilder {
      * </ul>
      *
      * @param cluster cluster specification
-     * @param ip allocated IP address
+     * @param ip      allocated IP address
      * @return VmConfig for single-node cluster
      */
     private VmConfig createSingleNodeVm(ClusterSpec cluster, String ip) {
         return new VmConfig(
-            cluster.name(),
-            NodeRole.CLUSTER,
-            ip,
-            cluster.sizeProfile(),
-            Optional.empty(),           // No CPU override
-            Optional.empty()            // No memory override
+                cluster.name(),
+                NodeRole.CLUSTER,
+                ip,
+                cluster.sizeProfile(),
+                Optional.empty(),           // No CPU override
+                Optional.empty()            // No memory override
         );
     }
 
@@ -232,17 +232,17 @@ public final class SpecToPlan implements PlanBuilder {
      * </ul>
      *
      * @param cluster cluster specification
-     * @param ip allocated IP address
+     * @param ip      allocated IP address
      * @return VmConfig for management VM
      */
     private VmConfig createManagementVm(ClusterSpec cluster, String ip) {
         return new VmConfig(
-            cluster.name(),
-            NodeRole.MANAGEMENT,
-            ip,
-            cluster.sizeProfile(),
-            Optional.empty(),
-            Optional.empty()
+                cluster.name(),
+                NodeRole.MANAGEMENT,
+                ip,
+                cluster.sizeProfile(),
+                Optional.empty(),
+                Optional.empty()
         );
     }
 
@@ -261,7 +261,7 @@ public final class SpecToPlan implements PlanBuilder {
      *   <li>Workers get next (workers) IPs</li>
      * </ul>
      *
-     * @param cluster cluster specification
+     * @param cluster      cluster specification
      * @param allocatedIps list of allocated IPs (size = masters + workers)
      * @return list of VmConfig (masters first, then workers)
      * @throws IllegalStateException if IP count doesn't match masters + workers
@@ -270,10 +270,10 @@ public final class SpecToPlan implements PlanBuilder {
         int expectedVmCount = cluster.masters() + cluster.workers();
         if (allocatedIps.size() != expectedVmCount) {
             throw new IllegalStateException(
-                String.format(
-                    "IP count mismatch for kubeadm cluster '%s': expected %d (masters=%d, workers=%d), got %d IPs",
-                    cluster.name(), expectedVmCount, cluster.masters(), cluster.workers(), allocatedIps.size()
-                )
+                    String.format(
+                            "IP count mismatch for kubeadm cluster '%s': expected %d (masters=%d, workers=%d), got %d IPs",
+                            cluster.name(), expectedVmCount, cluster.masters(), cluster.workers(), allocatedIps.size()
+                    )
             );
         }
 
@@ -284,12 +284,12 @@ public final class SpecToPlan implements PlanBuilder {
         for (int i = 1; i <= cluster.masters(); i++) {
             String vmName = String.format("%s-master-%d", cluster.name(), i);
             vms.add(new VmConfig(
-                vmName,
-                NodeRole.MASTER,
-                allocatedIps.get(ipIndex++),
-                cluster.sizeProfile(),
-                Optional.empty(),
-                Optional.empty()
+                    vmName,
+                    NodeRole.MASTER,
+                    allocatedIps.get(ipIndex++),
+                    cluster.sizeProfile(),
+                    Optional.empty(),
+                    Optional.empty()
             ));
         }
 
@@ -297,12 +297,12 @@ public final class SpecToPlan implements PlanBuilder {
         for (int i = 1; i <= cluster.workers(); i++) {
             String vmName = String.format("%s-worker-%d", cluster.name(), i);
             vms.add(new VmConfig(
-                vmName,
-                NodeRole.WORKER,
-                allocatedIps.get(ipIndex++),
-                cluster.sizeProfile(),
-                Optional.empty(),
-                Optional.empty()
+                    vmName,
+                    NodeRole.WORKER,
+                    allocatedIps.get(ipIndex++),
+                    cluster.sizeProfile(),
+                    Optional.empty(),
+                    Optional.empty()
             ));
         }
 
@@ -327,7 +327,7 @@ public final class SpecToPlan implements PlanBuilder {
      *   <li>CONTROL_PLANE_ENDPOINT (kubeadm HA)</li>
      * </ul>
      *
-     * @param module module metadata
+     * @param module  module metadata
      * @param cluster cluster specification
      * @return environment variables map (LinkedHashMap for stable ordering)
      */
@@ -341,7 +341,7 @@ public final class SpecToPlan implements PlanBuilder {
 
         // CNI type (only for kubeadm clusters)
         cluster.cni().ifPresent(cniType ->
-            envVars.put("CNI_TYPE", cniType.name().toLowerCase(Locale.ROOT))
+                envVars.put("CNI_TYPE", cniType.name().toLowerCase(Locale.ROOT))
         );
 
         return envVars;

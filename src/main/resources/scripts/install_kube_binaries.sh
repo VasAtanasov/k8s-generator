@@ -47,7 +47,7 @@ main() {
       "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/${ver_major_minor}/deb/ /"
 
     lib::log "Installing kubeadm, kubelet, kubectl..."
-    lib::apt_update_once
+    lib::ensure_apt_updated
     lib::ensure_packages kubeadm kubelet kubectl || true
     apt-mark hold kubelet kubeadm kubectl || true
 

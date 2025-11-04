@@ -45,7 +45,7 @@ main() {
       "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/azure-cli/ $AZ_REPO main"
 
     lib::log "Installing Azure CLI package..."
-    lib::apt_update_once
+    lib::ensure_apt_updated
     lib::ensure_packages azure-cli || true
 
     lib::log "Verifying installation..."

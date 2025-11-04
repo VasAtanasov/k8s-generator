@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+#
+# Purpose: Convenient wrapper to run the k8s-generator shaded JAR as a shell command.
+# Usage: k8s-generator [args...]
+#
+# Notes:
+# - This wrapper does not validate or parse arguments; they are forwarded to the application.
+# - It looks for the shaded JAR under the project root's target/ directory by default.
+# - You can override the JAR location via K8S_GENERATOR_JAR or project root via K8S_GENERATOR_HOME.
+# - Additional JVM options can be provided via K8S_GENERATOR_JAVA_OPTS (and/or JAVA_OPTS).
+
+set -Eeuo pipefail
+IFS=$'\n\t'
+
+script_dir() {
+  local src="${BASH_SOURCE[0]}"
+  while [ -h "$src" ]; do
+    local dir
+    dir=$(cd -P -- "$(dirname -- "$src")" >/dev/null 2>&1 && pwd)
+    src=$(readlink -- "$src")
+    [[ $src != /* ]] && src="$dir/$src"
+  done
+  cd -P -- "$(dirname -- "$src")" >/dev/null 2>&1 && pwd
+}
+
+die() {
+  echo "[k8s-generator] ERROR: $*" >&2
+  exit 1
+}
+
+require_cmd() {
+  command -v "$1" >/dev/null 2>&1 || die "Missing required command: $1"
+}
+
+require_cmd java
+
+# Resolve project root (parent of this script's directory) unless overridden.
+SCRIPT_DIR=$(script_dir)
+ROOT_DIR=${K8S_GENERATOR_HOME:-"$(cd "$SCRIPT_DIR/.." >/dev/null 2>&1 && pwd)"}
+
+# Resolve the shaded JAR path.
+JAR_PATH=${K8S_GENERATOR_JAR:-}
+if [[ -z "${JAR_PATH}" ]]; then
+  # Find a shaded JAR under target/, preferring non-"original-" jars.
+  shopt -s nullglob
+  candidates=("$ROOT_DIR"/target/k8s-generator-*.jar)
+  shopt -u nullglob
+  for c in "${candidates[@]}"; do
+    base=$(basename -- "$c")
+    if [[ "$base" != original-* ]]; then
+      JAR_PATH="$c"
+      break
+    fi
+  done
+fi
+
+[[ -n "${JAR_PATH:-}" && -f "$JAR_PATH" ]] || die \
+"Could not locate shaded JAR. Expected under: $ROOT_DIR/target
+Build it with: mvn -q -DskipTests package
+Or set K8S_GENERATOR_JAR to the full path."
+
+# JVM options (optional): honor both JAVA_OPTS and K8S_GENERATOR_JAVA_OPTS.
+JAVA_FLAGS=()
+if [[ -n "${JAVA_OPTS:-}" ]]; then
+  # shellcheck disable=SC2206 # intentional word splitting of JAVA_OPTS
+  JAVA_FLAGS+=(${JAVA_OPTS})
+fi
+if [[ -n "${K8S_GENERATOR_JAVA_OPTS:-}" ]]; then
+  # shellcheck disable=SC2206 # intentional word splitting of K8S_GENERATOR_JAVA_OPTS
+  JAVA_FLAGS+=(${K8S_GENERATOR_JAVA_OPTS})
+fi
+
+exec java "${JAVA_FLAGS[@]}" -jar "$JAR_PATH" "$@"
+

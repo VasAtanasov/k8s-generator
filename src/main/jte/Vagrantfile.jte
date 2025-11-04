@@ -11,7 +11,7 @@
 Vagrant.configure("2") do |config|
 @for(VmConfig vm : vms)
     config.vm.define "${vm.name()}" do |node|
-        node.vm.box = "ubuntu/jammy64"
+        node.vm.box = "shekeriev/debian-12.11"
         node.vm.hostname = "${vm.name()}"
         node.vm.network "private_network", ip: "${vm.ip()}"
 

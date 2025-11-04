@@ -43,7 +43,7 @@ main() {
       "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable"
 
     lib::log "Installing Docker Engine..."
-    lib::apt_update_once
+    lib::ensure_apt_updated
     lib::ensure_packages docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin || true
 
     lib::log "Configuring Docker for non-root users..."

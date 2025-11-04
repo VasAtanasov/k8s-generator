@@ -31,7 +31,7 @@ main() {
         return 0
     fi
 
-    lib::apt_update_once
+    lib::ensure_apt_updated
     lib::ensure_packages kustomize || true
 
     lib::log "Verifying Kustomize installation..."

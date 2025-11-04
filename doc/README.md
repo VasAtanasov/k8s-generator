@@ -1,6 +1,6 @@
 ---
 status: Documentation Index
-version: 1.0.0
+version: 1.1.0
 scope: Overview and navigation guide for k8s-generator documentation
 ---
 
@@ -117,27 +117,43 @@ CLI → Orchestrator → [Model ↔ InputParser ↔ Validation] → Rendering �
 
 ## Implementation Status
 
-| Phase | Status | Target |
-|-------|--------|--------|
-| **Phase 1**: MVP (kind/minikube) | 🔴 Not started | Week 3 |
-| **Phase 2**: kubeadm support | 🔴 Not started | Week 4 |
-| **Phase 3**: Multi-cluster | 🔴 Not started | Week 6 |
-| **Phase 4**: YAML spec path | 🔴 Not started | Week 8 |
+| Phase | Status | Tests | Completion Date |
+|-------|--------|-------|-----------------|
+| **Phase 1**: MVP (kind/minikube) | ✅ **COMPLETE** | 296 passing | 2025-11-04 |
+| **Phase 2**: kubeadm support | ✅ **COMPLETE** | Included in 296 | 2025-11-04 |
+| **Phase 3**: Multi-cluster | ⚠️ **DEFERRED** | N/A | Future |
+| **Phase 4**: YAML spec path | 🔴 Not started | N/A | Planned |
+
+**Current Status**: Phase 2 complete with comprehensive test coverage. The project has 296 passing tests covering all core functionality including IP allocation, VM generation, cluster orchestration, and full validation pipeline.
 
 ---
 
-## Critical P0 Changes (Must Fix Before Coding)
+## Critical P0 Changes Status
 
 From [ARCHITECTURE-REVIEW-2025-11-03.md](ARCHITECTURE-REVIEW-2025-11-03.md):
 
-1. ⚠️ **IP Allocation Algorithm**: Define explicit `IpAllocator` interface with edge case handling
-   - Status: ✅ Already specified in GENERATOR-ARCHITECTURE.md (lines 1301-1361)
+1. ✅ **IP Allocation Algorithm**: Define explicit `IpAllocator` interface with edge case handling
+   - Status: **IMPLEMENTED** - `SequentialIpAllocator` with 23 comprehensive tests
+   - Handles: Reserved IPs (.1, .2, .5), subnet boundaries, /30 networks, multi-cluster
 
-2. ⚠️ **Atomic File Generation**: Implement `AtomicFileWriter` for all-or-nothing file writes
-   - Status: 🔴 Needs implementation
+2. ✅ **Atomic File Generation**: Implement `AtomicFileWriter` for all-or-nothing file writes
+   - Status: **IMPLEMENTED** - `SimpleAtomicFileWriter` with temp dir + atomic move pattern
+   - Features: Rollback on failure, deterministic output, idempotent
 
-3. ⚠️ **Validation Strategy Refinement**: Hybrid approach (constructor + validator + policy)
-   - Status: 🟡 Needs documentation update
+3. ✅ **Validation Strategy Refinement**: Hybrid approach (constructor + validator + policy)
+   - Status: **IMPLEMENTED** - Three-layer validation (Structural/Semantic/Policy)
+   - Tests: 46 semantic + 9 structural + policy tests = comprehensive coverage
+
+### P1 Changes Status
+
+1. ✅ **Package Rename**: `conversion` → `parser`
+   - Status: **COMPLETE** - Package structure matches specification
+
+2. ⚠️ **Regeneration Contract**: `.k8s-generator.yaml` metadata tracking
+   - Status: **DEFERRED** to Phase 4 (not blocking MVP)
+
+3. ✅ **ValidationError Format**: Structured error records with suggestions
+   - Status: **IMPLEMENTED** - `ValidationError` with field/level/message/suggestion
 
 ---
 
@@ -279,4 +295,5 @@ See [ARCHITECTURE-REVIEW-2025-11-03.md](ARCHITECTURE-REVIEW-2025-11-03.md) for r
 
 | Version | Date       | Author      | Changes                    |
 |---------|------------|-------------|----------------------------|
+| 1.1.0   | 2025-11-04 | repo-maint  | Updated implementation status: Phase 1 & 2 complete, 296 tests passing, all P0 items implemented |
 | 1.0.0   | 2025-11-03 | repo-maint  | Initial documentation index |

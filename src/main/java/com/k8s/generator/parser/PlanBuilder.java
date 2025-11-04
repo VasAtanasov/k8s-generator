@@ -88,9 +88,9 @@ public interface PlanBuilder {
      *
      * @param spec validated GeneratorSpec (must not be null)
      * @return ScaffoldPlan ready for template rendering
-     * @throws NullPointerException if spec is null
+     * @throws NullPointerException  if spec is null
      * @throws IllegalStateException if spec is in an unexpected state
-     *         (e.g., unsupported cluster type in Phase 1)
+     *                               (e.g., unsupported cluster type in Phase 1)
      */
     ScaffoldPlan build(GeneratorSpec spec);
 }

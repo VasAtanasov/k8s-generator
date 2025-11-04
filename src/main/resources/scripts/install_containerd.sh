@@ -41,7 +41,7 @@ main() {
     lib::log "Adding Docker's APT repository (idempotent)..."
     lib::ensure_apt_source_file /etc/apt/sources.list.d/docker.list \
       "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(. /etc/os-release && echo \"$VERSION_CODENAME\") stable"
-    lib::apt_update_once
+    lib::ensure_apt_updated
 
     lib::log "Installing containerd.io..."
     lib::ensure_packages containerd.io || true

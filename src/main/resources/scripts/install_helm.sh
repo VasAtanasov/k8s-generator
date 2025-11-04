@@ -41,7 +41,7 @@ main() {
       "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main"
 
     lib::log "Installing Helm..."
-    lib::apt_update_once
+    lib::ensure_apt_updated
     lib::ensure_packages helm || true
 
     lib::log "Verifying Helm installation..."
