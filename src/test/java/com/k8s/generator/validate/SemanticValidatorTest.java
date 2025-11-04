@@ -22,7 +22,7 @@ class SemanticValidatorTest {
     @Test
     void shouldAcceptValidClusterName() {
         var spec = new ClusterSpec(
-                "staging",
+                ClusterName.of("staging"),
                 ClusterType.KUBEADM,
                 Optional.empty(),
                 1,
@@ -43,7 +43,7 @@ class SemanticValidatorTest {
     })
     void shouldAcceptValidClusterNames(String name) {
         var spec = new ClusterSpec(
-                name,
+                ClusterName.of(name),
                 ClusterType.KUBEADM,
                 Optional.empty(),
                 1,
@@ -71,7 +71,7 @@ class SemanticValidatorTest {
     })
     void shouldRejectInvalidClusterNames(String name) {
         var spec = new ClusterSpec(
-                name,
+                ClusterName.of(name),
                 ClusterType.KUBEADM,
                 Optional.empty(),
                 1,
@@ -95,7 +95,7 @@ class SemanticValidatorTest {
         String longName = "a".repeat(64);  // 64 chars, exceeds 63 limit
 
         var spec = new ClusterSpec(
-                longName,
+                ClusterName.of(longName),
                 ClusterType.KUBEADM,
                 Optional.empty(),
                 1,
@@ -117,7 +117,7 @@ class SemanticValidatorTest {
     @Test
     void shouldAcceptKindClusterWithZeroNodes() {
         var spec = new ClusterSpec(
-                "dev",
+                ClusterName.of("dev"),
                 ClusterType.KIND,
                 Optional.empty(),
                 0,
@@ -134,7 +134,7 @@ class SemanticValidatorTest {
     @Test
     void shouldRejectKindClusterWithNonZeroMasters() {
         var spec = new ClusterSpec(
-                "dev",
+                ClusterName.of("dev"),
                 ClusterType.KIND,
                 Optional.empty(),
                 1,  // KIND should have 0 masters
@@ -154,7 +154,7 @@ class SemanticValidatorTest {
     @Test
     void shouldRejectKindClusterWithNonZeroWorkers() {
         var spec = new ClusterSpec(
-                "dev",
+                ClusterName.of("dev"),
                 ClusterType.KIND,
                 Optional.empty(),
                 0,
@@ -174,7 +174,7 @@ class SemanticValidatorTest {
     @Test
     void shouldRejectMinikubeClusterWithNonZeroNodes() {
         var spec = new ClusterSpec(
-                "dev",
+                ClusterName.of("dev"),
                 ClusterType.MINIKUBE,
                 Optional.empty(),
                 1,
@@ -192,7 +192,7 @@ class SemanticValidatorTest {
     @Test
     void shouldRejectNoneClusterWithNonZeroNodes() {
         var spec = new ClusterSpec(
-                "mgmt",
+                ClusterName.of("mgmt"),
                 ClusterType.NONE,
                 Optional.empty(),
                 1,
@@ -211,7 +211,7 @@ class SemanticValidatorTest {
     @Test
     void shouldRejectKubeadmClusterWithZeroMasters() {
         var spec = new ClusterSpec(
-                "staging",
+                ClusterName.of("staging"),
                 ClusterType.KUBEADM,
                 Optional.empty(),
                 0,  // KUBEADM requires at least 1 master
@@ -231,7 +231,7 @@ class SemanticValidatorTest {
     @Test
     void shouldWarnAboutHighWorkerCount() {
         var spec = new ClusterSpec(
-                "huge",
+                ClusterName.of("huge"),
                 ClusterType.KUBEADM,
                 Optional.empty(),
                 1,
@@ -250,7 +250,7 @@ class SemanticValidatorTest {
     @Test
     void shouldAcceptValidIpAddress() {
         var spec = new ClusterSpec(
-                "staging",
+                ClusterName.of("staging"),
                 ClusterType.KUBEADM,
                 Optional.of("192.168.56.10"),
                 1,
@@ -271,7 +271,7 @@ class SemanticValidatorTest {
     })
     void shouldRejectInvalidIpFormat(String invalidIp) {
         var spec = new ClusterSpec(
-                "staging",
+                ClusterName.of("staging"),
                 ClusterType.KUBEADM,
                 Optional.of(invalidIp),
                 1,
@@ -294,7 +294,7 @@ class SemanticValidatorTest {
     })
     void shouldRejectReservedIpRanges(String reservedIp) {
         var spec = new ClusterSpec(
-                "staging",
+                ClusterName.of("staging"),
                 ClusterType.KUBEADM,
                 Optional.of(reservedIp),
                 1,
@@ -313,7 +313,7 @@ class SemanticValidatorTest {
     @Test
     void shouldRequireFirstIpForMultiCluster() {
         var spec1 = new ClusterSpec(
-                "staging",
+                ClusterName.of("staging"),
                 ClusterType.KUBEADM,
                 Optional.empty(),  // Missing firstIp in multi-cluster
                 1,
@@ -323,7 +323,7 @@ class SemanticValidatorTest {
                 Optional.of(CniType.CALICO));
 
         var spec2 = new ClusterSpec(
-                "prod",
+                ClusterName.of("prod"),
                 ClusterType.KUBEADM,
                 Optional.empty(),  // Missing firstIp in multi-cluster
                 1,
@@ -343,7 +343,7 @@ class SemanticValidatorTest {
     @Test
     void shouldAllowEmptyFirstIpForSingleCluster() {
         var spec = new ClusterSpec(
-                "dev",
+                ClusterName.of("dev"),
                 ClusterType.KUBEADM,
                 Optional.empty(),  // OK for single cluster
                 1,
@@ -360,7 +360,7 @@ class SemanticValidatorTest {
     @Test
     void shouldWarnAboutEvenNumberOfMastersInHA() {
         var spec = new ClusterSpec(
-                "prod",
+                ClusterName.of("prod"),
                 ClusterType.KUBEADM,
                 Optional.empty(),
                 4,  // Even number - bad for etcd quorum
@@ -382,7 +382,7 @@ class SemanticValidatorTest {
     @Test
     void shouldAcceptOddNumberOfMastersInHA() {
         var spec = new ClusterSpec(
-                "prod",
+                ClusterName.of("prod"),
                 ClusterType.KUBEADM,
                 Optional.empty(),
                 3,  // Odd number - good for etcd
@@ -399,7 +399,7 @@ class SemanticValidatorTest {
     @Test
     void shouldWarnAboutVeryHighMasterCount() {
         var spec = new ClusterSpec(
-                "huge",
+                ClusterName.of("huge"),
                 ClusterType.KUBEADM,
                 Optional.empty(),
                 9,  // More than 7 masters
@@ -418,7 +418,7 @@ class SemanticValidatorTest {
     @Test
     void shouldNotWarnAboutSingleMaster() {
         var spec = new ClusterSpec(
-                "dev",
+                ClusterName.of("dev"),
                 ClusterType.KUBEADM,
                 Optional.empty(),
                 1,  // Single master - no HA warnings
@@ -443,7 +443,7 @@ class SemanticValidatorTest {
     @Test
     void shouldCollectAllErrors() {
         var spec1 = new ClusterSpec(
-                "Invalid-Name",  // Invalid name
+                ClusterName.of("Invalid-Name"),  // Invalid name
                 ClusterType.KIND,
                 Optional.of("invalid-ip"),  // Invalid IP
                 1,  // KIND should have 0 masters
@@ -453,7 +453,7 @@ class SemanticValidatorTest {
                 Optional.empty());
 
         var spec2 = new ClusterSpec(
-                "prod",
+                ClusterName.of("prod"),
                 ClusterType.KUBEADM,
                 Optional.empty(),  // Missing firstIp in multi-cluster
                 1,

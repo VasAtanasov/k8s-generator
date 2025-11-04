@@ -16,7 +16,7 @@ class VmConfigTest {
     @Test
     void shouldCreateValidVmConfig() {
         var vm = new VmConfig(
-            "master-1",
+            VmName.of("master-1"),
             NodeRole.MASTER,
             "192.168.56.10",
             SizeProfile.MEDIUM,
@@ -24,7 +24,7 @@ class VmConfigTest {
             Optional.empty()
         );
 
-        assertThat(vm.name()).isEqualTo("master-1");
+        assertThat(vm.name()).isEqualTo(VmName.of("master-1"));
         assertThat(vm.role()).isEqualTo(NodeRole.MASTER);
         assertThat(vm.ip()).isEqualTo("192.168.56.10");
         assertThat(vm.sizeProfile()).isEqualTo(SizeProfile.MEDIUM);
@@ -35,7 +35,7 @@ class VmConfigTest {
     @Test
     void shouldCreateVmConfigWithOverrides() {
         var vm = new VmConfig(
-            "worker-1",
+            VmName.of("worker-1"),
             NodeRole.WORKER,
             "192.168.56.11",
             SizeProfile.LARGE,
@@ -64,7 +64,7 @@ class VmConfigTest {
     @Test
     void shouldRejectNullRole() {
         assertThatThrownBy(() -> new VmConfig(
-            "master-1",
+            VmName.of("master-1"),
             null,
             "192.168.56.10",
             SizeProfile.MEDIUM,
@@ -78,7 +78,7 @@ class VmConfigTest {
     @Test
     void shouldRejectNullIp() {
         assertThatThrownBy(() -> new VmConfig(
-            "master-1",
+            VmName.of("master-1"),
             NodeRole.MASTER,
             null,
             SizeProfile.MEDIUM,
@@ -92,7 +92,7 @@ class VmConfigTest {
     @Test
     void shouldRejectNullSizeProfile() {
         assertThatThrownBy(() -> new VmConfig(
-            "master-1",
+            VmName.of("master-1"),
             NodeRole.MASTER,
             "192.168.56.10",
             null,
@@ -106,7 +106,7 @@ class VmConfigTest {
     @Test
     void shouldRejectNullCpuOverride() {
         assertThatThrownBy(() -> new VmConfig(
-            "master-1",
+            VmName.of("master-1"),
             NodeRole.MASTER,
             "192.168.56.10",
             SizeProfile.MEDIUM,
@@ -120,7 +120,7 @@ class VmConfigTest {
     @Test
     void shouldRejectNullMemoryOverride() {
         assertThatThrownBy(() -> new VmConfig(
-            "master-1",
+            VmName.of("master-1"),
             NodeRole.MASTER,
             "192.168.56.10",
             SizeProfile.MEDIUM,
@@ -135,7 +135,7 @@ class VmConfigTest {
     @ValueSource(strings = {"", "  ", "\t", "\n"})
     void shouldRejectBlankName(String blank) {
         assertThatThrownBy(() -> new VmConfig(
-            blank,
+            VmName.of(blank),
             NodeRole.MASTER,
             "192.168.56.10",
             SizeProfile.MEDIUM,
@@ -153,7 +153,7 @@ class VmConfigTest {
     @ValueSource(strings = {"", "  ", "\t", "\n"})
     void shouldRejectBlankIp(String blank) {
         assertThatThrownBy(() -> new VmConfig(
-            "master-1",
+            VmName.of("master-1"),
             NodeRole.MASTER,
             blank,
             SizeProfile.MEDIUM,
@@ -168,7 +168,7 @@ class VmConfigTest {
     @ValueSource(ints = {0, -1, -10})
     void shouldRejectNonPositiveCpuOverride(int invalidCpu) {
         assertThatThrownBy(() -> new VmConfig(
-            "master-1",
+            VmName.of("master-1"),
             NodeRole.MASTER,
             "192.168.56.10",
             SizeProfile.MEDIUM,
@@ -184,7 +184,7 @@ class VmConfigTest {
     @ValueSource(ints = {0, -1, -1024})
     void shouldRejectNonPositiveMemoryOverride(int invalidMemory) {
         assertThatThrownBy(() -> new VmConfig(
-            "master-1",
+            VmName.of("master-1"),
             NodeRole.MASTER,
             "192.168.56.10",
             SizeProfile.MEDIUM,
@@ -199,7 +199,7 @@ class VmConfigTest {
     @Test
     void shouldReturnEffectiveCpusFromProfile() {
         var vm = new VmConfig(
-            "master-1",
+            VmName.of("master-1"),
             NodeRole.MASTER,
             "192.168.56.10",
             SizeProfile.LARGE,
@@ -213,7 +213,7 @@ class VmConfigTest {
     @Test
     void shouldReturnEffectiveCpusFromOverride() {
         var vm = new VmConfig(
-            "master-1",
+            VmName.of("master-1"),
             NodeRole.MASTER,
             "192.168.56.10",
             SizeProfile.SMALL,
@@ -227,7 +227,7 @@ class VmConfigTest {
     @Test
     void shouldReturnEffectiveMemoryFromProfile() {
         var vm = new VmConfig(
-            "master-1",
+            VmName.of("master-1"),
             NodeRole.MASTER,
             "192.168.56.10",
             SizeProfile.MEDIUM,
@@ -241,7 +241,7 @@ class VmConfigTest {
     @Test
     void shouldReturnEffectiveMemoryFromOverride() {
         var vm = new VmConfig(
-            "master-1",
+            VmName.of("master-1"),
             NodeRole.MASTER,
             "192.168.56.10",
             SizeProfile.SMALL,
@@ -255,7 +255,7 @@ class VmConfigTest {
     @Test
     void shouldIdentifyMasterRole() {
         var master = new VmConfig(
-            "master-1",
+            VmName.of("master-1"),
             NodeRole.MASTER,
             "192.168.56.10",
             SizeProfile.MEDIUM,
@@ -272,7 +272,7 @@ class VmConfigTest {
     @Test
     void shouldIdentifyWorkerRole() {
         var worker = new VmConfig(
-            "worker-1",
+            VmName.of("worker-1"),
             NodeRole.WORKER,
             "192.168.56.11",
             SizeProfile.MEDIUM,
@@ -289,7 +289,7 @@ class VmConfigTest {
     @Test
     void shouldIdentifyClusterRole() {
         var cluster = new VmConfig(
-            "cluster-1",
+            VmName.of("cluster-1"),
             NodeRole.CLUSTER,
             "192.168.56.10",
             SizeProfile.MEDIUM,
@@ -306,7 +306,7 @@ class VmConfigTest {
     @Test
     void shouldIdentifyManagementRole() {
         var management = new VmConfig(
-            "management-1",
+            VmName.of("management-1"),
             NodeRole.MANAGEMENT,
             "192.168.56.10",
             SizeProfile.SMALL,

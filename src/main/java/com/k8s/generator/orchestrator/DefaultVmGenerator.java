@@ -37,17 +37,17 @@ public class DefaultVmGenerator implements VmGenerator {
         int expectedCount = calculateVmCount(cluster);
         if (allocatedIps.size() != expectedCount) {
             throw new IllegalArgumentException(
-                String.format(
-                    "IP count mismatch for cluster '%s': expected %d IPs, got %d",
-                    cluster.name(), expectedCount, allocatedIps.size()
-                )
+                    String.format(
+                            "IP count mismatch for cluster '%s': expected %d IPs, got %d",
+                            cluster.name(), expectedCount, allocatedIps.size()
+                    )
             );
         }
 
         return switch (cluster.type()) {
-            case KIND -> generateSingleVm(cluster, allocatedIps.get(0), NodeRole.CLUSTER);
-            case MINIKUBE -> generateSingleVm(cluster, allocatedIps.get(0), NodeRole.CLUSTER);
-            case NONE -> generateSingleVm(cluster, allocatedIps.get(0), NodeRole.MANAGEMENT);
+            case KIND -> generateSingleVm(cluster, allocatedIps.getFirst(), NodeRole.CLUSTER);
+            case MINIKUBE -> generateSingleVm(cluster, allocatedIps.getFirst(), NodeRole.CLUSTER);
+            case NONE -> generateSingleVm(cluster, allocatedIps.getFirst(), NodeRole.MANAGEMENT);
             case KUBEADM -> generateKubeadmVms(cluster, allocatedIps);
         };
     }
@@ -68,12 +68,12 @@ public class DefaultVmGenerator implements VmGenerator {
      */
     private List<VmConfig> generateSingleVm(ClusterSpec cluster, String ip, NodeRole role) {
         var vm = new VmConfig(
-            cluster.name(),           // VM name = cluster name
-            role,                     // CLUSTER or MANAGEMENT
-            ip,
-            cluster.sizeProfile(),
-            Optional.empty(),         // Use size profile defaults
-            Optional.empty()
+                VmName.of(cluster.name().value()),           // VM name = cluster name
+                role,                     // CLUSTER or MANAGEMENT
+                ip,
+                cluster.sizeProfile(),
+                Optional.empty(),         // Use size profile defaults
+                Optional.empty()
         );
         return List.of(vm);
     }
@@ -89,12 +89,12 @@ public class DefaultVmGenerator implements VmGenerator {
         // Generate master nodes: {cluster-name}-master-{n}
         for (int i = 1; i <= cluster.masters(); i++) {
             var vm = new VmConfig(
-                String.format("%s-master-%d", cluster.name(), i),
-                NodeRole.MASTER,
-                ips.get(ipIndex++),
-                cluster.sizeProfile(),
-                Optional.empty(),
-                Optional.empty()
+                    VmName.of(String.format("%s-master-%d", cluster.name(), i)),
+                    NodeRole.MASTER,
+                    ips.get(ipIndex++),
+                    cluster.sizeProfile(),
+                    Optional.empty(),
+                    Optional.empty()
             );
             vms.add(vm);
         }
@@ -102,12 +102,12 @@ public class DefaultVmGenerator implements VmGenerator {
         // Generate worker nodes: {cluster-name}-worker-{n}
         for (int i = 1; i <= cluster.workers(); i++) {
             var vm = new VmConfig(
-                String.format("%s-worker-%d", cluster.name(), i),
-                NodeRole.WORKER,
-                ips.get(ipIndex++),
-                cluster.sizeProfile(),
-                Optional.empty(),
-                Optional.empty()
+                    VmName.of(String.format("%s-worker-%d", cluster.name(), i)),
+                    NodeRole.WORKER,
+                    ips.get(ipIndex++),
+                    cluster.sizeProfile(),
+                    Optional.empty(),
+                    Optional.empty()
             );
             vms.add(vm);
         }

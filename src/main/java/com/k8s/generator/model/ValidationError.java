@@ -34,21 +34,19 @@ import java.util.Objects;
  *     error.level(), error.field(), error.message(), error.suggestion());
  * }</pre>
  *
- * @param field Field path identifying error location (e.g., "clusters[].name")
- * @param level Validation layer that detected this error
- * @param message Human-readable error description
+ * @param field      Field path identifying error location (e.g., "clusters[].name")
+ * @param level      Validation layer that detected this error
+ * @param message    Human-readable error description
  * @param suggestion Actionable guidance for fixing the error
- *
  * @see ValidationLevel
  * @see com.k8s.generator.validate.ValidationResult
  * @since 1.0.0
  */
 public record ValidationError(
-    String field,
-    ValidationLevel level,
-    String message,
-    String suggestion
-) {
+        String field,
+        ValidationLevel level,
+        String message,
+        String suggestion) {
     /**
      * Compact constructor with structural validation.
      * Ensures all fields are non-null and non-blank.
@@ -80,7 +78,7 @@ public record ValidationError(
      */
     public String format() {
         return String.format("[%s] %s: %s%n  Suggestion: %s",
-            level, field, message, suggestion);
+                level, field, message, suggestion);
     }
 
     @Override

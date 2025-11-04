@@ -49,9 +49,9 @@ import com.k8s.generator.model.GeneratorSpec;
  *
  * // Result:
  * // spec.module() = ModuleInfo("m1", "pt")
- * // spec.clusters().get(0).name() = "clu-m1-pt-kind"
- * // spec.clusters().get(0).type() = ClusterType.KIND
- * // spec.clusters().get(0).sizeProfile() = SizeProfile.MEDIUM
+ * // spec.clusters().getFirst().name() = "clu-m1-pt-kind"
+ * // spec.clusters().getFirst().type() = ClusterType.KIND
+ * // spec.clusters().getFirst().sizeProfile() = SizeProfile.MEDIUM
  * }</pre>
  *
  * @see GenerateCommand
@@ -73,9 +73,9 @@ public interface SpecConverter {
      *
      * @param cmd validated Picocli command object (must not be null)
      * @return GeneratorSpec with convention-over-configuration defaults applied
-     * @throws NullPointerException if cmd is null
+     * @throws NullPointerException     if cmd is null
      * @throws IllegalArgumentException if cmd contains structurally invalid data
-     *         (e.g., unsupported cluster type in Phase 1)
+     *                                  (e.g., unsupported cluster type in Phase 1)
      */
     GeneratorSpec convert(GenerateCommand cmd);
 }

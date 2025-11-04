@@ -59,9 +59,9 @@ import com.k8s.generator.model.ScaffoldPlan;
  *
  * // Result:
  * // plan.vms().size() = 1
- * // plan.vms().get(0).name() = "clu-m1-pt-kind"
- * // plan.vms().get(0).role() = NodeRole.CLUSTER
- * // plan.vms().get(0).ip() = "192.168.56.10"
+ * // plan.vms().getFirst().name() = "clu-m1-pt-kind"
+ * // plan.vms().getFirst().role() = NodeRole.CLUSTER
+ * // plan.vms().getFirst().ip() = "192.168.56.10"
  * // plan.envVars().get("CLUSTER_NAME") = "clu-m1-pt-kind"
  * // plan.envVars().get("CLUSTER_TYPE") = "kind"
  * }</pre>

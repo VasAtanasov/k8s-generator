@@ -2,8 +2,8 @@ package com.k8s.generator.model;
 
 import java.util.Objects;
 
-public record ClusterName(String value) {
-    public ClusterName {
+public record VmName(String value) {
+    public VmName {
         Objects.requireNonNull(value, "name is required");
 
         if (value.isBlank()) {
@@ -16,7 +16,7 @@ public record ClusterName(String value) {
         return value;
     }
 
-    public static ClusterName of(String value) {
-        return new ClusterName(value);
+    public static VmName of(String value) {
+        return new VmName(value);
     }
 }

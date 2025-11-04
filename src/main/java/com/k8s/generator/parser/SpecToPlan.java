@@ -73,7 +73,7 @@ import java.util.*;
  *
  * // Result:
  * // plan.vms().size() = 1
- * // plan.vms().get(0) = VmConfig(
+ * // plan.vms().getFirst() = VmConfig(
  * //     name="clu-m1-pt-kind",
  * //     role=NodeRole.CLUSTER,
  * //     ip="192.168.56.10",
@@ -178,7 +178,7 @@ public final class SpecToPlan implements PlanBuilder {
                                     cluster.type(), allocatedIps.size())
                     );
                 }
-                yield List.of(createSingleNodeVm(cluster, allocatedIps.get(0)));
+                yield List.of(createSingleNodeVm(cluster, allocatedIps.getFirst()));
             }
             case KUBEADM -> createKubeadmVms(cluster, allocatedIps);
             case NONE -> {
@@ -188,7 +188,7 @@ public final class SpecToPlan implements PlanBuilder {
                                     allocatedIps.size())
                     );
                 }
-                yield List.of(createManagementVm(cluster, allocatedIps.get(0)));
+                yield List.of(createManagementVm(cluster, allocatedIps.getFirst()));
             }
         };
     }
@@ -211,7 +211,7 @@ public final class SpecToPlan implements PlanBuilder {
      */
     private VmConfig createSingleNodeVm(ClusterSpec cluster, String ip) {
         return new VmConfig(
-                cluster.name(),
+                VmName.of(cluster.name().value()),
                 NodeRole.CLUSTER,
                 ip,
                 cluster.sizeProfile(),
@@ -237,7 +237,7 @@ public final class SpecToPlan implements PlanBuilder {
      */
     private VmConfig createManagementVm(ClusterSpec cluster, String ip) {
         return new VmConfig(
-                cluster.name(),
+                VmName.of(cluster.name().value()),
                 NodeRole.MANAGEMENT,
                 ip,
                 cluster.sizeProfile(),
@@ -282,7 +282,7 @@ public final class SpecToPlan implements PlanBuilder {
 
         // Create master VMs
         for (int i = 1; i <= cluster.masters(); i++) {
-            String vmName = String.format("%s-master-%d", cluster.name(), i);
+            VmName vmName = VmName.of(String.format("%s-master-%d", cluster.name(), i));
             vms.add(new VmConfig(
                     vmName,
                     NodeRole.MASTER,
@@ -295,7 +295,7 @@ public final class SpecToPlan implements PlanBuilder {
 
         // Create worker VMs
         for (int i = 1; i <= cluster.workers(); i++) {
-            String vmName = String.format("%s-worker-%d", cluster.name(), i);
+            VmName vmName = VmName.of(String.format("%s-worker-%d", cluster.name(), i));
             vms.add(new VmConfig(
                     vmName,
                     NodeRole.WORKER,
@@ -335,7 +335,7 @@ public final class SpecToPlan implements PlanBuilder {
         var envVars = new LinkedHashMap<String, String>();
 
         // Core environment variables
-        envVars.put("CLUSTER_NAME", cluster.name());
+        envVars.put("CLUSTER_NAME", cluster.name().toString());
         envVars.put("NAMESPACE_DEFAULT", module.defaultNamespace());
         envVars.put("CLUSTER_TYPE", cluster.type().name().toLowerCase(Locale.ROOT));
 

@@ -130,7 +130,7 @@ public class SemanticValidator implements ClusterSpecValidator {
      * Must match pattern: [a-z][a-z0-9-]*
      */
     private void validateClusterName(ClusterSpec spec, List<ValidationError> errors) {
-        if (!NAME_PATTERN.matcher(spec.name()).matches()) {
+        if (!NAME_PATTERN.matcher(spec.name().toString()).matches()) {
             errors.add(new ValidationError(
                     "clusters[].name",
                     ValidationLevel.SEMANTIC,
@@ -140,11 +140,11 @@ public class SemanticValidator implements ClusterSpecValidator {
         }
 
         // Additional constraint: name should not be too long (practical limit)
-        if (spec.name().length() > 63) {
+        if (spec.name().toString().length() > 63) {
             errors.add(new ValidationError(
                     "clusters[].name",
                     ValidationLevel.SEMANTIC,
-                    String.format("Cluster name too long: '%s' (%d characters)", spec.name(), spec.name().length()),
+                    String.format("Cluster name too long: '%s' (%d characters)", spec.name(), spec.name().toString().length()),
                     "Cluster name should be 63 characters or less (Kubernetes label limit)"
             ));
         }

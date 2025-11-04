@@ -86,7 +86,7 @@ public final class CliToSpec implements SpecConverter {
         ClusterType clusterType = parseClusterType(cmd.clusterType);
 
         // 3. Build cluster name using convention: clu-{num}-{type}-{engine}
-        String clusterName = buildClusterName(module, clusterType);
+        ClusterName clusterName = buildClusterName(module, clusterType);
 
         // 4. Resolve size profile
         ClusterSpec cluster = getClusterSpec(cmd, clusterType, clusterName);
@@ -97,7 +97,7 @@ public final class CliToSpec implements SpecConverter {
 
     private ClusterSpec getClusterSpec(final GenerateCommand cmd,
                                        final ClusterType clusterType,
-                                       final String clusterName) {
+                                       final ClusterName clusterName) {
         SizeProfile sizeProfile = resolveSize(cmd.size);
 
         // 5. Resolve nodes and CNI based on cluster type
@@ -169,13 +169,13 @@ public final class CliToSpec implements SpecConverter {
      * @param clusterType cluster engine type
      * @return cluster name
      */
-    private String buildClusterName(ModuleInfo module, ClusterType clusterType) {
-        return String.format(
+    private ClusterName buildClusterName(ModuleInfo module, ClusterType clusterType) {
+        return ClusterName.of(String.format(
                 "clu-%s-%s-%s",
                 module.num(),
                 module.type(),
                 clusterType.name().toLowerCase(Locale.ROOT)
-        );
+        ));
     }
 
     private SizeProfile resolveSize(String sizeToken) {

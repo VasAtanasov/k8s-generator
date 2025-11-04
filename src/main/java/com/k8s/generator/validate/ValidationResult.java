@@ -3,7 +3,6 @@ package com.k8s.generator.validate;
 import com.k8s.generator.model.ValidationError;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -50,20 +49,22 @@ import java.util.stream.Collectors;
  * @see PolicyValidator
  * @since 1.0.0
  */
-public final class ValidationResult {
-    private final List<ValidationError> errors;
+public record ValidationResult(List<ValidationError> errors) {
 
     /**
-     * Private constructor - use factory methods.
+     * Compact constructor for ValidationResult.
+     * Ensures the errors list is non-null and contains no null elements, and makes a defensive copy.
      *
-     * @param errors list of validation errors (will be copied)
+     * @param errors list of validation errors
+     * @throws NullPointerException     if errors list is null
+     * @throws IllegalArgumentException if errors list contains null elements
      */
-    private ValidationResult(List<ValidationError> errors) {
+    public ValidationResult {
         Objects.requireNonNull(errors, "errors list cannot be null");
         if (errors.stream().anyMatch(Objects::isNull)) {
             throw new IllegalArgumentException("errors list contains null elements");
         }
-        this.errors = List.copyOf(errors);  // Defensive copy
+        errors = List.copyOf(errors); // Defensive copy to ensure immutability
     }
 
     /**
@@ -165,8 +166,8 @@ public final class ValidationResult {
             return "";
         }
         return errors.stream()
-            .map(ValidationError::format)
-            .collect(Collectors.joining("\n\n"));
+                .map(ValidationError::format)
+                .collect(Collectors.joining("\n\n"));
     }
 
     /**
@@ -200,24 +201,11 @@ public final class ValidationResult {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ValidationResult that = (ValidationResult) o;
-        return Objects.equals(errors, that.errors);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(errors);
-    }
-
-    @Override
     public String toString() {
         if (errors.isEmpty()) {
             return "ValidationResult{valid}";
         }
         return String.format("ValidationResult{%d error(s)}:%n%s",
-            errors.size(), formatErrors());
+                errors.size(), formatErrors());
     }
 }

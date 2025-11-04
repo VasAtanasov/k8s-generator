@@ -94,14 +94,14 @@ public class SequentialIpAllocator implements IpAllocator {
 
         // 1. Determine base IP (mgmt has reserved default .5)
         String baseIp = spec.firstIp().orElse(
-            spec.type() == ClusterType.NONE ? MGMT_DEFAULT_BASE_IP : DEFAULT_BASE_IP
+                spec.type() == ClusterType.NONE ? MGMT_DEFAULT_BASE_IP : DEFAULT_BASE_IP
         );
 
         // 2. Validate base IP format
         var ipAddress = new IPAddressString(baseIp).getAddress();
         if (ipAddress == null) {
             return IpAllocator.Result.failure(
-                String.format("Invalid IP address format: '%s'", baseIp)
+                    String.format("Invalid IP address format: '%s'", baseIp)
             );
         }
 
@@ -110,9 +110,9 @@ public class SequentialIpAllocator implements IpAllocator {
 
         // 4. Allocate sequential IPs (skip reserved .5 except for mgmt)
         Set<Integer> reserved = (spec.type() == ClusterType.NONE)
-            ? Set.of(1, 2)
-            : RESERVED_HOST_IDS;
-        return allocateSequential(baseIp, vmCount, spec.name(), reserved);
+                ? Set.of(1, 2)
+                : RESERVED_HOST_IDS;
+        return allocateSequential(baseIp, vmCount, spec.name().toString(), reserved);
     }
 
     /**
@@ -134,10 +134,10 @@ public class SequentialIpAllocator implements IpAllocator {
         for (ClusterSpec cluster : clusters) {
             if (cluster.firstIp().isEmpty()) {
                 return IpAllocator.Result.failure(
-                    String.format(
-                        "Multi-cluster configuration requires explicit firstIp for cluster '%s'",
-                        cluster.name()
-                    )
+                        String.format(
+                                "Multi-cluster configuration requires explicit firstIp for cluster '%s'",
+                                cluster.name()
+                        )
                 );
             }
         }
@@ -150,8 +150,8 @@ public class SequentialIpAllocator implements IpAllocator {
             var result = allocate(cluster);
             if (result.isFailure()) {
                 return IpAllocator.Result.failure(
-                    String.format("Failed to allocate IPs for cluster '%s': %s",
-                        cluster.name(), result.getError())
+                        String.format("Failed to allocate IPs for cluster '%s': %s",
+                                cluster.name(), result.getError())
                 );
             }
 
@@ -161,16 +161,16 @@ public class SequentialIpAllocator implements IpAllocator {
             for (String ip : ips) {
                 if (allAllocatedIps.contains(ip)) {
                     return IpAllocator.Result.failure(
-                        String.format(
-                            "IP address overlap detected: '%s' is used by multiple clusters",
-                            ip
-                        )
+                            String.format(
+                                    "IP address overlap detected: '%s' is used by multiple clusters",
+                                    ip
+                            )
                     );
                 }
                 allAllocatedIps.add(ip);
             }
 
-            allocations.put(cluster.name(), ips);
+            allocations.put(cluster.name().toString(), ips);
         }
 
         return IpAllocator.Result.success(allocations);
@@ -201,23 +201,23 @@ public class SequentialIpAllocator implements IpAllocator {
      *   <li>Return list of IP strings or error</li>
      * </ol>
      *
-     * @param baseIp starting IP address (e.g., "192.168.56.10")
-     * @param count number of IPs to allocate
+     * @param baseIp      starting IP address (e.g., "192.168.56.10")
+     * @param count       number of IPs to allocate
      * @param clusterName cluster name (for error messages)
      * @return Result with IP list or error message
      */
     private IpAllocator.Result<List<String>, String> allocateSequential(
-        String baseIp,
-        int count,
-        String clusterName,
-        Set<Integer> reservedHostIds
+            String baseIp,
+            int count,
+            String clusterName,
+            Set<Integer> reservedHostIds
     ) {
         var ipAddressString = new IPAddressString(baseIp);
         var ipAddress = ipAddressString.getAddress();
 
         if (ipAddress == null) {
             return IpAllocator.Result.failure(
-                String.format("Invalid IP address: '%s'", baseIp)
+                    String.format("Invalid IP address: '%s'", baseIp)
             );
         }
 
@@ -237,11 +237,11 @@ public class SequentialIpAllocator implements IpAllocator {
             // Check subnet boundary
             if (hostId > MAX_HOST_ID) {
                 return IpAllocator.Result.failure(
-                    String.format(
-                        "IP allocation for cluster '%s' exceeds subnet boundary (last octet > 254). " +
-                        "Started at %s, needed %d IPs, reached %s",
-                        clusterName, baseIp, count, current.toCanonicalString()
-                    )
+                        String.format(
+                                "IP allocation for cluster '%s' exceeds subnet boundary (last octet > 254). " +
+                                        "Started at %s, needed %d IPs, reached %s",
+                                clusterName, baseIp, count, current.toCanonicalString()
+                        )
                 );
             }
 
@@ -257,10 +257,10 @@ public class SequentialIpAllocator implements IpAllocator {
 
         if (allocated < count) {
             return IpAllocator.Result.failure(
-                String.format(
-                    "Failed to allocate %d IPs for cluster '%s' (only allocated %d)",
-                    count, clusterName, allocated
-                )
+                    String.format(
+                            "Failed to allocate %d IPs for cluster '%s' (only allocated %d)",
+                            count, clusterName, allocated
+                    )
             );
         }
 

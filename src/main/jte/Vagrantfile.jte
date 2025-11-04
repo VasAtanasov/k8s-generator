@@ -10,9 +10,9 @@
 
 Vagrant.configure("2") do |config|
 @for(VmConfig vm : vms)
-    config.vm.define "${vm.name()}" do |node|
+    config.vm.define "${vm.name().value()}" do |node|
         node.vm.box = "shekeriev/debian-12.11"
-        node.vm.hostname = "${vm.name()}"
+        node.vm.hostname = "${vm.name().value()}"
         node.vm.network "private_network", ip: "${vm.ip()}"
 
         node.vm.provider "virtualbox" do |vb|

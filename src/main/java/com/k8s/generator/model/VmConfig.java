@@ -48,25 +48,24 @@ import java.util.Optional;
  * );
  * }</pre>
  *
- * @param name VM hostname (e.g., "master-1", "worker-2", "cluster-1")
- * @param role VM role (MASTER, WORKER, CLUSTER, MANAGEMENT)
- * @param ip IP address for this VM (e.g., "192.168.56.10")
- * @param sizeProfile Base size profile (determines defaults for CPU/memory)
- * @param cpuOverride Optional CPU count override (if present, overrides sizeProfile)
+ * @param name             VM hostname (e.g., "master-1", "worker-2", "cluster-1")
+ * @param role             VM role (MASTER, WORKER, CLUSTER, MANAGEMENT)
+ * @param ip               IP address for this VM (e.g., "192.168.56.10")
+ * @param sizeProfile      Base size profile (determines defaults for CPU/memory)
+ * @param cpuOverride      Optional CPU count override (if present, overrides sizeProfile)
  * @param memoryMbOverride Optional memory override in MB (if present, overrides sizeProfile)
- *
  * @see NodeRole
  * @see SizeProfile
  * @see ClusterSpec
  * @since 1.0.0
  */
 public record VmConfig(
-    String name,
-    NodeRole role,
-    String ip,
-    SizeProfile sizeProfile,
-    Optional<Integer> cpuOverride,
-    Optional<Integer> memoryMbOverride
+        VmName name,
+        NodeRole role,
+        String ip,
+        SizeProfile sizeProfile,
+        Optional<Integer> cpuOverride,
+        Optional<Integer> memoryMbOverride
 ) {
     /**
      * Compact constructor with structural validation.
@@ -89,7 +88,7 @@ public record VmConfig(
         Objects.requireNonNull(cpuOverride, "cpuOverride must be present (use Optional.empty())");
         Objects.requireNonNull(memoryMbOverride, "memoryMbOverride must be present (use Optional.empty())");
 
-        if (name.isBlank()) {
+        if (name.value().isBlank()) {
             throw new IllegalArgumentException("name cannot be blank");
         }
         if (ip.isBlank()) {

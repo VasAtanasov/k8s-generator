@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Unit tests for StructuralValidator.
@@ -18,14 +18,14 @@ class StructuralValidatorTest {
     @Test
     void shouldAcceptValidClusterWithoutVms() {
         var spec = new ClusterSpec(
-            "staging",
-            ClusterType.KUBEADM,
-            Optional.empty(),
-            1,
-            2,
-            SizeProfile.MEDIUM,
-            List.of(),
-            Optional.of(CniType.CALICO));
+                ClusterName.of("staging"),
+                ClusterType.KUBEADM,
+                Optional.empty(),
+                1,
+                2,
+                SizeProfile.MEDIUM,
+                List.of(),
+                Optional.of(CniType.CALICO));
 
         ValidationResult result = validator.validate(spec);
 
@@ -34,22 +34,22 @@ class StructuralValidatorTest {
 
     @Test
     void shouldAcceptValidClusterWithMatchingVms() {
-        var master = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.10",
-            SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var worker1 = new VmConfig("worker-1", NodeRole.WORKER, "192.168.56.11",
-            SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var worker2 = new VmConfig("worker-2", NodeRole.WORKER, "192.168.56.12",
-            SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
+        var master = new VmConfig(VmName.of("master-1"), NodeRole.MASTER, "192.168.56.10",
+                SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
+        var worker1 = new VmConfig(VmName.of("worker-1"), NodeRole.WORKER, "192.168.56.11",
+                SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
+        var worker2 = new VmConfig(VmName.of("worker-2"), NodeRole.WORKER, "192.168.56.12",
+                SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
         var spec = new ClusterSpec(
-            "staging",
-            ClusterType.KUBEADM,
-            Optional.of("192.168.56.10"),
-            1,
-            2,
-            SizeProfile.MEDIUM,
-            List.of(master, worker1, worker2),
-            Optional.of(CniType.CALICO));
+                ClusterName.of("staging"),
+                ClusterType.KUBEADM,
+                Optional.of("192.168.56.10"),
+                1,
+                2,
+                SizeProfile.MEDIUM,
+                List.of(master, worker1, worker2),
+                Optional.of(CniType.CALICO));
 
         ValidationResult result = validator.validate(spec);
 
@@ -63,67 +63,67 @@ class StructuralValidatorTest {
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errors())
-            .hasSize(1)
-            .first()
-            .satisfies(error -> {
-                assertThat(error.field()).isEqualTo("cluster");
-                assertThat(error.level()).isEqualTo(ValidationLevel.STRUCTURAL);
-                assertThat(error.message()).contains("null");
-            });
+                .hasSize(1)
+                .first()
+                .satisfies(error -> {
+                    assertThat(error.field()).isEqualTo("cluster");
+                    assertThat(error.level()).isEqualTo(ValidationLevel.STRUCTURAL);
+                    assertThat(error.message()).contains("null");
+                });
     }
 
     @Test
     void shouldRejectMismatchedMasterCount() {
-        var master = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.10",
-            SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var worker = new VmConfig("worker-1", NodeRole.WORKER, "192.168.56.11",
-            SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
+        var master = new VmConfig(VmName.of("master-1"), NodeRole.MASTER, "192.168.56.10",
+                SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
+        var worker = new VmConfig(VmName.of("worker-1"), NodeRole.WORKER, "192.168.56.11",
+                SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
         var spec = new ClusterSpec(
-            "staging",
-            ClusterType.KUBEADM,
-            Optional.of("192.168.56.10"),
-            2,  // Declared 2 masters
-            1,
-            SizeProfile.MEDIUM,
-            List.of(master, worker),  // But only 1 master VM
-            Optional.of(CniType.CALICO)
+                ClusterName.of("staging"),
+                ClusterType.KUBEADM,
+                Optional.of("192.168.56.10"),
+                2,  // Declared 2 masters
+                1,
+                SizeProfile.MEDIUM,
+                List.of(master, worker),  // But only 1 master VM
+                Optional.of(CniType.CALICO)
         );
 
         ValidationResult result = validator.validate(spec);
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errors())
-            .anyMatch(e -> e.field().contains("vms")
-                && e.message().contains("1 master")
-                && e.message().contains("masters=2"));
+                .anyMatch(e -> e.field().contains("vms")
+                        && e.message().contains("1 master")
+                        && e.message().contains("masters=2"));
     }
 
     @Test
     void shouldRejectMismatchedWorkerCount() {
-        var master = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.10",
-            SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var worker = new VmConfig("worker-1", NodeRole.WORKER, "192.168.56.11",
-            SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
+        var master = new VmConfig(VmName.of("master-1"), NodeRole.MASTER, "192.168.56.10",
+                SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
+        var worker = new VmConfig(VmName.of("worker-1"), NodeRole.WORKER, "192.168.56.11",
+                SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
         var spec = new ClusterSpec(
-            "staging",
-            ClusterType.KUBEADM,
-            Optional.of("192.168.56.10"),
-            1,
-            3,  // Declared 3 workers
-            SizeProfile.MEDIUM,
-            List.of(master, worker),  // But only 1 worker VM
-            Optional.of(CniType.CALICO)
+                ClusterName.of("staging"),
+                ClusterType.KUBEADM,
+                Optional.of("192.168.56.10"),
+                1,
+                3,  // Declared 3 workers
+                SizeProfile.MEDIUM,
+                List.of(master, worker),  // But only 1 worker VM
+                Optional.of(CniType.CALICO)
         );
 
         ValidationResult result = validator.validate(spec);
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errors())
-            .anyMatch(e -> e.field().contains("vms")
-                && e.message().contains("1 worker")
-                && e.message().contains("workers=3"));
+                .anyMatch(e -> e.field().contains("vms")
+                        && e.message().contains("1 worker")
+                        && e.message().contains("workers=3"));
     }
 
     // Test removed: With NodeRole enum, invalid roles are prevented at compile time
@@ -131,24 +131,24 @@ class StructuralValidatorTest {
 
     @Test
     void shouldAcceptAllValidRoles() {
-        var master = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.10",
-            SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var worker = new VmConfig("worker-1", NodeRole.WORKER, "192.168.56.11",
-            SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var cluster = new VmConfig("cluster-1", NodeRole.CLUSTER, "192.168.56.12",
-            SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var mgmt = new VmConfig("mgmt-1", NodeRole.MANAGEMENT, "192.168.56.13",
-            SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
+        var master = new VmConfig(VmName.of("master-1"), NodeRole.MASTER, "192.168.56.10",
+                SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
+        var worker = new VmConfig(VmName.of("worker-1"), NodeRole.WORKER, "192.168.56.11",
+                SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
+        var cluster = new VmConfig(VmName.of("cluster-1"), NodeRole.CLUSTER, "192.168.56.12",
+                SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
+        var mgmt = new VmConfig(VmName.of("mgmt-1"), NodeRole.MANAGEMENT, "192.168.56.13",
+                SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
         var spec = new ClusterSpec(
-            "staging",
-            ClusterType.KUBEADM,
-            Optional.of("192.168.56.10"),
-            1,
-            1,
-            SizeProfile.MEDIUM,
-            List.of(master, worker),  // Don't include cluster/mgmt to match counts
-            Optional.of(CniType.CALICO)
+                ClusterName.of("staging"),
+                ClusterType.KUBEADM,
+                Optional.of("192.168.56.10"),
+                1,
+                1,
+                SizeProfile.MEDIUM,
+                List.of(master, worker),  // Don't include cluster/mgmt to match counts
+                Optional.of(CniType.CALICO)
         );
 
         ValidationResult result = validator.validate(spec);
@@ -158,75 +158,75 @@ class StructuralValidatorTest {
 
     @Test
     void shouldRejectDuplicateVmNames() {
-        var vm1 = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.10",
-            SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var vm2 = new VmConfig("master-1", NodeRole.MASTER, "192.168.56.11",
-            SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
+        var vm1 = new VmConfig(VmName.of("master-1"), NodeRole.MASTER, "192.168.56.10",
+                SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
+        var vm2 = new VmConfig(VmName.of("master-1"), NodeRole.MASTER, "192.168.56.11",
+                SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
         var spec = new ClusterSpec(
-            "staging",
-            ClusterType.KUBEADM,
-            Optional.of("192.168.56.10"),
-            2,
-            0,
-            SizeProfile.MEDIUM,
-            List.of(vm1, vm2),
-            Optional.of(CniType.CALICO));
+                ClusterName.of("staging"),
+                ClusterType.KUBEADM,
+                Optional.of("192.168.56.10"),
+                2,
+                0,
+                SizeProfile.MEDIUM,
+                List.of(vm1, vm2),
+                Optional.of(CniType.CALICO));
 
         ValidationResult result = validator.validate(spec);
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errors())
-            .anyMatch(e -> e.field().contains("vms")
-                && e.message().contains("Duplicate VM name")
-                && e.message().contains("master-1"));
+                .anyMatch(e -> e.field().contains("vms")
+                        && e.message().contains("Duplicate VM name")
+                        && e.message().contains("master-1"));
     }
 
     @Test
     void shouldDetectMultipleDuplicates() {
-        var vm1 = new VmConfig("node-1", NodeRole.MASTER, "192.168.56.10",
-            SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var vm2 = new VmConfig("node-1", NodeRole.WORKER, "192.168.56.11",
-            SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var vm3 = new VmConfig("node-2", NodeRole.WORKER, "192.168.56.12",
-            SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var vm4 = new VmConfig("node-2", NodeRole.WORKER, "192.168.56.13",
-            SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
+        var vm1 = new VmConfig(VmName.of("node-1"), NodeRole.MASTER, "192.168.56.10",
+                SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
+        var vm2 = new VmConfig(VmName.of("node-1"), NodeRole.WORKER, "192.168.56.11",
+                SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
+        var vm3 = new VmConfig(VmName.of("node-2"), NodeRole.WORKER, "192.168.56.12",
+                SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
+        var vm4 = new VmConfig(VmName.of("node-2"), NodeRole.WORKER, "192.168.56.13",
+                SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
         var spec = new ClusterSpec(
-            "staging",
-            ClusterType.KUBEADM,
-            Optional.of("192.168.56.10"),
-            1,
-            3,
-            SizeProfile.MEDIUM,
-            List.of(vm1, vm2, vm3, vm4),
-            Optional.of(CniType.CALICO));
+                ClusterName.of("staging"),
+                ClusterType.KUBEADM,
+                Optional.of("192.168.56.10"),
+                1,
+                3,
+                SizeProfile.MEDIUM,
+                List.of(vm1, vm2, vm3, vm4),
+                Optional.of(CniType.CALICO));
 
         ValidationResult result = validator.validate(spec);
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errors())
-            .filteredOn(e -> e.message().contains("Duplicate VM name"))
-            .hasSize(2);  // Two distinct duplicate names
+                .filteredOn(e -> e.message().contains("Duplicate VM name"))
+                .hasSize(2);  // Two distinct duplicate names
     }
 
     @Test
     void shouldCollectAllErrorsNotShortCircuit() {
-        var vm1 = new VmConfig("dup", NodeRole.MASTER, "192.168.56.10",
-            SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
-        var vm2 = new VmConfig("dup", NodeRole.MASTER, "192.168.56.11",
-            SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
+        var vm1 = new VmConfig(VmName.of("dup"), NodeRole.MASTER, "192.168.56.10",
+                SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
+        var vm2 = new VmConfig(VmName.of("dup"), NodeRole.MASTER, "192.168.56.11",
+                SizeProfile.MEDIUM, Optional.empty(), Optional.empty());
 
         var spec = new ClusterSpec(
-            "staging",
-            ClusterType.KUBEADM,
-            Optional.of("192.168.56.10"),
-            3,  // Mismatched count
-            0,
-            SizeProfile.MEDIUM,
-            List.of(vm1, vm2),
-            Optional.of(CniType.CALICO));
+                ClusterName.of("staging"),
+                ClusterType.KUBEADM,
+                Optional.of("192.168.56.10"),
+                3,  // Mismatched count
+                0,
+                SizeProfile.MEDIUM,
+                List.of(vm1, vm2),
+                Optional.of(CniType.CALICO));
 
         ValidationResult result = validator.validate(spec);
 

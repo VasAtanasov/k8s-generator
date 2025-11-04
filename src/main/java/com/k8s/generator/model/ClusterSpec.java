@@ -86,7 +86,7 @@ import java.util.Optional;
  * @since 1.0.0
  */
 public record ClusterSpec(
-        String name,
+        ClusterName name,
         ClusterType type,
         Optional<String> firstIp,
         int masters,
@@ -126,8 +126,8 @@ public record ClusterSpec(
         Objects.requireNonNull(vms, "vms list is required (use List.of() for empty)");
         Objects.requireNonNull(cni, "cni must be present (use Optional.empty() if no CNI)");
 
-        // Blank check
-        if (name.isBlank()) {
+        // Blank check (redundant if ClusterName already enforces non-blank, kept defensive)
+        if (name.value().isBlank()) {
             throw new IllegalArgumentException("name cannot be blank");
         }
 

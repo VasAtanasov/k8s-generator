@@ -1,9 +1,6 @@
 package com.k8s.generator.validate;
 
-import com.k8s.generator.model.ClusterSpec;
-import com.k8s.generator.model.NodeRole;
-import com.k8s.generator.model.ValidationError;
-import com.k8s.generator.model.ValidationLevel;
+import com.k8s.generator.model.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -142,7 +139,7 @@ public class StructuralValidator implements ClusterSpecValidator {
      * Validates that all VM names within a cluster are unique.
      */
     private void validateUniqueVmNames(ClusterSpec spec, List<ValidationError> errors) {
-        var names = new ArrayList<String>();
+        var names = new ArrayList<VmName>();
         for (int i = 0; i < spec.vms().size(); i++) {
             var vm = spec.vms().get(i);
             if (names.contains(vm.name())) {
