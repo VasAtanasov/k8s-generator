@@ -65,8 +65,7 @@ public record VmConfig(
         String ip,
         SizeProfile sizeProfile,
         Optional<Integer> cpuOverride,
-        Optional<Integer> memoryMbOverride
-) {
+        Optional<Integer> memoryMbOverride) {
     /**
      * Compact constructor with structural validation.
      *

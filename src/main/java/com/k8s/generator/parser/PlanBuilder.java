@@ -40,7 +40,7 @@ import com.k8s.generator.model.ScaffoldPlan;
  *         <li>CLUSTER_TYPE: kind|minikube</li>
  *       </ul>
  *   </li>
- *   <li>Size profile: Use SizeProfile from ClusterSpec (defaults to MEDIUM)</li>
+ *   <li>Size profile: Use SizeProfile from ClusterSpec (defaults to SMALL)</li>
  * </ul>
  *
  * <p>Example Usage:

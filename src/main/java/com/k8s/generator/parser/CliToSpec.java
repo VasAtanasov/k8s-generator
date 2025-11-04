@@ -112,15 +112,13 @@ public final class CliToSpec implements SpecConverter {
             case NONE -> Spec.empty();
         };
 
-        return new ClusterSpec(
+        return ClusterSpec.from(
                 clusterName,
                 clusterType,
-                Optional.empty(),
                 spec.masters(),
                 spec.workers(),
                 sizeProfile,
-                List.of(),
-                spec.cniType()
+                spec.cniType().orElse(null)
         );
     }
 
@@ -179,7 +177,7 @@ public final class CliToSpec implements SpecConverter {
     }
 
     private SizeProfile resolveSize(String sizeToken) {
-        if (sizeToken == null || sizeToken.isBlank()) return SizeProfile.MEDIUM;
+        if (sizeToken == null || sizeToken.isBlank()) return SizeProfile.SMALL;
         return SizeProfile.fromString(sizeToken);
     }
 
@@ -217,9 +215,9 @@ public final class CliToSpec implements SpecConverter {
         int workers = 0;
         for (String part : s.split(",")) {
             if (part.endsWith("m")) {
-                masters = Integer.parseInt(part.substring(0, part.length() - 1));
+                masters = parseCount(part);
             } else if (part.endsWith("w")) {
-                workers = Integer.parseInt(part.substring(0, part.length() - 1));
+                workers = parseCount(part);
             } else if (!part.isBlank()) {
                 throw new IllegalArgumentException(
                         String.format("Invalid --nodes segment: '%s'. Use N or Xm,Yw (e.g., 1m,2w)", part)
@@ -227,5 +225,9 @@ public final class CliToSpec implements SpecConverter {
             }
         }
         return new int[]{masters, workers};
+    }
+
+    private static int parseCount(String part) {
+        return Integer.parseInt(part.substring(0, part.length() - 1));
     }
 }

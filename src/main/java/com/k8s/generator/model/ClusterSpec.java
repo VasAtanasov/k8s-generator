@@ -156,11 +156,29 @@ public record ClusterSpec(
         vms = List.copyOf(vms);
     }
 
+    public static ClusterSpec from(ClusterName clusterName,
+                                   ClusterType clusterType,
+                                   int masters,
+                                   int workers,
+                                   SizeProfile sizeProfile,
+                                   CniType cni) {
+        return new ClusterSpec(
+                clusterName,
+                clusterType,
+                Optional.empty(),
+                masters,
+                workers,
+                sizeProfile,
+                List.of(),
+                Optional.ofNullable(cni)
+        );
+    }
+
     /**
      * Returns total node count (masters + workers).
      * Note: For KIND/MINIKUBE/NONE, this returns 0, but they generate 1 VM with special role.
      *
-     * @return total nodes declared (may be 0 for single-VM engines)
+     * @return total nodes declared (could be 0 for single-VM engines)
      */
     public int totalNodes() {
         return masters + workers;
@@ -206,8 +224,8 @@ public record ClusterSpec(
      * @return new ClusterSpec with updated CNI
      * @throws IllegalArgumentException if newCni is null
      */
-    public ClusterSpec withCni(Optional<CniType> newCni) {
+    public ClusterSpec withCni(CniType newCni) {
         Objects.requireNonNull(newCni, "newCni cannot be null");
-        return new ClusterSpec(name, type, firstIp, masters, workers, sizeProfile, vms, newCni);
+        return new ClusterSpec(name, type, firstIp, masters, workers, sizeProfile, vms, Optional.of(newCni));
     }
 }
