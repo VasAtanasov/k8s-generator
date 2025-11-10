@@ -24,16 +24,16 @@ class ManagementTest {
         void shouldCreateValidManagementWithAzure() {
             var mgmt = Management.builder()
                     .name("mgmt-m7-hw")
-                    .provider("azure")
+                    .provider(CloudProvider.azure())
                     .aggregateKubeconfigs()
-                    .tool("kubectl")
-                    .tool("azure_cli")
+                    .tool(Tool.kubectl())
+                    .tool(Tool.azureCli())
                     .build();
 
             assertThat(mgmt.name().toString()).isEqualTo("mgmt-m7-hw");
-            assertThat(mgmt.providers()).containsExactly("azure");
+            assertThat(mgmt.providers()).containsExactly(CloudProvider.azure());
             assertThat(mgmt.aggregateKubeconfigs()).isTrue();
-            assertThat(mgmt.tools()).containsExactly("kubectl", "azure_cli");
+            assertThat(mgmt.tools()).containsExactly(Tool.kubectl(), Tool.azureCli());
         }
 
         @Test
@@ -41,19 +41,29 @@ class ManagementTest {
         void shouldCreateValidManagementWithMultipleProviders() {
             var mgmt = Management.builder()
                     .name("mgmt-m9-exam")
-                    .provider("azure")
-                    .provider("aws")
-                    .provider("gcp")
+                    .provider(CloudProvider.azure())
+                    .provider(CloudProvider.aws())
+                    .provider(CloudProvider.gcp())
                     .aggregateKubeconfigs()
-                    .tool("kubectl")
-                    .tool("helm")
-                    .tool("azure_cli")
-                    .tool("aws_cli")
-                    .tool("gcloud")
+                    .tool(Tool.kubectl())
+                    .tool(Tool.helm())
+                    .tool(Tool.azureCli())
+                    .tool(Tool.awsCli())
+                    .tool(Tool.gcloud())
                     .build();
 
-            assertThat(mgmt.providers()).containsExactly("azure", "aws", "gcp");
-            assertThat(mgmt.tools()).containsExactly("kubectl", "helm", "azure_cli", "aws_cli", "gcloud");
+            assertThat(mgmt.providers()).containsExactly(
+                    CloudProvider.azure(),
+                    CloudProvider.aws(),
+                    CloudProvider.gcp()
+            );
+            assertThat(mgmt.tools()).containsExactly(
+                    Tool.kubectl(),
+                    Tool.helm(),
+                    Tool.azureCli(),
+                    Tool.awsCli(),
+                    Tool.gcloud()
+            );
         }
 
         @Test
@@ -73,9 +83,9 @@ class ManagementTest {
         void shouldRejectNullName() {
             assertThatThrownBy(() -> Management.builder()
                     .name((String) null)
-                    .provider("azure")
+                    .provider(CloudProvider.azure())
                     .aggregateKubeconfigs()
-                    .tool("kubectl")
+                    .tool(Tool.kubectl())
                     .build())
                     .isInstanceOf(NullPointerException.class)
                     .hasMessageContaining("name is required");
@@ -86,9 +96,9 @@ class ManagementTest {
         void shouldRejectBlankName() {
             assertThatThrownBy(() -> Management.builder()
                     .name("   ")
-                    .provider("azure")
+                    .provider(CloudProvider.azure())
                     .aggregateKubeconfigs()
-                    .tool("kubectl")
+                    .tool(Tool.kubectl())
                     .build())
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("name cannot be blank");
@@ -102,7 +112,7 @@ class ManagementTest {
                     VmName.of("mgmt-m1-pt"),
                     null,
                     true,
-                    List.of("kubectl")
+                    List.of(Tool.kubectl())
             ))
                     .isInstanceOf(NullPointerException.class)
                     .hasMessageContaining("providers list is required");
@@ -113,28 +123,15 @@ class ManagementTest {
         void shouldRejectNullProviderElement() {
             assertThatThrownBy(() -> Management.builder()
                     .name("mgmt-m1-pt")
-                    .providers(Arrays.asList("azure", null, "aws"))
+                    .providers(Arrays.asList(CloudProvider.azure(), null, CloudProvider.aws()))
                     .aggregateKubeconfigs()
-                    .tool("kubectl")
+                    .tool(Tool.kubectl())
                     .build())
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("providers list contains null element at index 1");
         }
 
-        @Test
-        @DisplayName("should reject blank provider element")
-        void shouldRejectBlankProviderElement() {
-            assertThatThrownBy(() -> Management.builder()
-                    .name("mgmt-m1-pt")
-                    .provider("azure")
-                    .provider("  ")
-                    .provider("aws")
-                    .aggregateKubeconfigs()
-                    .tool("kubectl")
-                    .build())
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("providers list contains blank element at index 1");
-        }
+        // Provider string parsing tests are covered in CloudProviderTest
 
         @Test
         @DisplayName("should reject null tools list")
@@ -142,7 +139,7 @@ class ManagementTest {
             // Use canonical constructor to validate record's null-list check
             assertThatThrownBy(() -> new Management(
                     VmName.of("mgmt-m1-pt"),
-                    List.of("azure"),
+                    List.of(CloudProvider.azure()),
                     true,
                     null
             ))
@@ -155,28 +152,15 @@ class ManagementTest {
         void shouldRejectNullToolElement() {
             assertThatThrownBy(() -> Management.builder()
                     .name("mgmt-m1-pt")
-                    .provider("azure")
+                    .provider(CloudProvider.azure())
                     .aggregateKubeconfigs()
-                    .tools(Arrays.asList("kubectl", null, "helm"))
+                    .tools(Arrays.asList(Tool.kubectl(), null, Tool.helm()))
                     .build())
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("tools list contains null element at index 1");
         }
 
-        @Test
-        @DisplayName("should reject blank tool element")
-        void shouldRejectBlankToolElement() {
-            assertThatThrownBy(() -> Management.builder()
-                    .name("mgmt-m1-pt")
-                    .provider("azure")
-                    .aggregateKubeconfigs()
-                    .tool("kubectl")
-                    .tool("")
-                    .tool("helm")
-                    .build())
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("tools list contains blank element at index 1");
-        }
+        // Tool string parsing tests are covered in ToolTest
     }
 
     @Nested
@@ -186,41 +170,41 @@ class ManagementTest {
         @Test
         @DisplayName("should create defensive copy of providers list")
         void shouldCreateDefensiveCopyOfProvidersList() {
-            var originalProviders = new java.util.ArrayList<String>();
-            originalProviders.add("azure");
+            var originalProviders = new java.util.ArrayList<CloudProvider>();
+            originalProviders.add(CloudProvider.azure());
 
             var mgmt = Management.builder()
                     .name("mgmt-m1-pt")
                     .providers(originalProviders)
                     .aggregateKubeconfigs()
-                    .tool("kubectl")
+                    .tool(Tool.kubectl())
                     .build();
 
             // Modify original list
-            originalProviders.add("aws");
+            originalProviders.add(CloudProvider.aws());
 
             // Management should be unaffected
-            assertThat(mgmt.providers()).containsExactly("azure");
+            assertThat(mgmt.providers()).containsExactly(CloudProvider.azure());
         }
 
         @Test
         @DisplayName("should create defensive copy of tools list")
         void shouldCreateDefensiveCopyOfToolsList() {
-            var originalTools = new java.util.ArrayList<String>();
-            originalTools.add("kubectl");
+            var originalTools = new java.util.ArrayList<Tool>();
+            originalTools.add(Tool.kubectl());
 
             var mgmt = Management.builder()
                     .name("mgmt-m1-pt")
-                    .provider("azure")
+                    .provider(CloudProvider.azure())
                     .aggregateKubeconfigs()
                     .tools(originalTools)
                     .build();
 
             // Modify original list
-            originalTools.add("helm");
+            originalTools.add(Tool.helm());
 
             // Management should be unaffected
-            assertThat(mgmt.tools()).containsExactly("kubectl");
+            assertThat(mgmt.tools()).containsExactly(Tool.kubectl());
         }
 
         @Test
@@ -228,12 +212,12 @@ class ManagementTest {
         void shouldReturnUnmodifiableProvidersList() {
             var mgmt = Management.builder()
                     .name("mgmt-m1-pt")
-                    .provider("azure")
+                    .provider(CloudProvider.azure())
                     .aggregateKubeconfigs()
-                    .tool("kubectl")
+                    .tool(Tool.kubectl())
                     .build();
 
-            assertThatThrownBy(() -> mgmt.providers().add("aws"))
+            assertThatThrownBy(() -> mgmt.providers().add(CloudProvider.aws()))
                     .isInstanceOf(UnsupportedOperationException.class);
         }
 
@@ -242,12 +226,12 @@ class ManagementTest {
         void shouldReturnUnmodifiableToolsList() {
             var mgmt = Management.builder()
                     .name("mgmt-m1-pt")
-                    .provider("azure")
+                    .provider(CloudProvider.azure())
                     .aggregateKubeconfigs()
-                    .tool("kubectl")
+                    .tool(Tool.kubectl())
                     .build();
 
-            assertThatThrownBy(() -> mgmt.tools().add("helm"))
+            assertThatThrownBy(() -> mgmt.tools().add(Tool.helm()))
                     .isInstanceOf(UnsupportedOperationException.class);
         }
     }
@@ -261,9 +245,9 @@ class ManagementTest {
         void hasProvidersShouldReturnTrueWhenProvidersExist() {
             var mgmt = Management.builder()
                     .name("mgmt-m1-pt")
-                    .provider("azure")
+                    .provider(CloudProvider.azure())
                     .aggregateKubeconfigs()
-                    .tool("kubectl")
+                    .tool(Tool.kubectl())
                     .build();
 
             assertThat(mgmt.hasProviders()).isTrue();
@@ -275,7 +259,7 @@ class ManagementTest {
             var mgmt = Management.builder()
                     .name("mgmt-m1-pt")
                     .aggregateKubeconfigs()
-                    .tool("kubectl")
+                    .tool(Tool.kubectl())
                     .build();
 
             assertThat(mgmt.hasProviders()).isFalse();
@@ -286,9 +270,9 @@ class ManagementTest {
         void hasToolsShouldReturnTrueWhenToolsExist() {
             var mgmt = Management.builder()
                     .name("mgmt-m1-pt")
-                    .provider("azure")
+                    .provider(CloudProvider.azure())
                     .aggregateKubeconfigs()
-                    .tool("kubectl")
+                    .tool(Tool.kubectl())
                     .build();
 
             assertThat(mgmt.hasTools()).isTrue();
@@ -299,7 +283,7 @@ class ManagementTest {
         void hasToolsShouldReturnFalseWhenNoTools() {
             var mgmt = Management.builder()
                     .name("mgmt-m1-pt")
-                    .provider("azure")
+                    .provider(CloudProvider.azure())
                     .aggregateKubeconfigs()
                     .build();
 
@@ -311,14 +295,14 @@ class ManagementTest {
         void hasProviderShouldReturnTrueForExistingProvider() {
             var mgmt = Management.builder()
                     .name("mgmt-m1-pt")
-                    .provider("azure")
-                    .provider("aws")
+                    .provider(CloudProvider.azure())
+                    .provider(CloudProvider.aws())
                     .aggregateKubeconfigs()
-                    .tool("kubectl")
+                    .tool(Tool.kubectl())
                     .build();
 
-            assertThat(mgmt.hasProvider("azure")).isTrue();
-            assertThat(mgmt.hasProvider("aws")).isTrue();
+            assertThat(mgmt.hasProvider(CloudProvider.azure())).isTrue();
+            assertThat(mgmt.hasProvider(CloudProvider.aws())).isTrue();
         }
 
         @Test
@@ -326,13 +310,13 @@ class ManagementTest {
         void hasProviderShouldReturnFalseForNonExistingProvider() {
             var mgmt = Management.builder()
                     .name("mgmt-m1-pt")
-                    .provider("azure")
+                    .provider(CloudProvider.azure())
                     .aggregateKubeconfigs()
-                    .tool("kubectl")
+                    .tool(Tool.kubectl())
                     .build();
 
-            assertThat(mgmt.hasProvider("aws")).isFalse();
-            assertThat(mgmt.hasProvider("gcp")).isFalse();
+            assertThat(mgmt.hasProvider(CloudProvider.aws())).isFalse();
+            assertThat(mgmt.hasProvider(CloudProvider.gcp())).isFalse();
         }
 
         @Test
@@ -340,14 +324,14 @@ class ManagementTest {
         void hasToolShouldReturnTrueForExistingTool() {
             var mgmt = Management.builder()
                     .name("mgmt-m1-pt")
-                    .provider("azure")
+                    .provider(CloudProvider.azure())
                     .aggregateKubeconfigs()
-                    .tool("kubectl")
-                    .tool("helm")
+                    .tool(Tool.kubectl())
+                    .tool(Tool.helm())
                     .build();
 
-            assertThat(mgmt.hasTool("kubectl")).isTrue();
-            assertThat(mgmt.hasTool("helm")).isTrue();
+            assertThat(mgmt.hasTool(Tool.kubectl())).isTrue();
+            assertThat(mgmt.hasTool(Tool.helm())).isTrue();
         }
 
         @Test
@@ -355,13 +339,13 @@ class ManagementTest {
         void hasToolShouldReturnFalseForNonExistingTool() {
             var mgmt = Management.builder()
                     .name("mgmt-m1-pt")
-                    .provider("azure")
+                    .provider(CloudProvider.azure())
                     .aggregateKubeconfigs()
-                    .tool("kubectl")
+                    .tool(Tool.kubectl())
                     .build();
 
-            assertThat(mgmt.hasTool("helm")).isFalse();
-            assertThat(mgmt.hasTool("azure_cli")).isFalse();
+            assertThat(mgmt.hasTool(Tool.helm())).isFalse();
+            assertThat(mgmt.hasTool(Tool.azureCli())).isFalse();
         }
     }
 
@@ -374,15 +358,15 @@ class ManagementTest {
         void shouldBeEqualWhenAllFieldsMatch() {
             var mgmt1 = Management.builder()
                     .name("mgmt-m1-pt")
-                    .provider("azure")
+                    .provider(CloudProvider.azure())
                     .aggregateKubeconfigs()
-                    .tool("kubectl")
+                    .tool(Tool.kubectl())
                     .build();
             var mgmt2 = Management.builder()
                     .name("mgmt-m1-pt")
-                    .provider("azure")
+                    .provider(CloudProvider.azure())
                     .aggregateKubeconfigs()
-                    .tool("kubectl")
+                    .tool(Tool.kubectl())
                     .build();
 
             assertThat(mgmt1).isEqualTo(mgmt2);
@@ -394,15 +378,15 @@ class ManagementTest {
         void shouldNotBeEqualWhenNameDiffers() {
             var mgmt1 = Management.builder()
                     .name("mgmt-m1-pt")
-                    .provider("azure")
+                    .provider(CloudProvider.azure())
                     .aggregateKubeconfigs()
-                    .tool("kubectl")
+                    .tool(Tool.kubectl())
                     .build();
             var mgmt2 = Management.builder()
                     .name("mgmt-m2-hw")
-                    .provider("azure")
+                    .provider(CloudProvider.azure())
                     .aggregateKubeconfigs()
-                    .tool("kubectl")
+                    .tool(Tool.kubectl())
                     .build();
 
             assertThat(mgmt1).isNotEqualTo(mgmt2);
@@ -413,15 +397,15 @@ class ManagementTest {
         void shouldNotBeEqualWhenProvidersDiffer() {
             var mgmt1 = Management.builder()
                     .name("mgmt-m1-pt")
-                    .provider("azure")
+                    .provider(CloudProvider.azure())
                     .aggregateKubeconfigs()
-                    .tool("kubectl")
+                    .tool(Tool.kubectl())
                     .build();
             var mgmt2 = Management.builder()
                     .name("mgmt-m1-pt")
-                    .provider("aws")
+                    .provider(CloudProvider.aws())
                     .aggregateKubeconfigs()
-                    .tool("kubectl")
+                    .tool(Tool.kubectl())
                     .build();
 
             assertThat(mgmt1).isNotEqualTo(mgmt2);
@@ -432,15 +416,15 @@ class ManagementTest {
         void shouldNotBeEqualWhenAggregateKubeconfigsDiffers() {
             var mgmt1 = Management.builder()
                     .name("mgmt-m1-pt")
-                    .provider("azure")
+                    .provider(CloudProvider.azure())
                     .aggregateKubeconfigs()
-                    .tool("kubectl")
+                    .tool(Tool.kubectl())
                     .build();
             var mgmt2 = Management.builder()
                     .name("mgmt-m1-pt")
-                    .provider("azure")
+                    .provider(CloudProvider.azure())
                     // do not call aggregateKubeconfigs()
-                    .tool("kubectl")
+                    .tool(Tool.kubectl())
                     .build();
 
             assertThat(mgmt1).isNotEqualTo(mgmt2);
@@ -451,19 +435,18 @@ class ManagementTest {
         void shouldNotBeEqualWhenToolsDiffer() {
             var mgmt1 = Management.builder()
                     .name("mgmt-m1-pt")
-                    .provider("azure")
+                    .provider(CloudProvider.azure())
                     .aggregateKubeconfigs()
-                    .tool("kubectl")
+                    .tool(Tool.kubectl())
                     .build();
             var mgmt2 = Management.builder()
                     .name("mgmt-m1-pt")
-                    .provider("azure")
+                    .provider(CloudProvider.azure())
                     .aggregateKubeconfigs()
-                    .tool("helm")
+                    .tool(Tool.helm())
                     .build();
 
             assertThat(mgmt1).isNotEqualTo(mgmt2);
         }
     }
 }
-

@@ -321,7 +321,7 @@ public final class SpecToPlan implements PlanBuilder {
      * @param spec generator specification
      * @return set of provider names (e.g., "azure", "aws", "gcp"); empty set if no management
      */
-    private Set<String> extractProviders(GeneratorSpec spec) {
+    private Set<CloudProvider> extractProviders(GeneratorSpec spec) {
         if (spec.management() == null) {
             return Set.of();
         }

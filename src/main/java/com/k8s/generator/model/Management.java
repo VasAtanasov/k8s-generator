@@ -3,6 +3,7 @@ package com.k8s.generator.model;
 import lombok.Builder;
 import lombok.Singular;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -46,35 +47,40 @@ import java.util.Objects;
  *
  * <p>Example Usage:
  * <pre>{@code
- * // Basic Azure management VM
- * var mgmt = new Management(
- *     "mgmt-m7-hw",
- *     List.of("azure"),
- *     true,
- *     List.of("kubectl", "azure_cli")
- * );
+ * // Basic Azure management VM (using builder with strings)
+ * var mgmt = Management.builder()
+ *     .name("mgmt-m7-hw")
+ *     .provider("azure")
+ *     .aggregateKubeconfigs()
+ *     .tool("kubectl")
+ *     .tool("azure_cli")
+ *     .build();
  *
- * // Multi-cloud management VM
- * var multiCloud = new Management(
- *     "mgmt-m9-exam",
- *     List.of("azure", "aws", "gcp"),
- *     true,
- *     List.of("kubectl", "helm", "azure_cli", "aws_cli", "gcloud")
- * );
+ * // Multi-cloud management VM (using VOs directly)
+ * var multiCloud = Management.builder()
+ *     .name("mgmt-m9-exam")
+ *     .provider(CloudProvider.azure())
+ *     .provider(CloudProvider.aws())
+ *     .provider(CloudProvider.gcp())
+ *     .aggregateKubeconfigs()
+ *     .tool(Tool.kubectl())
+ *     .tool(Tool.helm())
+ *     .tool(Tool.azureCli())
+ *     .tool(Tool.awsCli())
+ *     .tool(Tool.gcloud())
+ *     .build();
  *
  * // Management VM without aggregation
- * var basic = new Management(
- *     "mgmt-m1-pt",
- *     List.of(),
- *     false,
- *     List.of("kubectl")
- * );
+ * var basic = Management.builder()
+ *     .name("mgmt-m1-pt")
+ *     .tool(Tool.kubectl())
+ *     .build();
  * }</pre>
  *
- * @param name                 VM name (e.g., "mgmt-m7-hw", must be non-null and non-blank)
- * @param providers            List of cloud providers to configure (e.g., ["azure"], ["aws", "gcp"], never null but can be empty)
+ * @param name                 VM name (e.g., "mgmt-m7-hw", must be non-null)
+ * @param providers            List of CloudProvider instances to configure (never null but can be empty)
  * @param aggregateKubeconfigs Whether to aggregate kubeconfigs from all clusters
- * @param tools                List of tools to install (e.g., ["kubectl", "helm", "azure_cli"], never null but can be empty)
+ * @param tools                List of Tool instances to install (never null but can be empty)
  * @see GeneratorSpec
  * @see ScaffoldPlan
  * @since 1.0.0
@@ -82,9 +88,9 @@ import java.util.Objects;
 @Builder
 public record Management(
         VmName name,
-        @Singular List<String> providers,
+        @Singular List<CloudProvider> providers,
         boolean aggregateKubeconfigs,
-        @Singular List<String> tools) {
+        @Singular List<Tool> tools) {
 
     public static class ManagementBuilder {
 
@@ -92,7 +98,6 @@ public record Management(
             this.name = VmName.of(name);
             return this;
         }
-
 
         public ManagementBuilder name(VmName name) {
             this.name = name;
@@ -110,17 +115,17 @@ public record Management(
      *
      * <p>Validates:
      * <ul>
-     *   <li>name is non-null and non-blank</li>
+     *   <li>name is non-null</li>
      *   <li>providers list is non-null (but can be empty)</li>
-     *   <li>providers list contains no null or blank elements</li>
+     *   <li>providers list contains no null elements</li>
      *   <li>tools list is non-null (but can be empty)</li>
-     *   <li>tools list contains no null or blank elements</li>
+     *   <li>tools list contains no null elements</li>
      * </ul>
      *
      * <p>Note: This constructor does NOT validate:
      * <ul>
-     *   <li>Provider name validity (e.g., "azure" vs "azur") - handled by SemanticValidator</li>
-     *   <li>Tool name validity - handled by SemanticValidator</li>
+     *   <li>Provider name validity - handled by CloudProvider value object</li>
+     *   <li>Tool name validity - handled by Tool value object</li>
      *   <li>Tool/provider compatibility - handled by SemanticValidator</li>
      * </ul>
      *
@@ -133,24 +138,16 @@ public record Management(
         // Validate providers list
         Objects.requireNonNull(providers, "providers list is required (use List.of() for empty)");
         for (int i = 0; i < providers.size(); i++) {
-            String provider = providers.get(i);
-            if (provider == null) {
+            if (providers.get(i) == null) {
                 throw new IllegalArgumentException("providers list contains null element at index " + i);
-            }
-            if (provider.isBlank()) {
-                throw new IllegalArgumentException("providers list contains blank element at index " + i);
             }
         }
 
         // Validate tools list
         Objects.requireNonNull(tools, "tools list is required (use List.of() for empty)");
         for (int i = 0; i < tools.size(); i++) {
-            String tool = tools.get(i);
-            if (tool == null) {
+            if (tools.get(i) == null) {
                 throw new IllegalArgumentException("tools list contains null element at index " + i);
-            }
-            if (tool.isBlank()) {
-                throw new IllegalArgumentException("tools list contains blank element at index " + i);
             }
         }
 
@@ -184,7 +181,17 @@ public record Management(
      * @return true if provider is in providers list
      */
     public boolean hasProvider(String providerName) {
-        return providers.contains(providerName);
+        return hasProvider(CloudProvider.of(providerName));
+    }
+
+    /**
+     * Checks if a specific provider is configured.
+     *
+     * @param provider CloudProvider instance
+     * @return true if provider is in providers list
+     */
+    public boolean hasProvider(CloudProvider provider) {
+        return providers.contains(provider);
     }
 
     /**
@@ -194,6 +201,16 @@ public record Management(
      * @return true if tool is in tools list
      */
     public boolean hasTool(String toolName) {
-        return tools.contains(toolName);
+        return hasTool(Tool.of(toolName));
+    }
+
+    /**
+     * Checks if a specific tool is configured.
+     *
+     * @param tool Tool instance
+     * @return true if tool is in tools list
+     */
+    public boolean hasTool(Tool tool) {
+        return tools.contains(tool);
     }
 }

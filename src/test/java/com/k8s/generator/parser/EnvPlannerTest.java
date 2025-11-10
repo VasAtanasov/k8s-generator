@@ -209,7 +209,7 @@ class EnvPlannerTest {
         // Given: Kubeadm cluster with Azure provider
         var cluster = kubeadmCluster();
         var vms = List.of(masterVm());
-        var providers = Set.of("azure");
+        var providers = Set.of(CloudProvider.azure());
 
         // When: Build environment with providers
         var envSet = EnvPlanner.build(MODULE, cluster, vms, providers);

@@ -272,10 +272,10 @@ public final class CliToSpec implements SpecConverter {
 
         return Management.builder()
                 .name(String.format("mgmt-%s-%s", module.num(), module.type()))
-                .provider("azure")
+                .provider(CloudProvider.azure())
                 .aggregateKubeconfigs()
-                .tool("kubectl")
-                .tool("azure_cli")
+                .tool(Tool.kubectl())
+                .tool(Tool.azureCli())
                 .build();
     }
 }

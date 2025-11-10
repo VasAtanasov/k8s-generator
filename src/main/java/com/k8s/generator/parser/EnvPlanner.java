@@ -102,7 +102,7 @@ final class EnvPlanner {
      * @throws NullPointerException     if any parameter is null
      * @throws IllegalArgumentException if vms list is empty
      */
-    static EnvSet build(ModuleInfo module, ClusterSpec cluster, List<VmConfig> vms, Set<String> providers) {
+    static EnvSet build(ModuleInfo module, ClusterSpec cluster, List<VmConfig> vms, Set<CloudProvider> providers) {
         Objects.requireNonNull(module, "module");
         Objects.requireNonNull(cluster, "cluster");
         Objects.requireNonNull(vms, "vms");
@@ -198,8 +198,8 @@ final class EnvPlanner {
      * @param out       output map (mutable)
      * @param providers set of provider names (e.g., "azure")
      */
-    private static void buildProviderGlobalEnv(Map<String, String> out, Set<String> providers) {
-        if (providers.contains("azure")) {
+    private static void buildProviderGlobalEnv(Map<String, String> out, Set<CloudProvider> providers) {
+        if (providers.contains(CloudProvider.azure())) {
             // Placeholder references - resolved at runtime via /etc/azure-env
             out.put("AZ_SUBSCRIPTION_ID", "${AZ_SUBSCRIPTION_ID}");
             out.put("AZ_RESOURCE_GROUP", "${AZ_RESOURCE_GROUP}");

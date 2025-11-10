@@ -34,7 +34,7 @@ Vagrant.configure("2") do |config|
         node.vm.provider "virtualbox" do |vb|
             vb.memory = ${vm.getEffectiveMemoryMb()}
             vb.cpus = ${vm.getEffectiveCpus()}
-            vb.name = ${vm.name().value()}
+            vb.name = "${vm.name().value()}"
         end
 
         node.vm.provision "bootstrap", type: :shell do |shell|
@@ -45,6 +45,7 @@ Vagrant.configure("2") do |config|
             }
         end
     end
+
     @endfor
 end
 

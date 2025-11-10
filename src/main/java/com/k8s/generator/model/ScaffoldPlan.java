@@ -1,5 +1,6 @@
 package com.k8s.generator.model;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -89,7 +90,7 @@ public record ScaffoldPlan(
         List<VmConfig> vms,
         Map<String, String> envVars,
         Map<VmName, Map<String, String>> vmEnv,
-        Set<String> providers) {
+        Set<CloudProvider> providers) {
     /**
      * Compact constructor with structural validation.
      *
@@ -161,12 +162,9 @@ public record ScaffoldPlan(
         }
 
         // Providers validation
-        for (String provider : providers) {
+        for (CloudProvider provider : providers) {
             if (provider == null) {
                 throw new IllegalArgumentException("providers set contains null element");
-            }
-            if (provider.isBlank()) {
-                throw new IllegalArgumentException("providers set contains blank element");
             }
         }
 
@@ -175,11 +173,11 @@ public record ScaffoldPlan(
         envVars = Map.copyOf(envVars);
         providers = Set.copyOf(providers);
         // Deep copy vmEnv (shallow copy of inner maps wrapped as unmodifiable)
-        var copied = new java.util.LinkedHashMap<VmName, Map<String, String>>();
+        var copied = new LinkedHashMap<VmName, Map<String, String>>();
         for (Map.Entry<VmName, Map<String, String>> e : vmEnv.entrySet()) {
             copied.put(e.getKey(), Map.copyOf(e.getValue()));
         }
-        vmEnv = java.util.Map.copyOf(copied);
+        vmEnv = Map.copyOf(copied);
     }
 
     /**
