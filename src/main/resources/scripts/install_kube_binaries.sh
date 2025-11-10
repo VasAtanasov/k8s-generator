@@ -25,7 +25,6 @@ lib::setup_traps
 main() {
     lib::header "Installing kubeadm, kubelet, and kubectl"
 
-    # Idempotency: skip if all 3 pkgs installed
     if lib::pkg_installed kubeadm && lib::pkg_installed kubelet && lib::pkg_installed kubectl; then
         lib::success "kubeadm/kubelet/kubectl already installed, skipping..."
         return 0
@@ -40,7 +39,6 @@ main() {
     fi
 
     lib::log "Adding Kubernetes apt repository for ${ver_major_minor} (idempotent)..."
-    # gpg is required for key dearmor
     lib::ensure_packages gnupg || true
     lib::ensure_apt_key_from_url "https://pkgs.k8s.io/core:/stable:/${ver_major_minor}/deb/Release.key" /etc/apt/keyrings/kubernetes-apt-keyring.gpg
     lib::ensure_apt_source_file /etc/apt/sources.list.d/kubernetes.list \

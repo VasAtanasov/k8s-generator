@@ -28,11 +28,16 @@ main() {
     export DEBIAN_FRONTEND=noninteractive
     lib::ensure_apt_updated
 
-    # Let apt and our helpers handle idempotency
-    lib::ensure_packages jq curl yq tree git vim tmux wget zip unzip w3m tar gpg bash-completion || true
+    lib::ensure_packages jq curl yq tree git vim tmux wget zip unzip \
+                         w3m tar gpg bash-completion \
+                         avahi-daemon gnupg rsync lsof iotop htop \
+                         pv screen strace apt-transport-https dnsutils || true
+
+    apt-get -qq -y autoremove --purge wpasupplicant acpid bluetooth bluez
+
+    pkill mpris-proxy || true
 
     lib::success "Base packages installation completed (idempotent)."
 }
 
-# --- Run ---
 main

@@ -25,7 +25,6 @@ lib::setup_traps
 main() {
     lib::header "Starting Azure CLI installation..."
 
-    # Idempotency: binary present → skip
     if lib::cmd_exists az; then
         lib::success "Azure CLI already installed. Version: $(az version --output tsv --query '"'"'azure-cli'"'"' 2>/dev/null || echo unknown)"
         return 0
@@ -58,5 +57,4 @@ main() {
     az version
 }
 
-# --- Run ---
 main
