@@ -130,7 +130,7 @@ public class PolicyValidator implements ClusterSpecValidator {
     private void validateCniRequirements(ClusterSpec cluster, List<ValidationError> errors) {
         switch (cluster.type()) {
             case KUBEADM -> {
-                if (cluster.cni().isEmpty()) {
+                if (cluster.cni() == null) {
                     errors.add(new ValidationError(
                             String.format("clusters[name='%s'].cni", cluster.name()),
                             ValidationLevel.POLICY,
@@ -145,7 +145,7 @@ public class PolicyValidator implements ClusterSpecValidator {
                 }
             }
             case KIND, MINIKUBE -> {
-                if (cluster.cni().isPresent()) {
+                if (cluster.cni() != null) {
                     errors.add(new ValidationError(
                             String.format("clusters[name='%s'].cni", cluster.name()),
                             ValidationLevel.POLICY,
@@ -162,7 +162,7 @@ public class PolicyValidator implements ClusterSpecValidator {
                 }
             }
             case NONE -> {
-                if (cluster.cni().isPresent()) {
+                if (cluster.cni() != null) {
                     errors.add(new ValidationError(
                             String.format("clusters[name='%s'].cni", cluster.name()),
                             ValidationLevel.POLICY,

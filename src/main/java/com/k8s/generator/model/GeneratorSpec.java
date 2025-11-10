@@ -40,7 +40,7 @@ import java.util.Objects;
  *         new ClusterSpec(
  *             "clu-m1-pt-kind",
  *             ClusterType.KIND,
- *             Optional.empty(),           // Use default IP
+ *             null,                       // Use default IP
  *             0,                          // KIND: no masters
  *             0,                          // KIND: no workers
  *             SizeProfile.MEDIUM,
@@ -53,8 +53,8 @@ import java.util.Objects;
  * var multiCluster = new GeneratorSpec(
  *     new ModuleInfo("m7", "exam"),
  *     List.of(
- *         new ClusterSpec("staging", ClusterType.KUBEADM, Optional.of("192.168.56.10"), 3, 5, ...),
- *         new ClusterSpec("prod", ClusterType.KUBEADM, Optional.of("192.168.56.30"), 3, 7, ...)
+ *         new ClusterSpec("staging", ClusterType.KUBEADM, "192.168.56.10", 3, 5, ...),
+ *         new ClusterSpec("prod", ClusterType.KUBEADM, "192.168.56.30", 3, 7, ...)
  *     )
  * );
  * }</pre>

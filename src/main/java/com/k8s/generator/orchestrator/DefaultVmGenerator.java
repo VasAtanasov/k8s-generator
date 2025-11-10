@@ -1,11 +1,14 @@
 package com.k8s.generator.orchestrator;
 
-import com.k8s.generator.model.*;
+import com.k8s.generator.model.ClusterSpec;
+import com.k8s.generator.model.NodeRole;
+import com.k8s.generator.model.VmConfig;
+import com.k8s.generator.model.VmName;
+import inet.ipaddr.IPAddress;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Default implementation of VmGenerator.
@@ -30,7 +33,7 @@ import java.util.Optional;
 public class DefaultVmGenerator implements VmGenerator {
 
     @Override
-    public List<VmConfig> generate(ClusterSpec cluster, List<String> allocatedIps) {
+    public List<VmConfig> generate(ClusterSpec cluster, List<IPAddress> allocatedIps) {
         Objects.requireNonNull(cluster, "cluster cannot be null");
         Objects.requireNonNull(allocatedIps, "allocatedIps cannot be null");
 
@@ -66,14 +69,14 @@ public class DefaultVmGenerator implements VmGenerator {
      * Generates a single VM for KIND/MINIKUBE/NONE cluster types.
      * VM name equals cluster name.
      */
-    private List<VmConfig> generateSingleVm(ClusterSpec cluster, String ip, NodeRole role) {
+    private List<VmConfig> generateSingleVm(ClusterSpec cluster, IPAddress ip, NodeRole role) {
         var vm = new VmConfig(
                 VmName.of(cluster.name().value()),           // VM name = cluster name
                 role,                     // CLUSTER or MANAGEMENT
                 ip,
                 cluster.sizeProfile(),
-                Optional.empty(),         // Use size profile defaults
-                Optional.empty()
+                null,         // Use size profile defaults
+                null
         );
         return List.of(vm);
     }
@@ -82,7 +85,7 @@ public class DefaultVmGenerator implements VmGenerator {
      * Generates multi-node VMs for KUBEADM clusters.
      * Masters first, then workers, with cluster-prefixed names.
      */
-    private List<VmConfig> generateKubeadmVms(ClusterSpec cluster, List<String> ips) {
+    private List<VmConfig> generateKubeadmVms(ClusterSpec cluster, List<IPAddress> ips) {
         var vms = new ArrayList<VmConfig>();
         int ipIndex = 0;
 
@@ -93,8 +96,8 @@ public class DefaultVmGenerator implements VmGenerator {
                     NodeRole.MASTER,
                     ips.get(ipIndex++),
                     cluster.sizeProfile(),
-                    Optional.empty(),
-                    Optional.empty()
+                    null,
+                    null
             );
             vms.add(vm);
         }
@@ -106,8 +109,8 @@ public class DefaultVmGenerator implements VmGenerator {
                     NodeRole.WORKER,
                     ips.get(ipIndex++),
                     cluster.sizeProfile(),
-                    Optional.empty(),
-                    Optional.empty()
+                    null,
+                    null
             );
             vms.add(vm);
         }

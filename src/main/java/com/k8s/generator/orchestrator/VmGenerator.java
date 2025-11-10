@@ -2,6 +2,7 @@ package com.k8s.generator.orchestrator;
 
 import com.k8s.generator.model.ClusterSpec;
 import com.k8s.generator.model.VmConfig;
+import inet.ipaddr.IPAddress;
 
 import java.util.List;
 
@@ -94,7 +95,7 @@ public interface VmGenerator {
      *
      * @see ClusterSpec#totalNodes()
      */
-    List<VmConfig> generate(ClusterSpec cluster, List<String> allocatedIps);
+    List<VmConfig> generate(ClusterSpec cluster, List<IPAddress> allocatedIps);
 
     /**
      * Calculates expected VM count for a cluster.

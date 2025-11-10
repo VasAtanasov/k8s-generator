@@ -1,5 +1,6 @@
 package com.k8s.generator.ip;
 
+import com.k8s.generator.model.ClusterName;
 import com.k8s.generator.model.ClusterSpec;
 import com.k8s.generator.model.ClusterType;
 import com.k8s.generator.model.Result;
@@ -60,17 +61,17 @@ public class SequentialIpAllocator implements IpAllocator {
     /**
      * Default base IP for single-cluster mode when firstIp not specified.
      */
-    private static final String DEFAULT_BASE_IP = "192.168.56.10";
+    private static final IPAddress DEFAULT_BASE_IP = new IPAddressString("192.168.56.10").getAddress();
 
     /**
      * Default subnet (used for multi-cluster overlap detection).
      */
-    private static final String DEFAULT_SUBNET = "192.168.56.0/24";
+    private static final IPAddress DEFAULT_SUBNET = new IPAddressString("192.168.56.0/24").getAddress();
 
     /**
      * Default base IP for management (NONE) clusters when firstIp is not specified.
      */
-    private static final String MGMT_DEFAULT_BASE_IP = "192.168.56.5";
+    private static final IPAddress MGMT_DEFAULT_BASE_IP = new IPAddressString("192.168.56.5").getAddress();
 
     /**
      * Reserved IP addresses that should never be allocated.
@@ -90,21 +91,13 @@ public class SequentialIpAllocator implements IpAllocator {
      * @return Result with allocated IPs or error message
      */
     @Override
-    public Result<List<String>, String> allocate(ClusterSpec spec) {
+    public Result<List<IPAddress>, String> allocate(ClusterSpec spec) {
         Objects.requireNonNull(spec, "spec cannot be null");
 
         // 1. Determine base IP (mgmt has reserved default .5)
-        String baseIp = spec.firstIp().orElse(
-                spec.type() == ClusterType.NONE ? MGMT_DEFAULT_BASE_IP : DEFAULT_BASE_IP
-        );
-
-        // 2. Validate base IP format
-        var ipAddress = new IPAddressString(baseIp).getAddress();
-        if (ipAddress == null) {
-            return Result.failure(
-                    String.format("Invalid IP address format: '%s'", baseIp)
-            );
-        }
+        IPAddress ipAddress = spec.firstIp() != null
+                ? spec.firstIp()
+                : (spec.type() == ClusterType.NONE ? MGMT_DEFAULT_BASE_IP : DEFAULT_BASE_IP);
 
         // 3. Calculate VM count based on cluster type
         int vmCount = calculateVmCount(spec);
@@ -113,7 +106,7 @@ public class SequentialIpAllocator implements IpAllocator {
         Set<Integer> reserved = (spec.type() == ClusterType.NONE)
                 ? Set.of(1, 2)
                 : RESERVED_HOST_IDS;
-        return allocateSequential(baseIp, vmCount, spec.name().toString(), reserved);
+        return allocateSequential(ipAddress, vmCount, spec.name().toString(), reserved);
     }
 
     /**
@@ -123,7 +116,7 @@ public class SequentialIpAllocator implements IpAllocator {
      * @return Result with map of cluster name to IPs, or error
      */
     @Override
-    public Result<Map<String, List<String>>, String> allocateMulti(List<ClusterSpec> clusters) {
+    public Result<Map<ClusterName, List<IPAddress>>, String> allocateMulti(List<ClusterSpec> clusters) {
         Objects.requireNonNull(clusters, "clusters cannot be null");
 
         if (clusters.isEmpty()) {
@@ -133,7 +126,7 @@ public class SequentialIpAllocator implements IpAllocator {
         // Phase 2: Multi-cluster requires explicit firstIp for each cluster
         // This validation is also done by SemanticValidator, but we check here too
         for (ClusterSpec cluster : clusters) {
-            if (cluster.firstIp().isEmpty()) {
+            if (cluster.firstIp() == null) {
                 return Result.failure(
                         String.format(
                                 "Multi-cluster configuration requires explicit firstIp for cluster '%s'",
@@ -144,8 +137,8 @@ public class SequentialIpAllocator implements IpAllocator {
         }
 
         // Allocate IPs for each cluster
-        var allocations = new LinkedHashMap<String, List<String>>();
-        var allAllocatedIps = new HashSet<String>();
+        var allocations = new LinkedHashMap<ClusterName, List<IPAddress>>();
+        var allAllocatedIps = new HashSet<IPAddress>();
 
         for (ClusterSpec cluster : clusters) {
             var result = allocate(cluster);
@@ -156,10 +149,10 @@ public class SequentialIpAllocator implements IpAllocator {
                 );
             }
 
-            List<String> ips = result.orElseThrow();
+            List<IPAddress> ips = result.orElseThrow();
 
             // Check for overlaps
-            for (String ip : ips) {
+            for (IPAddress ip : ips) {
                 if (allAllocatedIps.contains(ip)) {
                     return Result.failure(
                             String.format(
@@ -171,7 +164,7 @@ public class SequentialIpAllocator implements IpAllocator {
                 allAllocatedIps.add(ip);
             }
 
-            allocations.put(cluster.name().toString(), ips);
+            allocations.put(cluster.name(), ips);
         }
 
         return Result.success(allocations);
@@ -207,23 +200,16 @@ public class SequentialIpAllocator implements IpAllocator {
      * @param clusterName cluster name (for error messages)
      * @return Result with IP list or error message
      */
-    private Result<List<String>, String> allocateSequential(
-            String baseIp,
-            int count,
-            String clusterName,
-            Set<Integer> reservedHostIds
-    ) {
-        var ipAddressString = new IPAddressString(baseIp);
-        var ipAddress = ipAddressString.getAddress();
-
-        if (ipAddress == null) {
-            return Result.failure(
-                    String.format("Invalid IP address: '%s'", baseIp)
-            );
+    private Result<List<IPAddress>, String> allocateSequential(final IPAddress baseIp,
+                                                               final int count,
+                                                               final String clusterName,
+                                                               final Set<Integer> reservedHostIds) {
+        if (baseIp == null) {
+            return Result.failure("Invalid IP address");
         }
 
-        var allocatedIps = new ArrayList<String>();
-        IPAddress current = ipAddress;
+        var allocatedIps = new ArrayList<IPAddress>();
+        IPAddress current = baseIp;
 
         int allocated = 0;
         int attempts = 0;
@@ -248,7 +234,7 @@ public class SequentialIpAllocator implements IpAllocator {
 
             // Skip reserved IPs (except when caller excluded some, e.g., mgmt .5)
             if (!reservedHostIds.contains(hostId)) {
-                allocatedIps.add(current.toCanonicalString());
+                allocatedIps.add(current);
                 allocated++;
             }
 

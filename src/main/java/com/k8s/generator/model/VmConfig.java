@@ -1,7 +1,8 @@
 package com.k8s.generator.model;
 
+import inet.ipaddr.IPAddress;
+
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Immutable VM configuration record.
@@ -27,24 +28,22 @@ import java.util.Optional;
  *
  * <p>Example Usage:
  * <pre>{@code
- * // Kubeadm master node
+ * // Kubeadm master node (using convenience constructor)
  * var master = new VmConfig(
- *     "master-1",
+ *     VmName.of("master-1"),
  *     NodeRole.MASTER,
  *     "192.168.56.10",
- *     SizeProfile.MEDIUM,
- *     Optional.empty(),  // Use MEDIUM profile defaults (2 CPU, 4096 MB)
- *     Optional.empty()
+ *     SizeProfile.MEDIUM   // Use MEDIUM profile defaults (2 CPU, 4096 MB)
  * );
  *
  * // Worker node with custom resources
  * var worker = new VmConfig(
- *     "worker-1",
+ *     VmName.of("worker-1"),
  *     NodeRole.WORKER,
  *     "192.168.56.11",
  *     SizeProfile.LARGE,
- *     Optional.of(4),    // Override: 4 CPUs
- *     Optional.of(8192)  // Override: 8GB RAM
+ *     4,      // Override: 4 CPUs
+ *     8192    // Override: 8GB RAM
  * );
  * }</pre>
  *
@@ -52,8 +51,8 @@ import java.util.Optional;
  * @param role             VM role (MASTER, WORKER, CLUSTER, MANAGEMENT)
  * @param ip               IP address for this VM (e.g., "192.168.56.10")
  * @param sizeProfile      Base size profile (determines defaults for CPU/memory)
- * @param cpuOverride      Optional CPU count override (if present, overrides sizeProfile)
- * @param memoryMbOverride Optional memory override in MB (if present, overrides sizeProfile)
+ * @param cpuOverride      CPU count override (null uses sizeProfile default)
+ * @param memoryMbOverride Memory override in MB (null uses sizeProfile default)
  * @see NodeRole
  * @see SizeProfile
  * @see ClusterSpec
@@ -62,10 +61,82 @@ import java.util.Optional;
 public record VmConfig(
         VmName name,
         NodeRole role,
-        String ip,
+        IPAddress ip,
         SizeProfile sizeProfile,
-        Optional<Integer> cpuOverride,
-        Optional<Integer> memoryMbOverride) {
+        Integer cpuOverride,
+        Integer memoryMbOverride) {
+
+    /**
+     * Convenience constructor - no resource overrides (most common case).
+     * Uses sizeProfile defaults for CPU and memory.
+     *
+     * @param name        VM hostname
+     * @param role        VM role
+     * @param ip          IP address for this VM
+     * @param sizeProfile Size profile (determines CPU/memory)
+     */
+    public VmConfig(VmName name, NodeRole role, IPAddress ip, SizeProfile sizeProfile) {
+        this(name, role, ip, sizeProfile, null, null);
+    }
+
+    /**
+     * Convenience constructor accepting string IP address (no overrides).
+     * Parses IP using IPAddressString library and validates format.
+     *
+     * <p>This constructor is provided for backward compatibility and test convenience.
+     * Production code should prefer using IPAddress directly for type safety.
+     *
+     * @param name        VM hostname
+     * @param role        VM role
+     * @param ipString    IP address as string (e.g., "192.168.56.10")
+     * @param sizeProfile Size profile
+     * @throws IllegalArgumentException if IP string format is invalid
+     */
+    public VmConfig(VmName name, NodeRole role, String ipString, SizeProfile sizeProfile) {
+        this(name, role, parseIpAddress(ipString), sizeProfile, null, null);
+    }
+
+    /**
+     * Convenience constructor accepting string IP address with overrides.
+     * Parses IP using IPAddressString library and validates format.
+     *
+     * @param name             VM hostname
+     * @param role             VM role
+     * @param ipString         IP address as string (e.g., "192.168.56.10")
+     * @param sizeProfile      Size profile
+     * @param cpuOverride      CPU override (null uses sizeProfile default)
+     * @param memoryMbOverride Memory override (null uses sizeProfile default)
+     * @throws IllegalArgumentException if IP string format is invalid
+     */
+    public VmConfig(VmName name,
+                    NodeRole role,
+                    String ipString,
+                    SizeProfile sizeProfile,
+                    Integer cpuOverride,
+                    Integer memoryMbOverride) {
+        this(name, role, parseIpAddress(ipString), sizeProfile, cpuOverride, memoryMbOverride);
+    }
+
+    /**
+     * Helper method to parse and validate IP address strings.
+     *
+     * @param ipString IP address string
+     * @return parsed IPAddress object
+     * @throws IllegalArgumentException if IP format is invalid or blank
+     */
+    private static IPAddress parseIpAddress(String ipString) {
+        if (ipString == null || ipString.isBlank()) {
+            throw new IllegalArgumentException("ip cannot be blank");
+        }
+
+        inet.ipaddr.IPAddressString ipAddr = new inet.ipaddr.IPAddressString(ipString);
+        if (!ipAddr.isValid()) {
+            throw new IllegalArgumentException("Invalid IP address format: " + ipString);
+        }
+
+        return ipAddr.getAddress();
+    }
+
     /**
      * Compact constructor with structural validation.
      *
@@ -84,27 +155,19 @@ public record VmConfig(
         Objects.requireNonNull(role, "role is required");
         Objects.requireNonNull(ip, "ip is required");
         Objects.requireNonNull(sizeProfile, "sizeProfile is required");
-        Objects.requireNonNull(cpuOverride, "cpuOverride must be present (use Optional.empty())");
-        Objects.requireNonNull(memoryMbOverride, "memoryMbOverride must be present (use Optional.empty())");
+        // cpuOverride and memoryMbOverride are nullable - null means "use sizeProfile default"
 
         if (name.value().isBlank()) {
             throw new IllegalArgumentException("name cannot be blank");
         }
-        if (ip.isBlank()) {
-            throw new IllegalArgumentException("ip cannot be blank");
-        }
 
-        // Validate overrides if present
-        cpuOverride.ifPresent(cpu -> {
-            if (cpu <= 0) {
-                throw new IllegalArgumentException("cpuOverride must be positive, got: " + cpu);
-            }
-        });
-        memoryMbOverride.ifPresent(mem -> {
-            if (mem <= 0) {
-                throw new IllegalArgumentException("memoryMbOverride must be positive, got: " + mem);
-            }
-        });
+        // Validate overrides if present (not null)
+        if (cpuOverride != null && cpuOverride <= 0) {
+            throw new IllegalArgumentException("cpuOverride must be positive, got: " + cpuOverride);
+        }
+        if (memoryMbOverride != null && memoryMbOverride <= 0) {
+            throw new IllegalArgumentException("memoryMbOverride must be positive, got: " + memoryMbOverride);
+        }
     }
 
     /**
@@ -114,7 +177,7 @@ public record VmConfig(
      * @return CPU count (1+)
      */
     public int getEffectiveCpus() {
-        return cpuOverride.orElseGet(sizeProfile::getCpus);
+        return cpuOverride != null ? cpuOverride : sizeProfile.getCpus();
     }
 
     /**
@@ -124,7 +187,7 @@ public record VmConfig(
      * @return memory in megabytes (512+)
      */
     public int getEffectiveMemoryMb() {
-        return memoryMbOverride.orElseGet(sizeProfile::getMemoryMb);
+        return memoryMbOverride != null ? memoryMbOverride : sizeProfile.getMemoryMb();
     }
 
     /**

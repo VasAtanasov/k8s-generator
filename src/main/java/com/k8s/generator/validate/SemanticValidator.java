@@ -201,35 +201,44 @@ public class SemanticValidator implements ClusterSpecValidator {
 
     /**
      * Validates IP address format if firstIp is provided.
+     * Leverages IPAddress library for type checking and range validation.
      */
     private void validateIpAddressFormat(ClusterSpec spec, List<ValidationError> errors) {
-        spec.firstIp().ifPresent(ip -> {
-            if (!IPV4_PATTERN.matcher(ip).matches()) {
+        if (spec.firstIp() != null) {
+            var ip = spec.firstIp();
+            // Use library's type checking instead of regex
+            if (!ip.isIPv4()) {
                 errors.add(new ValidationError(
                         String.format("clusters[name='%s'].firstIp", spec.name()),
                         ValidationLevel.SEMANTIC,
-                        String.format("Invalid IPv4 address format: '%s'", ip),
-                        "Use format: xxx.xxx.xxx.xxx (e.g., '192.168.56.10')"
+                        String.format("Only IPv4 addresses supported, got: %s (IPv6 or invalid)",
+                            ip.toCanonicalString()),
+                        "Use IPv4 format: xxx.xxx.xxx.xxx (e.g., '192.168.56.10')"
                 ));
+                return;  // Skip further validation if not IPv4
             }
 
-            // Warn about reserved/special IPs
-            if (ip.startsWith("0.") || ip.startsWith("127.") || ip.startsWith("255.")) {
+            // Convert to string for range prefix checks
+            String canonical = ip.toCanonicalString();
+
+            // Warn about reserved/special IP ranges
+            if (canonical.startsWith("0.") || canonical.startsWith("127.") ||
+                canonical.startsWith("255.")) {
                 errors.add(new ValidationError(
                         String.format("clusters[name='%s'].firstIp", spec.name()),
                         ValidationLevel.SEMANTIC,
-                        String.format("Invalid IP address range: '%s'", ip),
+                        String.format("Reserved IP address range: '%s'", canonical),
                         "Use private network ranges: 192.168.x.x, 172.16-31.x.x, or 10.x.x.x"
                 ));
             }
-        });
+        }
     }
 
     /**
      * Validates that multi-cluster setups have explicit firstIp for each cluster.
      */
     private void validateMultiClusterIpRequirement(ClusterSpec spec, boolean isMultiCluster, List<ValidationError> errors) {
-        if (isMultiCluster && spec.firstIp().isEmpty()) {
+        if (isMultiCluster && spec.firstIp() == null) {
             errors.add(new ValidationError(
                     String.format("clusters[name='%s'].firstIp", spec.name()),
                     ValidationLevel.SEMANTIC,

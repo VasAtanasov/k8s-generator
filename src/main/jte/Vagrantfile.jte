@@ -29,7 +29,7 @@ Vagrant.configure("2") do |config|
 
     @for(VmConfig vm : vms)config.vm.define "${vm.name().value()}" do |node|
         node.vm.hostname = "${vm.name().value()}"
-        node.vm.network "private_network", ip: "${vm.ip()}"
+        node.vm.network "private_network", ip: "${vm.ip().toCanonicalString()}"
 
         node.vm.provider "virtualbox" do |vb|
             vb.memory = ${vm.getEffectiveMemoryMb()}

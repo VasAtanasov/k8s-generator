@@ -18,6 +18,7 @@
         <junit.version>5.10.0</junit.version>
         <assertj.version>3.24.2</assertj.version>
         <lombok.version>1.18.42</lombok.version>
+        <ipaddress.version>5.4.0</ipaddress.version>
     </properties>
 
     <dependencies>
@@ -47,7 +48,7 @@
         <dependency>
             <groupId>com.github.seancfoley</groupId>
             <artifactId>ipaddress</artifactId>
-            <version>5.4.0</version>
+            <version>${ipaddress.version}</version>
         </dependency>
 
         <!-- Testing -->

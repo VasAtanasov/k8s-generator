@@ -155,11 +155,9 @@ final class EnvPlanner {
      *
      * <p>Variables added based on cluster type:
      * <ul>
-     *   <li><b>KUBEADM</b>: CNI_TYPE (if specified), KUBE_API_PORT</li>
+     *   <li><b>KUBEADM</b>: CNI_TYPE (if specified), KUBE_API_PORT, K8S_POD_CIDR, K8S_SVC_CIDR</li>
      *   <li><b>KIND/MINIKUBE</b>: No additional variables</li>
      * </ul>
-     *
-     * <p>Future: Pod/Service network CIDRs (blocked by architecture review P5)
      *
      * @param out     output map (mutable)
      * @param cluster cluster specification
@@ -167,14 +165,20 @@ final class EnvPlanner {
     private static void buildEngineGlobalEnv(Map<String, String> out, ClusterSpec cluster) {
         // CNI type only for kubeadm clusters
         if (cluster.type() == ClusterType.KUBEADM) {
-            cluster.cni().ifPresent(cniType -> out.put("CNI_TYPE", cniType.name().toLowerCase(Locale.ROOT)));
+            if (cluster.cni() != null) {
+                out.put("CNI_TYPE", cluster.cni().name().toLowerCase(Locale.ROOT));
+            }
 
             // Kubeadm API server port
             out.put("KUBE_API_PORT", String.valueOf(KUBE_API_PORT_DEFAULT));
 
-            // TODO(P5): Uncomment when ClusterSpec has podNetwork/svcNetwork fields
-            // cluster.podNetwork().ifPresent(cidr -> out.put("K8S_POD_CIDR", cidr));
-            // cluster.svcNetwork().ifPresent(cidr -> out.put("K8S_SVC_CIDR", cidr));
+            // Pod and Service network CIDRs for kubeadm
+            if (cluster.podNetwork() != null) {
+                out.put("K8S_POD_CIDR", cluster.podNetwork().toCIDRString());
+            }
+            if (cluster.svcNetwork() != null) {
+                out.put("K8S_SVC_CIDR", cluster.svcNetwork().toCIDRString());
+            }
         }
     }
 
@@ -220,7 +224,7 @@ final class EnvPlanner {
     private static void buildBasePerVmEnv(Map<String, String> out, VmConfig vm) {
         out.put("VM_NAME", vm.name().value());
         out.put("ROLE", vm.role().name().toLowerCase(Locale.ROOT));
-        out.put("VM_IP", vm.ip());
+        out.put("VM_IP", vm.ip().toCanonicalString());
     }
 
     /**

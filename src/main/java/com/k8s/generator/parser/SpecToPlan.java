@@ -3,6 +3,8 @@ package com.k8s.generator.parser;
 import com.k8s.generator.ip.IpAllocator;
 import com.k8s.generator.ip.SequentialIpAllocator;
 import com.k8s.generator.model.*;
+import inet.ipaddr.IPAddress;
+import inet.ipaddr.IPAddressString;
 
 import java.util.*;
 
@@ -142,7 +144,7 @@ public final class SpecToPlan implements PlanBuilder {
                     "IP allocation failed: " + ipResult.getError()
             );
         }
-        List<String> allocatedIps = ipResult.orElseThrow();
+        List<IPAddress> allocatedIps = ipResult.orElseThrow();
 
         // 2. Generate VMs with allocated IPs
         List<VmConfig> vms = generateVms(cluster, allocatedIps);
@@ -170,7 +172,7 @@ public final class SpecToPlan implements PlanBuilder {
      * @return list of VmConfig with assigned IPs
      * @throws IllegalStateException if IP count doesn't match expected VM count
      */
-    private List<VmConfig> generateVms(ClusterSpec cluster, List<String> allocatedIps) {
+    private List<VmConfig> generateVms(ClusterSpec cluster, List<IPAddress> allocatedIps) {
         return switch (cluster.type()) {
             case KIND, MINIKUBE -> {
                 if (allocatedIps.size() != 1) {
@@ -210,14 +212,14 @@ public final class SpecToPlan implements PlanBuilder {
      * @param ip      allocated IP address
      * @return VmConfig for single-node cluster
      */
-    private VmConfig createSingleNodeVm(ClusterSpec cluster, String ip) {
+    private VmConfig createSingleNodeVm(ClusterSpec cluster, IPAddress ip) {
         return new VmConfig(
                 VmName.of(cluster.name().value()),
                 NodeRole.CLUSTER,
                 ip,
                 cluster.sizeProfile(),
-                Optional.empty(),           // No CPU override
-                Optional.empty()            // No memory override
+                null,           // No CPU override
+                null            // No memory override
         );
     }
 
@@ -236,14 +238,14 @@ public final class SpecToPlan implements PlanBuilder {
      * @param ip      allocated IP address
      * @return VmConfig for management VM
      */
-    private VmConfig createManagementVm(ClusterSpec cluster, String ip) {
+    private VmConfig createManagementVm(ClusterSpec cluster, IPAddress ip) {
         return new VmConfig(
                 VmName.of(cluster.name().value()),
                 NodeRole.MANAGEMENT,
                 ip,
                 cluster.sizeProfile(),
-                Optional.empty(),
-                Optional.empty()
+                null,
+                null
         );
     }
 
@@ -267,7 +269,7 @@ public final class SpecToPlan implements PlanBuilder {
      * @return list of VmConfig (masters first, then workers)
      * @throws IllegalStateException if IP count doesn't match masters + workers
      */
-    private List<VmConfig> createKubeadmVms(ClusterSpec cluster, List<String> allocatedIps) {
+    private List<VmConfig> createKubeadmVms(ClusterSpec cluster, List<IPAddress> allocatedIps) {
         int expectedVmCount = cluster.masters() + cluster.workers();
         if (allocatedIps.size() != expectedVmCount) {
             throw new IllegalStateException(
@@ -289,8 +291,8 @@ public final class SpecToPlan implements PlanBuilder {
                     NodeRole.MASTER,
                     allocatedIps.get(ipIndex++),
                     cluster.sizeProfile(),
-                    Optional.empty(),
-                    Optional.empty()
+                    null,
+                    null
             ));
         }
 
@@ -302,8 +304,8 @@ public final class SpecToPlan implements PlanBuilder {
                     NodeRole.WORKER,
                     allocatedIps.get(ipIndex++),
                     cluster.sizeProfile(),
-                    Optional.empty(),
-                    Optional.empty()
+                    null,
+                    null
             ));
         }
 
@@ -358,10 +360,10 @@ public final class SpecToPlan implements PlanBuilder {
         return new VmConfig(
                 VmName.of("dummy"),
                 NodeRole.CLUSTER,
-                "192.168.56.10",
+                new IPAddressString("192.168.56.10").getAddress(),
                 SizeProfile.MEDIUM,
-                Optional.empty(),
-                Optional.empty()
+                null,
+                null
         );
     }
 }

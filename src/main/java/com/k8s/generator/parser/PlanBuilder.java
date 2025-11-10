@@ -49,7 +49,7 @@ import com.k8s.generator.model.ScaffoldPlan;
  * var spec = new GeneratorSpec(
  *     new ModuleInfo("m1", "pt"),
  *     List.of(
- *         new ClusterSpec("clu-m1-pt-kind", ClusterType.KIND, Optional.empty(), 0, 0,
+ *         new ClusterSpec("clu-m1-pt-kind", ClusterType.KIND, null, 0, 0,
  *                        SizeProfile.MEDIUM, List.of())
  *     )
  * );

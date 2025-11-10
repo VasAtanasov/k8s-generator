@@ -3,6 +3,7 @@ package com.k8s.generator.orchestrator;
 import com.k8s.generator.ip.IpAllocator;
 import com.k8s.generator.model.ClusterSpec;
 import com.k8s.generator.model.Result;
+import inet.ipaddr.IPAddress;
 
 import java.util.List;
 import java.util.Objects;
@@ -99,8 +100,8 @@ public class ClusterOrchestrator {
         // Allocate IPs using pattern matching
         var ipResult = ipAllocator.allocate(cluster);
         return switch (ipResult) {
-            case Result.Success<List<String>, String> success -> generateVmsWithAllocatedIps(cluster, success.value());
-            case Result.Failure<List<String>, String> failure -> Result.failure(
+            case Result.Success<List<IPAddress>, String> success -> generateVmsWithAllocatedIps(cluster, success.value());
+            case Result.Failure<List<IPAddress>, String> failure -> Result.failure(
                     "IP allocation failed for cluster '" + cluster.name() + "': " + failure.error()
             );
         };
@@ -115,7 +116,7 @@ public class ClusterOrchestrator {
      * @return Result containing enriched ClusterSpec with VMs, or error message
      */
     private Result<ClusterSpec, String> generateVmsWithAllocatedIps(final ClusterSpec cluster,
-                                                                    final List<String> allocatedIps) {
+                                                                    final List<IPAddress> allocatedIps) {
         try {
             var generatedVms = vmGenerator.generate(cluster, allocatedIps);
             var enrichedCluster = cluster.withVms(generatedVms);

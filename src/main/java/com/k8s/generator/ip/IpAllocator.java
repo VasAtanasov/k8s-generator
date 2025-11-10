@@ -1,7 +1,9 @@
 package com.k8s.generator.ip;
 
+import com.k8s.generator.model.ClusterName;
 import com.k8s.generator.model.ClusterSpec;
 import com.k8s.generator.model.Result;
+import inet.ipaddr.IPAddress;
 
 import java.util.List;
 import java.util.Map;
@@ -87,7 +89,7 @@ public interface IpAllocator {
      * @throws NullPointerException if spec is null
      * @see ClusterSpec
      */
-    Result<List<String>, String> allocate(ClusterSpec spec);
+    Result<List<IPAddress>, String> allocate(ClusterSpec spec);
 
     /**
      * Allocates IP addresses for multiple clusters with overlap detection.
@@ -111,5 +113,5 @@ public interface IpAllocator {
      * @return Result containing map of cluster name to IP list, or error message
      * @throws NullPointerException if clusters is null
      */
-    Result<Map<String, List<String>>, String> allocateMulti(List<ClusterSpec> clusters);
+    Result<Map<ClusterName, List<IPAddress>>, String> allocateMulti(List<ClusterSpec> clusters);
 }
