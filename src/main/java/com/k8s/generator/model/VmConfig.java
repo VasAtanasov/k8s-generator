@@ -67,8 +67,8 @@ public record VmConfig(
         NodeRole role,
         IPAddress ip,
         SizeProfile sizeProfile,
-        Integer cpuOverride,
-        Integer memoryMbOverride) {
+        CPUCount cpuOverride,
+        MemoryInMB memoryMbOverride) {
 
     public static class VmConfigBuilder {
 
@@ -89,6 +89,31 @@ public record VmConfig(
 
         public VmConfigBuilder ip(String ipString) {
             this.ip = parseIpAddress(ipString);
+            return this;
+        }
+
+        /**
+         * Convenience to set CPU override from primitive value.
+         */
+        public VmConfigBuilder cpuOverride(int cpus) {
+            this.cpuOverride = CPUCount.of(cpus);
+            return this;
+        }
+
+        /**
+         * Convenience to set Memory override in megabytes.
+         * Kept for backward-compatibility with existing callers.
+         */
+        public VmConfigBuilder memoryMbOverride(int megabytes) {
+            this.memoryMbOverride = MemoryInMB.ofMegabytes(megabytes);
+            return this;
+        }
+
+        /**
+         * Set memory override using a MemoryInMB value object.
+         */
+        public VmConfigBuilder memoryMbOverride(MemoryInMB memory) {
+            this.memoryMbOverride = memory;
             return this;
         }
     }
@@ -135,19 +160,13 @@ public record VmConfig(
         Objects.requireNonNull(role, "role is required");
         Objects.requireNonNull(ip, "ip is required");
         Objects.requireNonNull(sizeProfile, "sizeProfile is required");
-        // cpuOverride and memoryMbOverride are nullable - null means "use sizeProfile default"
+        // cpuOverride and memoryOverride are nullable - null means "use sizeProfile default"
 
         if (name.value().isBlank()) {
             throw new IllegalArgumentException("name cannot be blank");
         }
 
-        // Validate overrides if present (not null)
-        if (cpuOverride != null && cpuOverride <= 0) {
-            throw new IllegalArgumentException("cpuOverride must be positive, got: " + cpuOverride);
-        }
-        if (memoryMbOverride != null && memoryMbOverride <= 0) {
-            throw new IllegalArgumentException("memoryMbOverride must be positive, got: " + memoryMbOverride);
-        }
+        // Validation of overrides is handled by the value objects themselves (CPUCount, MemoryInMB)
     }
 
     /**
@@ -157,7 +176,7 @@ public record VmConfig(
      * @return CPU count (1+)
      */
     public int getEffectiveCpus() {
-        return cpuOverride != null ? cpuOverride : sizeProfile.getCpus();
+        return cpuOverride != null ? cpuOverride.toInt() : sizeProfile.getCpus();
     }
 
     /**
@@ -167,7 +186,7 @@ public record VmConfig(
      * @return memory in megabytes (512+)
      */
     public int getEffectiveMemoryMb() {
-        return memoryMbOverride != null ? memoryMbOverride : sizeProfile.getMemoryMb();
+        return memoryMbOverride != null ? memoryMbOverride.toMegabytes() : sizeProfile.getMemoryMb();
     }
 
     /**

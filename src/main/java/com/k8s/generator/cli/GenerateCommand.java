@@ -51,6 +51,9 @@ public final class GenerateCommand implements Callable<Integer> {
     @Option(names = {"--dry-run"}, description = "Show planned VMs/files and exit without writing")
     public boolean dryRun;
 
+    @Option(names = {"--azure"}, description = "Enable Azure integration (installs Azure CLI and configures management VM)")
+    public boolean azure;
+
     @Override
     public Integer call() {
         return ScaffoldService.create().scaffold(this);

@@ -3,6 +3,7 @@ package com.k8s.generator.model;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Template-ready scaffold plan - represents the complete output model for rendering.
@@ -71,9 +72,11 @@ import java.util.Objects;
  * );
  * }</pre>
  *
- * @param module  Module metadata (module number + type)
- * @param vms     List of VMs to provision (1+ required, with allocated IPs)
- * @param envVars Environment variables for bootstrap scripts
+ * @param module    Module metadata (module number + type)
+ * @param vms       List of VMs to provision (1+ required, with allocated IPs)
+ * @param envVars   Environment variables for bootstrap scripts
+ * @param vmEnv     Per-VM environment variables
+ * @param providers Set of cloud provider names (e.g., "azure", "aws", "gcp"); never null, use Set.of() for empty
  * @see ModuleInfo
  * @see VmConfig
  * @see NodeRole
@@ -85,7 +88,8 @@ public record ScaffoldPlan(
         ModuleInfo module,
         List<VmConfig> vms,
         Map<String, String> envVars,
-        Map<VmName, Map<String, String>> vmEnv) {
+        Map<VmName, Map<String, String>> vmEnv,
+        Set<String> providers) {
     /**
      * Compact constructor with structural validation.
      *
@@ -95,6 +99,7 @@ public record ScaffoldPlan(
      *   <li>VMs list is non-empty (at least 1 VM required)</li>
      *   <li>VMs list contains no null elements</li>
      *   <li>Environment variables map contains no null keys or values</li>
+     *   <li>Providers set contains no null or blank elements</li>
      * </ul>
      *
      * <p>Note: This constructor assumes the plan has been validated.
@@ -103,6 +108,7 @@ public record ScaffoldPlan(
      *   <li>IP format or uniqueness</li>
      *   <li>VM naming patterns</li>
      *   <li>Environment variable content</li>
+     *   <li>Provider name validity (e.g., "azure" vs "azur")</li>
      * </ul>
      *
      * @throws IllegalArgumentException if any structural validation fails
@@ -113,6 +119,7 @@ public record ScaffoldPlan(
         Objects.requireNonNull(vms, "vms list is required");
         Objects.requireNonNull(envVars, "envVars map is required (use Map.of() for empty)");
         Objects.requireNonNull(vmEnv, "vmEnv map is required (use Map.of() for empty)");
+        Objects.requireNonNull(providers, "providers set is required (use Set.of() for empty)");
 
         // Empty check for VMs
         if (vms.isEmpty()) {
@@ -153,9 +160,20 @@ public record ScaffoldPlan(
             }
         }
 
+        // Providers validation
+        for (String provider : providers) {
+            if (provider == null) {
+                throw new IllegalArgumentException("providers set contains null element");
+            }
+            if (provider.isBlank()) {
+                throw new IllegalArgumentException("providers set contains blank element");
+            }
+        }
+
         // Make defensive copies to ensure immutability
         vms = List.copyOf(vms);
         envVars = Map.copyOf(envVars);
+        providers = Set.copyOf(providers);
         // Deep copy vmEnv (shallow copy of inner maps wrapped as unmodifiable)
         var copied = new java.util.LinkedHashMap<VmName, Map<String, String>>();
         for (Map.Entry<VmName, Map<String, String>> e : vmEnv.entrySet()) {
@@ -260,6 +278,7 @@ public record ScaffoldPlan(
     /**
      * Returns a new ScaffoldPlan with updated VMs list.
      * Used by plan builders or post-processors.
+     * Preserves providers from the original plan.
      *
      * @param newVms new VMs list (must not be null or empty)
      * @return new ScaffoldPlan with updated VMs
@@ -267,12 +286,13 @@ public record ScaffoldPlan(
      */
     public ScaffoldPlan withVms(List<VmConfig> newVms) {
         Objects.requireNonNull(newVms, "newVms cannot be null");
-        return new ScaffoldPlan(module, newVms, envVars, vmEnv);
+        return new ScaffoldPlan(module, newVms, envVars, vmEnv, providers);
     }
 
     /**
      * Returns a new ScaffoldPlan with updated environment variables.
      * Used by plan builders to add or modify environment variables.
+     * Preserves providers from the original plan.
      *
      * @param newEnvVars new environment variables map (must not be null)
      * @return new ScaffoldPlan with updated environment variables
@@ -280,17 +300,37 @@ public record ScaffoldPlan(
      */
     public ScaffoldPlan withEnvVars(Map<String, String> newEnvVars) {
         Objects.requireNonNull(newEnvVars, "newEnvVars cannot be null");
-        return new ScaffoldPlan(module, vms, newEnvVars, vmEnv);
+        return new ScaffoldPlan(module, vms, newEnvVars, vmEnv, providers);
     }
 
     /**
      * Returns a new ScaffoldPlan with updated per-VM environment variables.
+     * Preserves providers from the original plan.
      *
      * @param newVmEnv map of VM name → env vars (must not be null)
      * @return new ScaffoldPlan with updated vmEnv
      */
     public ScaffoldPlan withVmEnv(Map<VmName, Map<String, String>> newVmEnv) {
         Objects.requireNonNull(newVmEnv, "newVmEnv cannot be null");
-        return new ScaffoldPlan(module, vms, envVars, newVmEnv);
+        return new ScaffoldPlan(module, vms, envVars, newVmEnv, providers);
+    }
+
+    /**
+     * Checks if any cloud providers are configured.
+     *
+     * @return true if providers set is non-empty
+     */
+    public boolean hasProviders() {
+        return !providers.isEmpty();
+    }
+
+    /**
+     * Checks if a specific provider is configured.
+     *
+     * @param providerName provider name (e.g., "azure", "aws", "gcp")
+     * @return true if provider is in providers set
+     */
+    public boolean hasProvider(String providerName) {
+        return providers.contains(providerName);
     }
 }

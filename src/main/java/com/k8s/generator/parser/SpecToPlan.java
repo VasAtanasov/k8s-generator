@@ -151,12 +151,14 @@ public final class SpecToPlan implements PlanBuilder {
         // 2. Generate VMs with allocated IPs
         List<VmConfig> vms = generateVms(cluster, allocatedIps);
 
-        // 3. Build environment variables (global + per-VM)
+        // 3. Extract providers from management configuration
         var providers = extractProviders(spec);
+
+        // 4. Build environment variables (global + per-VM)
         var envSet = EnvPlanner.build(spec.module(), cluster, vms, providers);
 
-        // 4. Create ScaffoldPlan
-        return new ScaffoldPlan(spec.module(), vms, envSet.global(), envSet.perVm());
+        // 5. Create ScaffoldPlan
+        return new ScaffoldPlan(spec.module(), vms, envSet.global(), envSet.perVm(), providers);
     }
 
     /**
@@ -307,15 +309,22 @@ public final class SpecToPlan implements PlanBuilder {
     /**
      * Extracts cloud providers from GeneratorSpec.
      *
-     * <p>Phase 2: Returns empty set (no provider support yet)
-     * <p>Future (P5): Extract from ManagementSpec or ClusterSpec.tools()
+     * <p>Phase 2+ Implementation:
+     * <ul>
+     *   <li>If spec.management is null: Return empty set (no providers)</li>
+     *   <li>If spec.management is present: Return Set.copyOf(management.providers())</li>
+     * </ul>
+     *
+     * <p>Provider names are validated by Management compact constructor to be non-null and non-blank.
+     * This method simply extracts and returns them as an immutable set.
      *
      * @param spec generator specification
-     * @return set of provider names (e.g., "azure", "aws") - currently always empty
+     * @return set of provider names (e.g., "azure", "aws", "gcp"); empty set if no management
      */
     private Set<String> extractProviders(GeneratorSpec spec) {
-        // TODO(P5): Extract from ManagementSpec when architecture review P5 is implemented
-        // For now, return empty set (local-only clusters)
-        return Set.of();
+        if (spec.management() == null) {
+            return Set.of();
+        }
+        return Set.copyOf(spec.management().providers());
     }
 }

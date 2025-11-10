@@ -1,5 +1,8 @@
 package com.k8s.generator.model;
 
+import lombok.Builder;
+import lombok.Singular;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -59,31 +62,37 @@ import java.util.Objects;
  * );
  * }</pre>
  *
- * @param module   Module metadata (module number + type)
- * @param clusters List of cluster specifications (1+ required, Phase 1 = exactly 1)
+ * @param module     Module metadata (module number + type)
+ * @param clusters   List of cluster specifications (1+ required, Phase 1 = exactly 1)
+ * @param management Management VM configuration (nullable; null means no management VM)
  * @see ModuleInfo
  * @see ClusterSpec
+ * @see Management
  * @see ScaffoldPlan
  * @see com.k8s.generator.parser.SpecConverter
  * @since 1.0.0
  */
+@Builder
 public record GeneratorSpec(
         ModuleInfo module,
-        List<ClusterSpec> clusters) {
+        @Singular List<ClusterSpec> clusters,
+        Management management) {
     /**
      * Compact constructor with structural validation.
      *
      * <p>Validates:
      * <ul>
-     *   <li>All required fields are non-null</li>
+     *   <li>Module and clusters are non-null</li>
      *   <li>Clusters list is non-empty (at least 1 cluster required)</li>
      *   <li>Clusters list contains no null elements</li>
+     *   <li>Management field is nullable (null means no management VM)</li>
      * </ul>
      *
      * <p>Note: This constructor does NOT validate:
      * <ul>
      *   <li>Module format (handled by ModuleInfo compact constructor)</li>
      *   <li>Cluster specifications (handled by ClusterSpec compact constructor)</li>
+     *   <li>Management specification (handled by Management compact constructor)</li>
      *   <li>Cluster name uniqueness (handled by PolicyValidator)</li>
      *   <li>IP allocation conflicts (handled by PolicyValidator)</li>
      * </ul>
@@ -91,7 +100,7 @@ public record GeneratorSpec(
      * @throws IllegalArgumentException if any structural validation fails
      */
     public GeneratorSpec {
-        // Null checks
+        // Null checks for required fields
         Objects.requireNonNull(module, "module is required");
         Objects.requireNonNull(clusters, "clusters list is required (use List.of() if empty, but at least 1 required)");
 
@@ -158,6 +167,7 @@ public record GeneratorSpec(
     /**
      * Returns a new GeneratorSpec with updated clusters list.
      * Used by validators or plan builders to update cluster configurations.
+     * Preserves the management field from the original spec.
      *
      * @param newClusters new clusters list (must not be null or empty)
      * @return new GeneratorSpec with updated clusters
@@ -165,6 +175,15 @@ public record GeneratorSpec(
      */
     public GeneratorSpec withClusters(List<ClusterSpec> newClusters) {
         Objects.requireNonNull(newClusters, "newClusters cannot be null");
-        return new GeneratorSpec(module, newClusters);
+        return new GeneratorSpec(module, newClusters, management);
+    }
+
+    /**
+     * Checks if this spec has a management VM configured.
+     *
+     * @return true if management is non-null
+     */
+    public boolean hasManagement() {
+        return management != null;
     }
 }

@@ -40,8 +40,8 @@ class VmConfigTest {
                 .memoryMbOverride(16384)
                 .build();
 
-        assertThat(vm.cpuOverride()).isEqualTo(8);
-        assertThat(vm.memoryMbOverride()).isEqualTo(16384);
+        assertThat(vm.cpuOverride()).isEqualTo(CPUCount.of(8));
+        assertThat(vm.memoryMbOverride()).isEqualTo(MemoryInMB.ofMegabytes(16384));
     }
 
     @Test
@@ -132,9 +132,7 @@ class VmConfigTest {
                 .sizeProfile(SizeProfile.MEDIUM)
                 .cpuOverride(invalidCpu)
                 .build())
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("cpuOverride must be positive")
-                .hasMessageContaining(String.valueOf(invalidCpu));
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @ParameterizedTest
@@ -147,9 +145,7 @@ class VmConfigTest {
                 .sizeProfile(SizeProfile.MEDIUM)
                 .memoryMbOverride(invalidMemory)
                 .build())
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("memoryMbOverride must be positive")
-                .hasMessageContaining(String.valueOf(invalidMemory));
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

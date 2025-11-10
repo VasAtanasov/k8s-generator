@@ -5,7 +5,11 @@
       "Bash(mvn test:*)",
       "Bash(find:*)",
       "Bash(mvn clean test:*)",
-      "Bash(mvn clean test-compile:*)"
+      "Bash(mvn clean test-compile:*)",
+      "Bash(sed:*)",
+      "Bash(mvn test-compile:*)",
+      "Bash(xargs:*)",
+      "Bash(mvn compile:*)"
     ],
     "deny": [],
     "ask": []

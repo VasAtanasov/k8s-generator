@@ -91,8 +91,15 @@ public final class CliToSpec implements SpecConverter {
         // 4. Resolve size profile
         ClusterSpec cluster = getClusterSpec(cmd, clusterType, clusterName);
 
-        // 5. Create single-cluster spec (Phase 1 MVP)
-        return new GeneratorSpec(module, List.of(cluster));
+        // 5. Build management configuration if --azure flag is present
+        Management management = buildManagement(cmd, module);
+
+        // 6. Create single-cluster spec (Phase 1 MVP)
+        return GeneratorSpec.builder()
+                .module(module)
+                .cluster(cluster)
+                .management(management)
+                .build();
     }
 
     private ClusterSpec getClusterSpec(final GenerateCommand cmd,
@@ -235,5 +242,40 @@ public final class CliToSpec implements SpecConverter {
 
     private static int parseCount(String part) {
         return Integer.parseInt(part.substring(0, part.length() - 1));
+    }
+
+    /**
+     * Builds Management configuration based on CLI flags.
+     *
+     * <p>Phase 2 Implementation:
+     * <ul>
+     *   <li>If --azure flag is present: Create Management with Azure provider</li>
+     *   <li>Otherwise: Return null (no management VM)</li>
+     * </ul>
+     *
+     * <p>Management VM Convention:
+     * <ul>
+     *   <li>Name: mgmt-{module-num}-{module-type} (e.g., "mgmt-m7-hw")</li>
+     *   <li>Providers: ["azure"] when --azure flag is present</li>
+     *   <li>Aggregate kubeconfigs: true (always for now)</li>
+     *   <li>Tools: ["kubectl", "azure_cli"] when --azure is present</li>
+     * </ul>
+     *
+     * @param cmd    CLI command with flags
+     * @param module module info for naming
+     * @return Management instance if --azure is present, null otherwise
+     */
+    private Management buildManagement(GenerateCommand cmd, ModuleInfo module) {
+        if (!cmd.azure) {
+            return null;
+        }
+
+        return Management.builder()
+                .name(String.format("mgmt-%s-%s", module.num(), module.type()))
+                .provider("azure")
+                .aggregateKubeconfigs()
+                .tool("kubectl")
+                .tool("azure_cli")
+                .build();
     }
 }
