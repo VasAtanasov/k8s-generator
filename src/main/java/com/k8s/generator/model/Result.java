@@ -47,7 +47,6 @@ import java.util.function.Function;
  *
  * @param <T> Success value type
  * @param <E> Error value type
- *
  * @since 1.0.0
  */
 public sealed interface Result<T, E> {
@@ -56,8 +55,8 @@ public sealed interface Result<T, E> {
      * Success case containing a valid result value.
      *
      * @param value the success value (must be non-null)
-     * @param <T> success type
-     * @param <E> error type (unused in success case)
+     * @param <T>   success type
+     * @param <E>   error type (unused in success case)
      */
     record Success<T, E>(T value) implements Result<T, E> {
         public Success {
@@ -69,8 +68,8 @@ public sealed interface Result<T, E> {
      * Failure case containing an error value.
      *
      * @param error the error value (must be non-null)
-     * @param <T> success type (unused in failure case)
-     * @param <E> error type
+     * @param <T>   success type (unused in failure case)
+     * @param <E>   error type
      */
     record Failure<T, E>(E error) implements Result<T, E> {
         public Failure {
@@ -82,8 +81,8 @@ public sealed interface Result<T, E> {
      * Creates a successful result.
      *
      * @param value success value (must be non-null)
-     * @param <T> success type
-     * @param <E> error type
+     * @param <T>   success type
+     * @param <E>   error type
      * @return Success instance containing value
      * @throws NullPointerException if value is null
      */
@@ -95,8 +94,8 @@ public sealed interface Result<T, E> {
      * Creates a failed result.
      *
      * @param error error value (must be non-null)
-     * @param <T> success type
-     * @param <E> error type
+     * @param <T>   success type
+     * @param <E>   error type
      * @return Failure instance containing error
      * @throws NullPointerException if error is null
      */
@@ -138,6 +137,19 @@ public sealed interface Result<T, E> {
     }
 
     /**
+     * Returns the value if success, or throws exception if failure.
+     *
+     * @return the success value
+     * @throws RuntimeException if this is a Failure
+     */
+    default T orElseThrow() {
+        return switch (this) {
+            case Success<T, E> s -> s.value();
+            case Failure<T, E> f -> throw new RuntimeException("Operation failed: " + f.error());
+        };
+    }
+
+    /**
      * Returns the success value if present, otherwise returns the default value.
      *
      * @param defaultValue value to return if this is a failure
@@ -167,7 +179,7 @@ public sealed interface Result<T, E> {
      * Failures pass through unchanged.
      *
      * @param mapper transformation function
-     * @param <U> new success type
+     * @param <U>    new success type
      * @return Result with transformed value or original failure
      */
     default <U> Result<U, E> map(Function<T, U> mapper) {
@@ -183,7 +195,7 @@ public sealed interface Result<T, E> {
      * Used for chaining operations that can fail.
      *
      * @param mapper function that returns a Result
-     * @param <U> new success type
+     * @param <U>    new success type
      * @return Result from mapper if success, original failure otherwise
      */
     default <U> Result<U, E> flatMap(Function<T, Result<U, E>> mapper) {
@@ -199,7 +211,7 @@ public sealed interface Result<T, E> {
      * Successes pass through unchanged.
      *
      * @param mapper transformation function for errors
-     * @param <F> new error type
+     * @param <F>    new error type
      * @return Result with original value or transformed error
      */
     default <F> Result<T, F> mapError(Function<? super E, ? extends F> mapper) {
@@ -207,6 +219,18 @@ public sealed interface Result<T, E> {
         return switch (this) {
             case Success<T, E> s -> Result.success(s.value());
             case Failure<T, E> f -> Result.failure(mapper.apply(f.error()));
+        };
+    }
+
+    /**
+     * Returns the error if failure, or null if success.
+     *
+     * @return the error value or null
+     */
+    default E getError() {
+        return switch (this) {
+            case Success<T, E> s -> null;
+            case Failure<T, E> f -> f.error();
         };
     }
 }

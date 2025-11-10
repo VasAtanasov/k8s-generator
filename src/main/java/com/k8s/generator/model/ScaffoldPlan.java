@@ -84,7 +84,8 @@ import java.util.Objects;
 public record ScaffoldPlan(
         ModuleInfo module,
         List<VmConfig> vms,
-        Map<String, String> envVars) {
+        Map<String, String> envVars,
+        Map<VmName, Map<String, String>> vmEnv) {
     /**
      * Compact constructor with structural validation.
      *
@@ -111,6 +112,7 @@ public record ScaffoldPlan(
         Objects.requireNonNull(module, "module is required");
         Objects.requireNonNull(vms, "vms list is required");
         Objects.requireNonNull(envVars, "envVars map is required (use Map.of() for empty)");
+        Objects.requireNonNull(vmEnv, "vmEnv map is required (use Map.of() for empty)");
 
         // Empty check for VMs
         if (vms.isEmpty()) {
@@ -123,16 +125,43 @@ public record ScaffoldPlan(
         }
 
         // Environment variables validation
-        if (envVars.containsKey(null)) {
-            throw new IllegalArgumentException("envVars map contains null key");
+        for (Map.Entry<String, String> e : envVars.entrySet()) {
+            if (e.getKey() == null) {
+                throw new IllegalArgumentException("envVars map contains null key");
+            }
+            if (e.getValue() == null) {
+                throw new IllegalArgumentException("envVars map contains null value for key '" + e.getKey() + "'");
+            }
         }
-        if (envVars.containsValue(null)) {
-            throw new IllegalArgumentException("envVars map contains null value");
+
+        // Per-VM environment validation
+        for (Map.Entry<VmName, Map<String, String>> e : vmEnv.entrySet()) {
+            if (e.getKey() == null) {
+                throw new IllegalArgumentException("vmEnv map contains null VM key");
+            }
+            Map<String, String> m = e.getValue();
+            if (m == null) {
+                throw new IllegalArgumentException("vmEnv contains null env map for VM: " + e.getKey());
+            }
+            for (Map.Entry<String, String> kv : m.entrySet()) {
+                if (kv.getKey() == null) {
+                    throw new IllegalArgumentException("vmEnv for VM " + e.getKey() + " contains null key");
+                }
+                if (kv.getValue() == null) {
+                    throw new IllegalArgumentException("vmEnv for VM " + e.getKey() + " contains null value for key '" + kv.getKey() + "'");
+                }
+            }
         }
 
         // Make defensive copies to ensure immutability
         vms = List.copyOf(vms);
         envVars = Map.copyOf(envVars);
+        // Deep copy vmEnv (shallow copy of inner maps wrapped as unmodifiable)
+        var copied = new java.util.LinkedHashMap<VmName, Map<String, String>>();
+        for (Map.Entry<VmName, Map<String, String>> e : vmEnv.entrySet()) {
+            copied.put(e.getKey(), Map.copyOf(e.getValue()));
+        }
+        vmEnv = java.util.Map.copyOf(copied);
     }
 
     /**
@@ -238,7 +267,7 @@ public record ScaffoldPlan(
      */
     public ScaffoldPlan withVms(List<VmConfig> newVms) {
         Objects.requireNonNull(newVms, "newVms cannot be null");
-        return new ScaffoldPlan(module, newVms, envVars);
+        return new ScaffoldPlan(module, newVms, envVars, vmEnv);
     }
 
     /**
@@ -251,6 +280,17 @@ public record ScaffoldPlan(
      */
     public ScaffoldPlan withEnvVars(Map<String, String> newEnvVars) {
         Objects.requireNonNull(newEnvVars, "newEnvVars cannot be null");
-        return new ScaffoldPlan(module, vms, newEnvVars);
+        return new ScaffoldPlan(module, vms, newEnvVars, vmEnv);
+    }
+
+    /**
+     * Returns a new ScaffoldPlan with updated per-VM environment variables.
+     *
+     * @param newVmEnv map of VM name → env vars (must not be null)
+     * @return new ScaffoldPlan with updated vmEnv
+     */
+    public ScaffoldPlan withVmEnv(Map<VmName, Map<String, String>> newVmEnv) {
+        Objects.requireNonNull(newVmEnv, "newVmEnv cannot be null");
+        return new ScaffoldPlan(module, vms, envVars, newVmEnv);
     }
 }

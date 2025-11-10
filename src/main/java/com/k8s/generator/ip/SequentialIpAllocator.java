@@ -2,6 +2,7 @@ package com.k8s.generator.ip;
 
 import com.k8s.generator.model.ClusterSpec;
 import com.k8s.generator.model.ClusterType;
+import com.k8s.generator.model.Result;
 import inet.ipaddr.IPAddress;
 import inet.ipaddr.IPAddressString;
 
@@ -89,7 +90,7 @@ public class SequentialIpAllocator implements IpAllocator {
      * @return Result with allocated IPs or error message
      */
     @Override
-    public IpAllocator.Result<List<String>, String> allocate(ClusterSpec spec) {
+    public Result<List<String>, String> allocate(ClusterSpec spec) {
         Objects.requireNonNull(spec, "spec cannot be null");
 
         // 1. Determine base IP (mgmt has reserved default .5)
@@ -100,7 +101,7 @@ public class SequentialIpAllocator implements IpAllocator {
         // 2. Validate base IP format
         var ipAddress = new IPAddressString(baseIp).getAddress();
         if (ipAddress == null) {
-            return IpAllocator.Result.failure(
+            return Result.failure(
                     String.format("Invalid IP address format: '%s'", baseIp)
             );
         }
@@ -122,18 +123,18 @@ public class SequentialIpAllocator implements IpAllocator {
      * @return Result with map of cluster name to IPs, or error
      */
     @Override
-    public IpAllocator.Result<Map<String, List<String>>, String> allocateMulti(List<ClusterSpec> clusters) {
+    public Result<Map<String, List<String>>, String> allocateMulti(List<ClusterSpec> clusters) {
         Objects.requireNonNull(clusters, "clusters cannot be null");
 
         if (clusters.isEmpty()) {
-            return IpAllocator.Result.success(Map.of());
+            return Result.success(Map.of());
         }
 
         // Phase 2: Multi-cluster requires explicit firstIp for each cluster
         // This validation is also done by SemanticValidator, but we check here too
         for (ClusterSpec cluster : clusters) {
             if (cluster.firstIp().isEmpty()) {
-                return IpAllocator.Result.failure(
+                return Result.failure(
                         String.format(
                                 "Multi-cluster configuration requires explicit firstIp for cluster '%s'",
                                 cluster.name()
@@ -149,7 +150,7 @@ public class SequentialIpAllocator implements IpAllocator {
         for (ClusterSpec cluster : clusters) {
             var result = allocate(cluster);
             if (result.isFailure()) {
-                return IpAllocator.Result.failure(
+                return Result.failure(
                         String.format("Failed to allocate IPs for cluster '%s': %s",
                                 cluster.name(), result.getError())
                 );
@@ -160,7 +161,7 @@ public class SequentialIpAllocator implements IpAllocator {
             // Check for overlaps
             for (String ip : ips) {
                 if (allAllocatedIps.contains(ip)) {
-                    return IpAllocator.Result.failure(
+                    return Result.failure(
                             String.format(
                                     "IP address overlap detected: '%s' is used by multiple clusters",
                                     ip
@@ -173,7 +174,7 @@ public class SequentialIpAllocator implements IpAllocator {
             allocations.put(cluster.name().toString(), ips);
         }
 
-        return IpAllocator.Result.success(allocations);
+        return Result.success(allocations);
     }
 
     /**
@@ -206,7 +207,7 @@ public class SequentialIpAllocator implements IpAllocator {
      * @param clusterName cluster name (for error messages)
      * @return Result with IP list or error message
      */
-    private IpAllocator.Result<List<String>, String> allocateSequential(
+    private Result<List<String>, String> allocateSequential(
             String baseIp,
             int count,
             String clusterName,
@@ -216,7 +217,7 @@ public class SequentialIpAllocator implements IpAllocator {
         var ipAddress = ipAddressString.getAddress();
 
         if (ipAddress == null) {
-            return IpAllocator.Result.failure(
+            return Result.failure(
                     String.format("Invalid IP address: '%s'", baseIp)
             );
         }
@@ -236,7 +237,7 @@ public class SequentialIpAllocator implements IpAllocator {
 
             // Check subnet boundary
             if (hostId > MAX_HOST_ID) {
-                return IpAllocator.Result.failure(
+                return Result.failure(
                         String.format(
                                 "IP allocation for cluster '%s' exceeds subnet boundary (last octet > 254). " +
                                         "Started at %s, needed %d IPs, reached %s",
@@ -256,7 +257,7 @@ public class SequentialIpAllocator implements IpAllocator {
         }
 
         if (allocated < count) {
-            return IpAllocator.Result.failure(
+            return Result.failure(
                     String.format(
                             "Failed to allocate %d IPs for cluster '%s' (only allocated %d)",
                             count, clusterName, allocated
@@ -264,7 +265,7 @@ public class SequentialIpAllocator implements IpAllocator {
             );
         }
 
-        return IpAllocator.Result.success(allocatedIps);
+        return Result.success(allocatedIps);
     }
 
     /**

@@ -147,11 +147,12 @@ public final class SpecToPlan implements PlanBuilder {
         // 2. Generate VMs with allocated IPs
         List<VmConfig> vms = generateVms(cluster, allocatedIps);
 
-        // 3. Build environment variables
-        Map<String, String> envVars = buildEnvVars(spec.module(), cluster);
+        // 3. Build environment variables (global + per-VM)
+        var providers = extractProviders(spec);
+        var envSet = EnvPlanner.build(spec.module(), cluster, vms, providers);
 
         // 4. Create ScaffoldPlan
-        return new ScaffoldPlan(spec.module(), vms, envVars);
+        return new ScaffoldPlan(spec.module(), vms, envSet.global(), envSet.perVm());
     }
 
     /**
@@ -310,6 +311,21 @@ public final class SpecToPlan implements PlanBuilder {
     }
 
     /**
+     * Extracts cloud providers from GeneratorSpec.
+     *
+     * <p>Phase 2: Returns empty set (no provider support yet)
+     * <p>Future (P5): Extract from ManagementSpec or ClusterSpec.tools()
+     *
+     * @param spec generator specification
+     * @return set of provider names (e.g., "azure", "aws") - currently always empty
+     */
+    private Set<String> extractProviders(GeneratorSpec spec) {
+        // TODO(P5): Extract from ManagementSpec when architecture review P5 is implemented
+        // For now, return empty set (local-only clusters)
+        return Set.of();
+    }
+
+    /**
      * Builds environment variables map for bootstrap scripts.
      *
      * <p>Phase 2 Environment Variables:
@@ -330,20 +346,22 @@ public final class SpecToPlan implements PlanBuilder {
      * @param module  module metadata
      * @param cluster cluster specification
      * @return environment variables map (LinkedHashMap for stable ordering)
+     * @deprecated Retained for binary compatibility in tests. Use {@link EnvPlanner#build} directly.
      */
+    @Deprecated(since = "1.0.0", forRemoval = false)
     private Map<String, String> buildEnvVars(ModuleInfo module, ClusterSpec cluster) {
-        var envVars = new LinkedHashMap<String, String>();
+        return EnvPlanner.build(module, cluster, List.of(kindVm()), Set.of()).global();
+    }
 
-        // Core environment variables
-        envVars.put("CLUSTER_NAME", cluster.name().toString());
-        envVars.put("NAMESPACE_DEFAULT", module.defaultNamespace());
-        envVars.put("CLUSTER_TYPE", cluster.type().name().toLowerCase(Locale.ROOT));
-
-        // CNI type (only for kubeadm clusters)
-        cluster.cni().ifPresent(cniType ->
-                envVars.put("CNI_TYPE", cniType.name().toLowerCase(Locale.ROOT))
+    // Minimal VM for backward compatibility
+    private VmConfig kindVm() {
+        return new VmConfig(
+                VmName.of("dummy"),
+                NodeRole.CLUSTER,
+                "192.168.56.10",
+                SizeProfile.MEDIUM,
+                Optional.empty(),
+                Optional.empty()
         );
-
-        return envVars;
     }
 }

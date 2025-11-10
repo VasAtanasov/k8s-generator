@@ -1,6 +1,7 @@
 package com.k8s.generator.ip;
 
 import com.k8s.generator.model.ClusterSpec;
+import com.k8s.generator.model.Result;
 
 import java.util.List;
 import java.util.Map;
@@ -111,109 +112,4 @@ public interface IpAllocator {
      * @throws NullPointerException if clusters is null
      */
     Result<Map<String, List<String>>, String> allocateMulti(List<ClusterSpec> clusters);
-
-    /**
-     * Result type for operations that can succeed or fail.
-     *
-     * <p>This is a sealed interface with two implementations:
-     * <ul>
-     *   <li><b>Success</b>: Contains the successfully allocated value</li>
-     *   <li><b>Failure</b>: Contains an error message explaining the failure</li>
-     * </ul>
-     *
-     * @param <T> success value type
-     * @param <E> error value type
-     */
-    sealed interface Result<T, E> permits Result.Success, Result.Failure {
-
-        /**
-         * Success result containing allocated IPs.
-         *
-         * @param value the successfully allocated IPs
-         */
-        record Success<T, E>(T value) implements Result<T, E> {}
-
-        /**
-         * Failure result containing error message.
-         *
-         * @param error the error message
-         */
-        record Failure<T, E>(E error) implements Result<T, E> {}
-
-        /**
-         * Creates a success result.
-         *
-         * @param value the success value
-         * @return Success result
-         */
-        static <T, E> Result<T, E> success(T value) {
-            return new Success<>(value);
-        }
-
-        /**
-         * Creates a failure result.
-         *
-         * @param error the error message
-         * @return Failure result
-         */
-        static <T, E> Result<T, E> failure(E error) {
-            return new Failure<>(error);
-        }
-
-        /**
-         * Checks if this result is a success.
-         *
-         * @return true if Success, false if Failure
-         */
-        default boolean isSuccess() {
-            return this instanceof Success;
-        }
-
-        /**
-         * Checks if this result is a failure.
-         *
-         * @return true if Failure, false if Success
-         */
-        default boolean isFailure() {
-            return this instanceof Failure;
-        }
-
-        /**
-         * Returns the value if success, or throws exception if failure.
-         *
-         * @return the success value
-         * @throws RuntimeException if this is a Failure
-         */
-        default T orElseThrow() {
-            return switch (this) {
-                case Success<T, E> s -> s.value();
-                case Failure<T, E> f -> throw new RuntimeException("Operation failed: " + f.error());
-            };
-        }
-
-        /**
-         * Returns the value if success, or the default value if failure.
-         *
-         * @param defaultValue value to return on failure
-         * @return the success value or default
-         */
-        default T orElse(T defaultValue) {
-            return switch (this) {
-                case Success<T, E> s -> s.value();
-                case Failure<T, E> f -> defaultValue;
-            };
-        }
-
-        /**
-         * Returns the error if failure, or null if success.
-         *
-         * @return the error value or null
-         */
-        default E getError() {
-            return switch (this) {
-                case Success<T, E> s -> null;
-                case Failure<T, E> f -> f.error();
-            };
-        }
-    }
 }

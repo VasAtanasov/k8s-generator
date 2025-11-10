@@ -2,11 +2,11 @@ package com.k8s.generator.parser;
 
 import com.k8s.generator.cli.GenerateCommand;
 import com.k8s.generator.model.*;
+import lombok.Builder;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Converts CLI arguments to GeneratorSpec with convention-over-configuration defaults.
@@ -106,25 +106,30 @@ public final class CliToSpec implements SpecConverter {
             case KIND, MINIKUBE -> Spec.empty();
             case KUBEADM -> {
                 int[] nw = parseNodes(cmd.nodes);
-                yield new Spec(nw[0], nw[1], parseCni(cmd.cni));
+                yield Spec.builder()
+                        .masters(nw[0])
+                        .workers(nw[1])
+                        .cni(parseCni(cmd.cni))
+                        .build();
             }
             // Management VM: no nodes, no CNI
             case NONE -> Spec.empty();
         };
 
-        return ClusterSpec.from(
-                clusterName,
-                clusterType,
-                spec.masters(),
-                spec.workers(),
-                sizeProfile,
-                spec.cniType().orElse(null)
-        );
+        return ClusterSpec.builder()
+                .name(clusterName)
+                .type(clusterType)
+                .masters(spec.masters())
+                .workers(spec.workers())
+                .sizeProfile(sizeProfile)
+                .cni(spec.cni())
+                .build();
     }
 
-    private record Spec(int masters, int workers, Optional<CniType> cniType) {
+    @Builder
+    private record Spec(int masters, int workers, CniType cni) {
         static Spec empty() {
-            return new Spec(0, 0, Optional.empty());
+            return new Spec(0, 0, null);
         }
     }
 
@@ -181,10 +186,10 @@ public final class CliToSpec implements SpecConverter {
         return SizeProfile.fromString(sizeToken);
     }
 
-    private Optional<CniType> parseCni(String cniToken) {
-        if (cniToken == null || cniToken.isBlank()) return Optional.empty();
+    private CniType parseCni(String cniToken) {
+        if (cniToken == null || cniToken.isBlank()) return null;
         try {
-            return Optional.of(CniType.valueOf(cniToken.trim().toUpperCase(Locale.ROOT)));
+            return CniType.valueOf(cniToken.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException(
                     String.format(

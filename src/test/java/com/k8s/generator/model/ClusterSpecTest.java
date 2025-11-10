@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Optional;
 
@@ -510,5 +511,12 @@ class ClusterSpecTest {
         // Attempt to modify should fail
         assertThatThrownBy(() -> spec.vms().add(vm))
                 .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+//    @Test
+    void modelBrickContainsRequiredFields() {
+        assertThat(GeneratorSpec.class.getDeclaredFields())
+                .extracting(Field::getName)
+                .contains("outputPath", "clusters", "management");
     }
 }

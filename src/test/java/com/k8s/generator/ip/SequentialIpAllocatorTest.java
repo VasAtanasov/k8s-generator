@@ -36,15 +36,11 @@ class SequentialIpAllocatorTest {
     @Test
     void shouldAllocateDefaultIpForKindCluster() {
         // Given: KIND cluster without explicit firstIp
-        var cluster = new ClusterSpec(
-                ClusterName.of("dev"),
-                ClusterType.KIND,
-                Optional.empty(),  // Use default
-                0, 0,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.empty()
-        );
+        var cluster = ClusterSpec.builder()
+                .name("dev")
+                .type(ClusterType.KIND)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
 
         // When: allocate
         var result = allocator.allocate(cluster);

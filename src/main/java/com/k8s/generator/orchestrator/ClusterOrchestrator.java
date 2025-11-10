@@ -2,6 +2,7 @@ package com.k8s.generator.orchestrator;
 
 import com.k8s.generator.ip.IpAllocator;
 import com.k8s.generator.model.ClusterSpec;
+import com.k8s.generator.model.Result;
 
 import java.util.List;
 import java.util.Objects;
@@ -87,23 +88,21 @@ public class ClusterOrchestrator {
      * @return Result containing enriched ClusterSpec with VMs, or error message
      * @throws NullPointerException if cluster is null
      */
-    public IpAllocator.Result<ClusterSpec, String> orchestrate(ClusterSpec cluster) {
+    public Result<ClusterSpec, String> orchestrate(ClusterSpec cluster) {
         Objects.requireNonNull(cluster, "cluster cannot be null");
 
         // If cluster already has explicit VMs, return as-is
         if (cluster.hasExplicitVms()) {
-            return IpAllocator.Result.success(cluster);
+            return Result.success(cluster);
         }
 
         // Allocate IPs using pattern matching
         var ipResult = ipAllocator.allocate(cluster);
         return switch (ipResult) {
-            case IpAllocator.Result.Success<List<String>, String> success ->
-                generateVmsWithAllocatedIps(cluster, success.value());
-            case IpAllocator.Result.Failure<List<String>, String> failure ->
-                IpAllocator.Result.failure(
+            case Result.Success<List<String>, String> success -> generateVmsWithAllocatedIps(cluster, success.value());
+            case Result.Failure<List<String>, String> failure -> Result.failure(
                     "IP allocation failed for cluster '" + cluster.name() + "': " + failure.error()
-                );
+            );
         };
     }
 
@@ -111,28 +110,26 @@ public class ClusterOrchestrator {
      * Generates VMs for a cluster using allocated IPs.
      * Extracted method for better separation of concerns and testability.
      *
-     * @param cluster cluster specification
+     * @param cluster      cluster specification
      * @param allocatedIps list of allocated IP addresses
      * @return Result containing enriched ClusterSpec with VMs, or error message
      */
-    private IpAllocator.Result<ClusterSpec, String> generateVmsWithAllocatedIps(
-        ClusterSpec cluster,
-        List<String> allocatedIps
-    ) {
+    private Result<ClusterSpec, String> generateVmsWithAllocatedIps(final ClusterSpec cluster,
+                                                                    final List<String> allocatedIps) {
         try {
             var generatedVms = vmGenerator.generate(cluster, allocatedIps);
             var enrichedCluster = cluster.withVms(generatedVms);
-            return IpAllocator.Result.success(enrichedCluster);
+            return Result.success(enrichedCluster);
         } catch (IllegalArgumentException e) {
             // Specific handling for validation errors
-            return IpAllocator.Result.failure(
-                "VM generation failed for cluster '" + cluster.name() + "': " + e.getMessage()
+            return Result.failure(
+                    "VM generation failed for cluster '" + cluster.name() + "': " + e.getMessage()
             );
         } catch (Exception e) {
             // Catch-all for unexpected errors
-            return IpAllocator.Result.failure(
-                "Unexpected error during VM generation for cluster '" + cluster.name() + "': " +
-                e.getClass().getSimpleName() + " - " + e.getMessage()
+            return Result.failure(
+                    "Unexpected error during VM generation for cluster '" + cluster.name() + "': " +
+                            e.getClass().getSimpleName() + " - " + e.getMessage()
             );
         }
     }
@@ -152,11 +149,11 @@ public class ClusterOrchestrator {
      * @return Result containing list of enriched ClusterSpecs, or error message
      * @throws NullPointerException if clusters is null
      */
-    public IpAllocator.Result<List<ClusterSpec>, String> orchestrateMulti(List<ClusterSpec> clusters) {
+    public Result<List<ClusterSpec>, String> orchestrateMulti(List<ClusterSpec> clusters) {
         Objects.requireNonNull(clusters, "clusters cannot be null");
 
         if (clusters.isEmpty()) {
-            return IpAllocator.Result.success(List.of());
+            return Result.success(List.of());
         }
 
         // Orchestrate each cluster independently using pattern matching
@@ -166,13 +163,11 @@ public class ClusterOrchestrator {
             var result = orchestrate(cluster);
 
             switch (result) {
-                case IpAllocator.Result.Success<ClusterSpec, String> success ->
-                    enrichedClusters.add(success.value());
-                case IpAllocator.Result.Failure<ClusterSpec, String> failure ->
-                    { return IpAllocator.Result.failure(failure.error()); }
+                case Result.Success<ClusterSpec, String> success -> enrichedClusters.add(success.value());
+                case Result.Failure<ClusterSpec, String> failure -> {return Result.failure(failure.error());}
             }
         }
 
-        return IpAllocator.Result.success(List.copyOf(enrichedClusters));
+        return Result.success(List.copyOf(enrichedClusters));
     }
 }
