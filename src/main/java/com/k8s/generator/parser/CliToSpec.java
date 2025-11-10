@@ -122,6 +122,7 @@ public final class CliToSpec implements SpecConverter {
                 .masters(spec.masters())
                 .workers(spec.workers())
                 .sizeProfile(sizeProfile)
+                .vms(List.of())
                 .cni(spec.cni())
                 .build();
     }

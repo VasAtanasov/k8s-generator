@@ -2,10 +2,10 @@ package com.k8s.generator.model;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Unit tests for ValidationError record.
@@ -15,10 +15,10 @@ class ValidationErrorTest {
     @Test
     void shouldCreateValidErrorWithAllFields() {
         var error = new ValidationError(
-            "clusters[].name",
-            ValidationLevel.SEMANTIC,
-            "Invalid cluster name",
-            "Use lowercase letters only"
+                "clusters[].name",
+                ValidationLevel.SEMANTIC,
+                "Invalid cluster name",
+                "Use lowercase letters only"
         );
 
         assertThat(error.field()).isEqualTo("clusters[].name");
@@ -30,119 +30,119 @@ class ValidationErrorTest {
     @Test
     void shouldRejectNullField() {
         assertThatThrownBy(() -> new ValidationError(
-            null,
-            ValidationLevel.SEMANTIC,
-            "message",
-            "suggestion"
+                null,
+                ValidationLevel.SEMANTIC,
+                "message",
+                "suggestion"
         ))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("field is required");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("field is required");
     }
 
     @Test
     void shouldRejectNullLevel() {
         assertThatThrownBy(() -> new ValidationError(
-            "field",
-            null,
-            "message",
-            "suggestion"
+                "field",
+                null,
+                "message",
+                "suggestion"
         ))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("level is required");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("level is required");
     }
 
     @Test
     void shouldRejectNullMessage() {
         assertThatThrownBy(() -> new ValidationError(
-            "field",
-            ValidationLevel.SEMANTIC,
-            null,
-            "suggestion"
+                "field",
+                ValidationLevel.SEMANTIC,
+                null,
+                "suggestion"
         ))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("message is required");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("message is required");
     }
 
     @Test
     void shouldRejectNullSuggestion() {
         assertThatThrownBy(() -> new ValidationError(
-            "field",
-            ValidationLevel.SEMANTIC,
-            "message",
-            null
+                "field",
+                ValidationLevel.SEMANTIC,
+                "message",
+                null
         ))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("suggestion is required");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("suggestion is required");
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"", "  ", "\t", "\n"})
     void shouldRejectBlankField(String blank) {
         assertThatThrownBy(() -> new ValidationError(
-            blank,
-            ValidationLevel.SEMANTIC,
-            "message",
-            "suggestion"
+                blank,
+                ValidationLevel.SEMANTIC,
+                "message",
+                "suggestion"
         ))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("field cannot be blank");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("field cannot be blank");
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"", "  ", "\t", "\n"})
     void shouldRejectBlankMessage(String blank) {
         assertThatThrownBy(() -> new ValidationError(
-            "field",
-            ValidationLevel.SEMANTIC,
-            blank,
-            "suggestion"
+                "field",
+                ValidationLevel.SEMANTIC,
+                blank,
+                "suggestion"
         ))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("message cannot be blank");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("message cannot be blank");
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"", "  ", "\t", "\n"})
     void shouldRejectBlankSuggestion(String blank) {
         assertThatThrownBy(() -> new ValidationError(
-            "field",
-            ValidationLevel.SEMANTIC,
-            "message",
-            blank
+                "field",
+                ValidationLevel.SEMANTIC,
+                "message",
+                blank
         ))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("suggestion cannot be blank");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("suggestion cannot be blank");
     }
 
     @Test
     void shouldFormatErrorMessage() {
         var error = new ValidationError(
-            "clusters[name='staging'].firstIp",
-            ValidationLevel.SEMANTIC,
-            "Multi-cluster requires explicit firstIp",
-            "Add: firstIp: 192.168.56.20"
+                "clusters[name='staging'].firstIp",
+                ValidationLevel.SEMANTIC,
+                "Multi-cluster requires explicit firstIp",
+                "Add: firstIp: 192.168.56.20"
         );
 
         String formatted = error.format();
 
         assertThat(formatted)
-            .contains("[SEMANTIC]")
-            .contains("clusters[name='staging'].firstIp")
-            .contains("Multi-cluster requires explicit firstIp")
-            .contains("Suggestion:")
-            .contains("Add: firstIp: 192.168.56.20");
+                .contains("[SEMANTIC]")
+                .contains("clusters[name='staging'].firstIp")
+                .contains("Multi-cluster requires explicit firstIp")
+                .contains("Suggestion:")
+                .contains("Add: firstIp: 192.168.56.20");
     }
 
     @Test
     void shouldIncludeAllValidationLevelsInFormatting() {
         var structural = new ValidationError(
-            "field", ValidationLevel.STRUCTURAL, "msg", "sugg"
+                "field", ValidationLevel.STRUCTURAL, "msg", "sugg"
         );
         var semantic = new ValidationError(
-            "field", ValidationLevel.SEMANTIC, "msg", "sugg"
+                "field", ValidationLevel.SEMANTIC, "msg", "sugg"
         );
         var policy = new ValidationError(
-            "field", ValidationLevel.POLICY, "msg", "sugg"
+                "field", ValidationLevel.POLICY, "msg", "sugg"
         );
 
         assertThat(structural.format()).contains("[STRUCTURAL]");
@@ -153,10 +153,10 @@ class ValidationErrorTest {
     @Test
     void shouldUseFormatMethodInToString() {
         var error = new ValidationError(
-            "field",
-            ValidationLevel.SEMANTIC,
-            "message",
-            "suggestion"
+                "field",
+                ValidationLevel.SEMANTIC,
+                "message",
+                "suggestion"
         );
 
         assertThat(error.toString()).isEqualTo(error.format());
@@ -165,10 +165,10 @@ class ValidationErrorTest {
     @Test
     void shouldBeImmutable() {
         var error = new ValidationError(
-            "field",
-            ValidationLevel.SEMANTIC,
-            "message",
-            "suggestion"
+                "field",
+                ValidationLevel.SEMANTIC,
+                "message",
+                "suggestion"
         );
 
         // Records are immutable by design - this just verifies the contract

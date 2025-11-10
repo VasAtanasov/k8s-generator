@@ -83,7 +83,7 @@ public sealed interface Result<T, E> {
      * @param value success value (must be non-null)
      * @param <T>   success type
      * @param <E>   error type
-     * @return Success instance containing value
+* @return Success instance containing value
      * @throws NullPointerException if value is null
      */
     static <T, E> Result<T, E> success(T value) {

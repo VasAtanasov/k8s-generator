@@ -4,7 +4,6 @@ import com.k8s.generator.ip.IpAllocator;
 import com.k8s.generator.ip.SequentialIpAllocator;
 import com.k8s.generator.model.*;
 import inet.ipaddr.IPAddress;
-import inet.ipaddr.IPAddressString;
 
 import java.util.*;
 
@@ -213,14 +212,12 @@ public final class SpecToPlan implements PlanBuilder {
      * @return VmConfig for single-node cluster
      */
     private VmConfig createSingleNodeVm(ClusterSpec cluster, IPAddress ip) {
-        return new VmConfig(
-                VmName.of(cluster.name().value()),
-                NodeRole.CLUSTER,
-                ip,
-                cluster.sizeProfile(),
-                null,           // No CPU override
-                null            // No memory override
-        );
+        return VmConfig.builder()
+                .name(cluster.name().value())
+                .role(NodeRole.CLUSTER)
+                .ip(ip)
+                .sizeProfile(cluster.sizeProfile())
+                .build();
     }
 
     /**
@@ -239,14 +236,12 @@ public final class SpecToPlan implements PlanBuilder {
      * @return VmConfig for management VM
      */
     private VmConfig createManagementVm(ClusterSpec cluster, IPAddress ip) {
-        return new VmConfig(
-                VmName.of(cluster.name().value()),
-                NodeRole.MANAGEMENT,
-                ip,
-                cluster.sizeProfile(),
-                null,
-                null
-        );
+        return VmConfig.builder()
+                .name(cluster.name().value())
+                .role(NodeRole.MANAGEMENT)
+                .ip(ip)
+                .sizeProfile(cluster.sizeProfile())
+                .build();
     }
 
     /**
@@ -285,28 +280,22 @@ public final class SpecToPlan implements PlanBuilder {
 
         // Create master VMs
         for (int i = 1; i <= cluster.masters(); i++) {
-            VmName vmName = VmName.of(String.format("%s-master-%d", cluster.name(), i));
-            vms.add(new VmConfig(
-                    vmName,
-                    NodeRole.MASTER,
-                    allocatedIps.get(ipIndex++),
-                    cluster.sizeProfile(),
-                    null,
-                    null
-            ));
+            vms.add(VmConfig.builder()
+                    .name(VmName.of(String.format("%s-master-%d", cluster.name(), i)))
+                    .role(NodeRole.MASTER)
+                    .ip(allocatedIps.get(ipIndex++))
+                    .sizeProfile(cluster.sizeProfile())
+                    .build());
         }
 
         // Create worker VMs
         for (int i = 1; i <= cluster.workers(); i++) {
-            VmName vmName = VmName.of(String.format("%s-worker-%d", cluster.name(), i));
-            vms.add(new VmConfig(
-                    vmName,
-                    NodeRole.WORKER,
-                    allocatedIps.get(ipIndex++),
-                    cluster.sizeProfile(),
-                    null,
-                    null
-            ));
+            vms.add(VmConfig.builder()
+                    .name(VmName.of(String.format("%s-worker-%d", cluster.name(), i)))
+                    .role(NodeRole.WORKER)
+                    .ip(allocatedIps.get(ipIndex++))
+                    .sizeProfile(cluster.sizeProfile())
+                    .build());
         }
 
         return vms;
@@ -357,13 +346,11 @@ public final class SpecToPlan implements PlanBuilder {
 
     // Minimal VM for backward compatibility
     private VmConfig kindVm() {
-        return new VmConfig(
-                VmName.of("dummy"),
-                NodeRole.CLUSTER,
-                new IPAddressString("192.168.56.10").getAddress(),
-                SizeProfile.MEDIUM,
-                null,
-                null
-        );
+        return VmConfig.builder()
+                .name("dummy")
+                .role(NodeRole.CLUSTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
     }
 }

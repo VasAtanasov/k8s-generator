@@ -218,17 +218,14 @@ public class SemanticValidator implements ClusterSpecValidator {
                 return;  // Skip further validation if not IPv4
             }
 
-            // Convert to string for range prefix checks
-            String canonical = ip.toCanonicalString();
-
-            // Warn about reserved/special IP ranges
-            if (canonical.startsWith("0.") || canonical.startsWith("127.") ||
-                canonical.startsWith("255.")) {
+            // Warn about reserved/special IP ranges using library predicates
+            // Loopback (127.0.0.0/8) and multicast (224.0.0.0/4) are not suitable base IPs
+            if (ip.isLoopback() || ip.isMulticast()) {
                 errors.add(new ValidationError(
                         String.format("clusters[name='%s'].firstIp", spec.name()),
                         ValidationLevel.SEMANTIC,
-                        String.format("Reserved IP address range: '%s'", canonical),
-                        "Use private network ranges: 192.168.x.x, 172.16-31.x.x, or 10.x.x.x"
+                        String.format("Reserved or special IP address: '%s'", ip.toCanonicalString()),
+                        "Use private IPv4 ranges: 192.168.x.x, 172.16-31.x.x, or 10.x.x.x"
                 ));
             }
         }

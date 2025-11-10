@@ -1,6 +1,6 @@
 ---
 status: Documentation Index
-version: 1.1.1
+version: 1.1.2
 scope: Overview and navigation guide for k8s-generator documentation
 ---
 
@@ -199,6 +199,16 @@ scope: <one-line description>
 Additional rules:
 - Keep the Document History table sorted in descending order by version (latest first). When updating, add the new row at the top.
 
+### Testing Helpers
+
+When asserting lists of allocated IPs in tests, prefer the utility `IpAssertions`:
+
+- Path: `src/test/java/com/k8s/generator/testutil/IpAssertions.java`
+- Usage: `IpAssertions.assertIps(Iterable<IPAddress> ips, String... expected)`
+  - Example: `assertIps(result.orElseThrow(), "192.168.56.10", "192.168.56.11");`
+
+This keeps tests concise and decoupled from the IPAddress API.
+
 ---
 
 ## Technology Stack
@@ -298,6 +308,7 @@ See [ARCHITECTURE-REVIEW-2025-11-03.md](ARCHITECTURE-REVIEW-2025-11-03.md) for r
 
 | Version | Date       | Author      | Changes                    |
 |---------|------------|-------------|----------------------------|
+| 1.1.2   | 2025-11-10 | repo-maint  | Add Testing Helpers section; recommend IpAssertions for IP lists |
 | 1.1.1   | 2025-11-04 | repo-maint  | Clarified: history tables sorted descending by version; prepend new rows |
 | 1.1.0   | 2025-11-04 | repo-maint  | Updated implementation status: Phase 1 & 2 complete, 296 tests passing, all P0 items implemented |
 | 1.0.0   | 2025-11-03 | repo-maint  | Initial documentation index |

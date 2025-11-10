@@ -7,7 +7,8 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Unit tests for ValidationResult class.
@@ -27,10 +28,10 @@ class ValidationResultTest {
     @Test
     void shouldCreateResultWithSingleError() {
         var error = new ValidationError(
-            "field",
-            ValidationLevel.SEMANTIC,
-            "message",
-            "suggestion"
+                "field",
+                ValidationLevel.SEMANTIC,
+                "message",
+                "suggestion"
         );
 
         ValidationResult result = ValidationResult.of(error);
@@ -45,10 +46,10 @@ class ValidationResultTest {
     @Test
     void shouldCreateResultWithMultipleErrors() {
         var error1 = new ValidationError(
-            "field1", ValidationLevel.SEMANTIC, "msg1", "sugg1"
+                "field1", ValidationLevel.SEMANTIC, "msg1", "sugg1"
         );
         var error2 = new ValidationError(
-            "field2", ValidationLevel.SEMANTIC, "msg2", "sugg2"
+                "field2", ValidationLevel.SEMANTIC, "msg2", "sugg2"
         );
 
         ValidationResult result = ValidationResult.of(List.of(error1, error2));
@@ -61,21 +62,21 @@ class ValidationResultTest {
     @Test
     void shouldRejectNullErrorInOf() {
         assertThatThrownBy(() -> ValidationResult.of((ValidationError) null))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("error cannot be null");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("error cannot be null");
     }
 
     @Test
     void shouldRejectNullErrorListInOf() {
         assertThatThrownBy(() -> ValidationResult.of((List<ValidationError>) null))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("errors list cannot be null");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("errors list cannot be null");
     }
 
     @Test
     void shouldRejectErrorListContainingNulls() {
         var error = new ValidationError(
-            "field", ValidationLevel.SEMANTIC, "msg", "sugg"
+                "field", ValidationLevel.SEMANTIC, "msg", "sugg"
         );
 
         // Use ArrayList to avoid List.of() throwing NPE before our validation
@@ -84,20 +85,20 @@ class ValidationResultTest {
         listWithNull.add(null);
 
         assertThatThrownBy(() -> ValidationResult.of(listWithNull))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("errors list contains null elements");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("errors list contains null elements");
     }
 
     @Test
     void shouldCombineMultipleResults() {
         var error1 = new ValidationError(
-            "field1", ValidationLevel.SEMANTIC, "msg1", "sugg1"
+                "field1", ValidationLevel.SEMANTIC, "msg1", "sugg1"
         );
         var error2 = new ValidationError(
-            "field2", ValidationLevel.SEMANTIC, "msg2", "sugg2"
+                "field2", ValidationLevel.SEMANTIC, "msg2", "sugg2"
         );
         var error3 = new ValidationError(
-            "field3", ValidationLevel.POLICY, "msg3", "sugg3"
+                "field3", ValidationLevel.POLICY, "msg3", "sugg3"
         );
 
         var result1 = ValidationResult.of(error1);
@@ -127,17 +128,17 @@ class ValidationResultTest {
         var result = ValidationResult.valid();
 
         assertThatThrownBy(() -> ValidationResult.combine(result, null))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("result cannot be null");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("result cannot be null");
     }
 
     @Test
     void shouldFormatErrorsAsString() {
         var error1 = new ValidationError(
-            "field1", ValidationLevel.SEMANTIC, "msg1", "sugg1"
+                "field1", ValidationLevel.SEMANTIC, "msg1", "sugg1"
         );
         var error2 = new ValidationError(
-            "field2", ValidationLevel.POLICY, "msg2", "sugg2"
+                "field2", ValidationLevel.POLICY, "msg2", "sugg2"
         );
 
         ValidationResult result = ValidationResult.of(List.of(error1, error2));
@@ -145,14 +146,14 @@ class ValidationResultTest {
         String formatted = result.formatErrors();
 
         assertThat(formatted)
-            .contains("[SEMANTIC]")
-            .contains("field1")
-            .contains("msg1")
-            .contains("sugg1")
-            .contains("[POLICY]")
-            .contains("field2")
-            .contains("msg2")
-            .contains("sugg2");
+                .contains("[SEMANTIC]")
+                .contains("field1")
+                .contains("msg1")
+                .contains("sugg1")
+                .contains("[POLICY]")
+                .contains("field2")
+                .contains("msg2")
+                .contains("sugg2");
     }
 
     @Test
@@ -165,10 +166,10 @@ class ValidationResultTest {
     @Test
     void shouldAddErrorImmutably() {
         var error1 = new ValidationError(
-            "field1", ValidationLevel.SEMANTIC, "msg1", "sugg1"
+                "field1", ValidationLevel.SEMANTIC, "msg1", "sugg1"
         );
         var error2 = new ValidationError(
-            "field2", ValidationLevel.SEMANTIC, "msg2", "sugg2"
+                "field2", ValidationLevel.SEMANTIC, "msg2", "sugg2"
         );
 
         ValidationResult original = ValidationResult.of(error1);
@@ -188,20 +189,20 @@ class ValidationResultTest {
         ValidationResult result = ValidationResult.valid();
 
         assertThatThrownBy(() -> result.withError(null))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("error cannot be null");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("error cannot be null");
     }
 
     @Test
     void shouldMergeResultsImmutably() {
         var error1 = new ValidationError(
-            "field1", ValidationLevel.SEMANTIC, "msg1", "sugg1"
+                "field1", ValidationLevel.SEMANTIC, "msg1", "sugg1"
         );
         var error2 = new ValidationError(
-            "field2", ValidationLevel.SEMANTIC, "msg2", "sugg2"
+                "field2", ValidationLevel.SEMANTIC, "msg2", "sugg2"
         );
         var error3 = new ValidationError(
-            "field3", ValidationLevel.POLICY, "msg3", "sugg3"
+                "field3", ValidationLevel.POLICY, "msg3", "sugg3"
         );
 
         ValidationResult result1 = ValidationResult.of(List.of(error1, error2));
@@ -223,14 +224,14 @@ class ValidationResultTest {
         ValidationResult result = ValidationResult.valid();
 
         assertThatThrownBy(() -> result.merge(null))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("other cannot be null");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("other cannot be null");
     }
 
     @Test
     void shouldImplementEqualsAndHashCode() {
         var error = new ValidationError(
-            "field", ValidationLevel.SEMANTIC, "msg", "sugg"
+                "field", ValidationLevel.SEMANTIC, "msg", "sugg"
         );
 
         ValidationResult result1 = ValidationResult.of(error);
@@ -248,30 +249,30 @@ class ValidationResultTest {
         assertThat(valid.toString()).contains("valid");
 
         var error = new ValidationError(
-            "field", ValidationLevel.SEMANTIC, "msg", "sugg"
+                "field", ValidationLevel.SEMANTIC, "msg", "sugg"
         );
         ValidationResult invalid = ValidationResult.of(error);
 
         assertThat(invalid.toString())
-            .contains("ValidationResult")
-            .contains("1 error");
+                .contains("ValidationResult")
+                .contains("1 error");
     }
 
     @Test
     void shouldReturnUnmodifiableErrorsList() {
         var error = new ValidationError(
-            "field", ValidationLevel.SEMANTIC, "msg", "sugg"
+                "field", ValidationLevel.SEMANTIC, "msg", "sugg"
         );
         ValidationResult result = ValidationResult.of(error);
 
         assertThatThrownBy(() -> result.errors().add(error))
-            .isInstanceOf(UnsupportedOperationException.class);
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
     void shouldMakeDefensiveCopyOfErrorsList() {
         var error = new ValidationError(
-            "field", ValidationLevel.SEMANTIC, "msg", "sugg"
+                "field", ValidationLevel.SEMANTIC, "msg", "sugg"
         );
         var mutableList = new ArrayList<ValidationError>();
         mutableList.add(error);

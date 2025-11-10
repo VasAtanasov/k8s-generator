@@ -1,6 +1,9 @@
 package com.k8s.generator.model;
 
 import inet.ipaddr.IPAddress;
+import inet.ipaddr.IPAddressString;
+import inet.ipaddr.IPAddressStringParameters;
+import lombok.Builder;
 
 import java.util.Objects;
 
@@ -58,6 +61,7 @@ import java.util.Objects;
  * @see ClusterSpec
  * @since 1.0.0
  */
+@Builder
 public record VmConfig(
         VmName name,
         NodeRole role,
@@ -66,55 +70,27 @@ public record VmConfig(
         Integer cpuOverride,
         Integer memoryMbOverride) {
 
-    /**
-     * Convenience constructor - no resource overrides (most common case).
-     * Uses sizeProfile defaults for CPU and memory.
-     *
-     * @param name        VM hostname
-     * @param role        VM role
-     * @param ip          IP address for this VM
-     * @param sizeProfile Size profile (determines CPU/memory)
-     */
-    public VmConfig(VmName name, NodeRole role, IPAddress ip, SizeProfile sizeProfile) {
-        this(name, role, ip, sizeProfile, null, null);
-    }
+    public static class VmConfigBuilder {
 
-    /**
-     * Convenience constructor accepting string IP address (no overrides).
-     * Parses IP using IPAddressString library and validates format.
-     *
-     * <p>This constructor is provided for backward compatibility and test convenience.
-     * Production code should prefer using IPAddress directly for type safety.
-     *
-     * @param name        VM hostname
-     * @param role        VM role
-     * @param ipString    IP address as string (e.g., "192.168.56.10")
-     * @param sizeProfile Size profile
-     * @throws IllegalArgumentException if IP string format is invalid
-     */
-    public VmConfig(VmName name, NodeRole role, String ipString, SizeProfile sizeProfile) {
-        this(name, role, parseIpAddress(ipString), sizeProfile, null, null);
-    }
+        public VmConfigBuilder name(VmName name) {
+            this.name = name;
+            return this;
+        }
 
-    /**
-     * Convenience constructor accepting string IP address with overrides.
-     * Parses IP using IPAddressString library and validates format.
-     *
-     * @param name             VM hostname
-     * @param role             VM role
-     * @param ipString         IP address as string (e.g., "192.168.56.10")
-     * @param sizeProfile      Size profile
-     * @param cpuOverride      CPU override (null uses sizeProfile default)
-     * @param memoryMbOverride Memory override (null uses sizeProfile default)
-     * @throws IllegalArgumentException if IP string format is invalid
-     */
-    public VmConfig(VmName name,
-                    NodeRole role,
-                    String ipString,
-                    SizeProfile sizeProfile,
-                    Integer cpuOverride,
-                    Integer memoryMbOverride) {
-        this(name, role, parseIpAddress(ipString), sizeProfile, cpuOverride, memoryMbOverride);
+        public VmConfigBuilder name(String name) {
+            this.name = VmName.of(name);
+            return this;
+        }
+
+        public VmConfigBuilder ip(IPAddress ip) {
+            this.ip = ip;
+            return this;
+        }
+
+        public VmConfigBuilder ip(String ipString) {
+            this.ip = parseIpAddress(ipString);
+            return this;
+        }
     }
 
     /**
@@ -129,7 +105,11 @@ public record VmConfig(
             throw new IllegalArgumentException("ip cannot be blank");
         }
 
-        inet.ipaddr.IPAddressString ipAddr = new inet.ipaddr.IPAddressString(ipString);
+        // Use strict parsing to avoid inet_aton-style permissive formats
+        IPAddressStringParameters params = new IPAddressStringParameters.Builder()
+                .allow_inet_aton(false)
+                .toParams();
+        IPAddressString ipAddr = new IPAddressString(ipString, params);
         if (!ipAddr.isValid()) {
             throw new IllegalArgumentException("Invalid IP address format: " + ipString);
         }

@@ -70,15 +70,12 @@ public class DefaultVmGenerator implements VmGenerator {
      * VM name equals cluster name.
      */
     private List<VmConfig> generateSingleVm(ClusterSpec cluster, IPAddress ip, NodeRole role) {
-        var vm = new VmConfig(
-                VmName.of(cluster.name().value()),           // VM name = cluster name
-                role,                     // CLUSTER or MANAGEMENT
-                ip,
-                cluster.sizeProfile(),
-                null,         // Use size profile defaults
-                null
-        );
-        return List.of(vm);
+        return List.of(VmConfig.builder()
+                .name(cluster.name().value())
+                .role(role)
+                .ip(ip)
+                .sizeProfile(cluster.sizeProfile())
+                .build());
     }
 
     /**
@@ -91,27 +88,23 @@ public class DefaultVmGenerator implements VmGenerator {
 
         // Generate master nodes: {cluster-name}-master-{n}
         for (int i = 1; i <= cluster.masters(); i++) {
-            var vm = new VmConfig(
-                    VmName.of(String.format("%s-master-%d", cluster.name(), i)),
-                    NodeRole.MASTER,
-                    ips.get(ipIndex++),
-                    cluster.sizeProfile(),
-                    null,
-                    null
-            );
+            var vm = VmConfig.builder()
+                    .name(VmName.of(String.format("%s-master-%d", cluster.name(), i)))
+                    .role(NodeRole.MASTER)
+                    .ip(ips.get(ipIndex++))
+                    .sizeProfile(cluster.sizeProfile())
+                    .build();
             vms.add(vm);
         }
 
         // Generate worker nodes: {cluster-name}-worker-{n}
         for (int i = 1; i <= cluster.workers(); i++) {
-            var vm = new VmConfig(
-                    VmName.of(String.format("%s-worker-%d", cluster.name(), i)),
-                    NodeRole.WORKER,
-                    ips.get(ipIndex++),
-                    cluster.sizeProfile(),
-                    null,
-                    null
-            );
+            var vm = VmConfig.builder()
+                    .name(VmName.of(String.format("%s-worker-%d", cluster.name(), i)))
+                    .role(NodeRole.WORKER)
+                    .ip(ips.get(ipIndex++))
+                    .sizeProfile(cluster.sizeProfile())
+                    .build();
             vms.add(vm);
         }
 

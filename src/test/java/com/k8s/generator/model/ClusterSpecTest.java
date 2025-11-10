@@ -6,7 +6,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.lang.reflect.Field;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -18,20 +17,21 @@ class ClusterSpecTest {
 
     @Test
     void shouldCreateValidKubeadmCluster() {
-        var spec = new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.of("192.168.56.10"),
-                3,
-                5,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO)
-        );
+        var spec = ClusterSpec.builder()
+                .name("staging")
+                .type(ClusterType.KUBEADM)
+                .firstIp("192.168.56.10")
+                .masters(3)
+                .workers(5)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build();
 
         assertThat(spec.name().toString()).isEqualTo("staging");
         assertThat(spec.type()).isEqualTo(ClusterType.KUBEADM);
-        assertThat(spec.firstIp()).contains("192.168.56.10");
+        assertThat(spec.firstIp()).isNotNull();
+        assertThat(spec.firstIp().toCanonicalString()).isEqualTo("192.168.56.10");
         assertThat(spec.masters()).isEqualTo(3);
         assertThat(spec.workers()).isEqualTo(5);
         assertThat(spec.sizeProfile()).isEqualTo(SizeProfile.MEDIUM);
@@ -40,51 +40,47 @@ class ClusterSpecTest {
 
     @Test
     void shouldCreateValidKindCluster() {
-        var spec = new ClusterSpec(
-                ClusterName.of("dev"),
-                ClusterType.KIND,
-                Optional.empty(),
-                0,
-                0,
-                SizeProfile.SMALL,
-                List.of(),
-                Optional.empty()
-        );
+        var spec = ClusterSpec.builder()
+                .name("dev")
+                .type(ClusterType.KIND)
+                .masters(0)
+                .workers(0)
+                .sizeProfile(SizeProfile.SMALL)
+                .vms(List.of())
+                .build();
 
         assertThat(spec.name().toString()).isEqualTo("dev");
         assertThat(spec.type()).isEqualTo(ClusterType.KIND);
-        assertThat(spec.firstIp()).isEmpty();
+        assertThat(spec.firstIp()).isNull();
         assertThat(spec.masters()).isZero();
         assertThat(spec.workers()).isZero();
     }
 
     @Test
     void shouldCreateClusterWithExplicitVms() {
-        var vm1 = new VmConfig(
-                VmName.of("master-1"),
-                NodeRole.MASTER,
-                "192.168.56.10",
-                SizeProfile.MEDIUM,
-                Optional.empty(),
-                Optional.empty());
-        var vm2 = new VmConfig(
-                VmName.of("worker-1"),
-                NodeRole.WORKER,
-                "192.168.56.11",
-                SizeProfile.MEDIUM,
-                Optional.empty(),
-                Optional.empty());
+        var vm1 = VmConfig.builder()
+                .name("master-1")
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
+        var vm2 = VmConfig.builder()
+                .name("worker-1")
+                .role(NodeRole.WORKER)
+                .ip("192.168.56.11")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
 
-        var spec = new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.of("192.168.56.10"),
-                1,
-                1,
-                SizeProfile.MEDIUM,
-                List.of(vm1, vm2),
-                Optional.of(CniType.CALICO)
-        );
+        var spec = ClusterSpec.builder()
+                .name("staging")
+                .type(ClusterType.KUBEADM)
+                .firstIp("192.168.56.10")
+                .masters(1)
+                .workers(1)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of(vm1, vm2))
+                .cni(CniType.CALICO)
+                .build();
 
         assertThat(spec.vms()).hasSize(2);
         assertThat(spec.hasExplicitVms()).isTrue();
@@ -92,80 +88,74 @@ class ClusterSpecTest {
 
     @Test
     void shouldRejectNullName() {
-        assertThatThrownBy(() -> new ClusterSpec(
-                null,
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                1,
-                1,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO)
-        ))
+        assertThatThrownBy(() -> ClusterSpec.builder()
+                .name((ClusterName) null)
+                .type(ClusterType.KUBEADM)
+                .masters(1)
+                .workers(1)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build())
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("name is required");
     }
 
     @Test
     void shouldRejectNullType() {
-        assertThatThrownBy(() -> new ClusterSpec(
-                ClusterName.of("staging"),
-                null,
-                Optional.empty(),
-                1,
-                1,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO)
-        ))
+        assertThatThrownBy(() -> ClusterSpec.builder()
+                .name("staging")
+                .type(null)
+                .masters(1)
+                .workers(1)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build())
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("type is required");
     }
 
     @Test
-    void shouldRejectNullFirstIp() {
-        assertThatThrownBy(() -> new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                null,
-                1,
-                1,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO)
-        ))
-                .isInstanceOf(NullPointerException.class)
-                .hasMessageContaining("firstIp must be present");
+    void shouldAllowNullFirstIp() {
+        var spec = ClusterSpec.builder()
+                .name("staging")
+                .type(ClusterType.KUBEADM)
+                .masters(1)
+                .workers(1)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build();
+        assertThat(spec.firstIp()).isNull();
     }
 
     @Test
     void shouldRejectNullSizeProfile() {
-        assertThatThrownBy(() -> new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                1,
-                1,
-                null,
-                List.of(),
-                Optional.of(CniType.CALICO)
-        ))
+        assertThatThrownBy(() -> ClusterSpec.builder()
+                .name("staging")
+                .type(ClusterType.KUBEADM)
+                .masters(1)
+                .workers(1)
+                .sizeProfile(null)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build())
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("sizeProfile is required");
     }
 
     @Test
     void shouldRejectNullVmsList() {
-        assertThatThrownBy(() -> new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                1,
-                1,
-                SizeProfile.MEDIUM,
-                null,
-                Optional.of(CniType.CALICO)
-        ))
+        assertThatThrownBy(() -> ClusterSpec.builder()
+                .name("staging")
+                .type(ClusterType.KUBEADM)
+                .masters(1)
+                .workers(1)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(null)
+                .cni(CniType.CALICO)
+                .build())
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("vms list is required");
     }
@@ -173,80 +163,74 @@ class ClusterSpecTest {
     @ParameterizedTest
     @ValueSource(strings = {"", "  ", "\t", "\n"})
     void shouldRejectBlankName(String blank) {
-        assertThatThrownBy(() -> new ClusterSpec(
-                ClusterName.of(blank),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                1,
-                1,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO)
-        ))
+        assertThatThrownBy(() -> ClusterSpec.builder()
+                .name(ClusterName.of(blank))
+                .type(ClusterType.KUBEADM)
+                .masters(1)
+                .workers(1)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("name cannot be blank");
     }
 
     @Test
     void shouldRejectNegativeMasters() {
-        assertThatThrownBy(() -> new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                -1,
-                1,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO)
-        ))
+        assertThatThrownBy(() -> ClusterSpec.builder()
+                .name("staging")
+                .type(ClusterType.KUBEADM)
+                .masters(-1)
+                .workers(1)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("masters must be >= 0");
     }
 
     @Test
     void shouldRejectNegativeWorkers() {
-        assertThatThrownBy(() -> new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                1,
-                -1,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO)
-        ))
+        assertThatThrownBy(() -> ClusterSpec.builder()
+                .name("staging")
+                .type(ClusterType.KUBEADM)
+                .masters(1)
+                .workers(-1)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("workers must be >= 0");
     }
 
     @Test
     void shouldRejectKubeadmClusterWithZeroNodes() {
-        assertThatThrownBy(() -> new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                0,
-                0,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO)
-        ))
+        assertThatThrownBy(() -> ClusterSpec.builder()
+                .name("staging")
+                .type(ClusterType.KUBEADM)
+                .masters(0)
+                .workers(0)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("KUBEADM cluster requires at least one node");
     }
 
     @Test
     void shouldAllowKindClusterWithZeroNodes() {
-        var spec = new ClusterSpec(
-                ClusterName.of("dev"),
-                ClusterType.KIND,
-                Optional.empty(),
-                0,
-                0,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.empty()
-        );
+        var spec = ClusterSpec.builder()
+                .name("dev")
+                .type(ClusterType.KIND)
+                .masters(0)
+                .workers(0)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .build();
 
         assertThat(spec.masters()).isZero();
         assertThat(spec.workers()).isZero();
@@ -254,16 +238,14 @@ class ClusterSpecTest {
 
     @Test
     void shouldAllowMinikubeClusterWithZeroNodes() {
-        var spec = new ClusterSpec(
-                ClusterName.of("dev"),
-                ClusterType.MINIKUBE,
-                Optional.empty(),
-                0,
-                0,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.empty()
-        );
+        var spec = ClusterSpec.builder()
+                .name("dev")
+                .type(ClusterType.MINIKUBE)
+                .masters(0)
+                .workers(0)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .build();
 
         assertThat(spec.masters()).isZero();
         assertThat(spec.workers()).isZero();
@@ -271,16 +253,14 @@ class ClusterSpecTest {
 
     @Test
     void shouldAllowNoneClusterWithZeroNodes() {
-        var spec = new ClusterSpec(
-                ClusterName.of("mgmt"),
-                ClusterType.NONE,
-                Optional.empty(),
-                0,
-                0,
-                SizeProfile.SMALL,
-                List.of(),
-                Optional.empty()
-        );
+        var spec = ClusterSpec.builder()
+                .name("mgmt")
+                .type(ClusterType.NONE)
+                .masters(0)
+                .workers(0)
+                .sizeProfile(SizeProfile.SMALL)
+                .vms(List.of())
+                .build();
 
         assertThat(spec.masters()).isZero();
         assertThat(spec.workers()).isZero();
@@ -288,88 +268,81 @@ class ClusterSpecTest {
 
     @Test
     void shouldRejectVmsListContainingNulls() {
-        var vm1 = new VmConfig(
-                VmName.of("master-1"),
-                NodeRole.MASTER,
-                "192.168.56.10",
-                SizeProfile.MEDIUM,
-                Optional.empty(),
-                Optional.empty());
+        var vm1 = VmConfig.builder()
+                .name("master-1")
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
 
         // Use ArrayList to avoid List.of() throwing NPE before our validation
         var listWithNull = new java.util.ArrayList<VmConfig>();
         listWithNull.add(vm1);
         listWithNull.add(null);
 
-        assertThatThrownBy(() -> new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                1,
-                0,
-                SizeProfile.MEDIUM,
-                listWithNull,
-                Optional.of(CniType.CALICO)
-        ))
+        assertThatThrownBy(() -> ClusterSpec.builder()
+                .name("staging")
+                .type(ClusterType.KUBEADM)
+                .masters(1)
+                .workers(0)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(listWithNull)
+                .cni(CniType.CALICO)
+                .build())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("vms list contains null elements");
     }
 
     @Test
     void shouldCalculateTotalNodes() {
-        var spec = new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                3,
-                5,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO)
-        );
+        var spec = ClusterSpec.builder()
+                .name("staging")
+                .type(ClusterType.KUBEADM)
+                .masters(3)
+                .workers(5)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build();
 
         assertThat(spec.totalNodes()).isEqualTo(8);
     }
 
     @Test
     void shouldReturnZeroTotalNodesForKind() {
-        var spec = new ClusterSpec(
-                ClusterName.of("dev"),
-                ClusterType.KIND,
-                Optional.empty(),
-                0,
-                0,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.empty()
-        );
+        var spec = ClusterSpec.builder()
+                .name("dev")
+                .type(ClusterType.KIND)
+                .masters(0)
+                .workers(0)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .build();
 
         assertThat(spec.totalNodes()).isZero();
     }
 
     @Test
     void shouldDetectHighAvailability() {
-        var haCluster = new ClusterSpec(
-                ClusterName.of("prod"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                3,
-                5,
-                SizeProfile.LARGE,
-                List.of(),
-                Optional.of(CniType.CALICO)
-        );
+        var haCluster = ClusterSpec.builder()
+                .name("prod")
+                .type(ClusterType.KUBEADM)
+                .masters(3)
+                .workers(5)
+                .sizeProfile(SizeProfile.LARGE)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build();
 
-        var singleMaster = new ClusterSpec(
-                ClusterName.of("dev"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                1,
-                2,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO)
-        );
+        var singleMaster = ClusterSpec.builder()
+                .name("dev")
+                .type(ClusterType.KUBEADM)
+                .masters(1)
+                .workers(2)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build();
 
         assertThat(haCluster.isHighAvailability()).isTrue();
         assertThat(singleMaster.isHighAvailability()).isFalse();
@@ -377,35 +350,32 @@ class ClusterSpecTest {
 
     @Test
     void shouldDetectExplicitVms() {
-        var vm = new VmConfig(
-                VmName.of("master-1"),
-                NodeRole.MASTER,
-                "192.168.56.10",
-                SizeProfile.MEDIUM,
-                Optional.empty(),
-                Optional.empty());
+        var vm = VmConfig.builder()
+                .name("master-1")
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
 
-        var withVms = new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                1,
-                0,
-                SizeProfile.MEDIUM,
-                List.of(vm),
-                Optional.of(CniType.CALICO)
-        );
+        var withVms = ClusterSpec.builder()
+                .name("staging")
+                .type(ClusterType.KUBEADM)
+                .masters(1)
+                .workers(0)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of(vm))
+                .cni(CniType.CALICO)
+                .build();
 
-        var withoutVms = new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                1,
-                0,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO)
-        );
+        var withoutVms = ClusterSpec.builder()
+                .name("staging")
+                .type(ClusterType.KUBEADM)
+                .masters(1)
+                .workers(0)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build();
 
         assertThat(withVms.hasExplicitVms()).isTrue();
         assertThat(withoutVms.hasExplicitVms()).isFalse();
@@ -413,24 +383,22 @@ class ClusterSpecTest {
 
     @Test
     void shouldCreateNewInstanceWithUpdatedVms() {
-        var original = new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                1,
-                0,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO)
-        );
+        var original = ClusterSpec.builder()
+                .name("staging")
+                .type(ClusterType.KUBEADM)
+                .masters(1)
+                .workers(0)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build();
 
-        var vm = new VmConfig(
-                VmName.of("master-1"),
-                NodeRole.MASTER,
-                "192.168.56.10",
-                SizeProfile.MEDIUM,
-                Optional.empty(),
-                Optional.empty());
+        var vm = VmConfig.builder()
+                .name("master-1")
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
         var updated = original.withVms(List.of(vm));
 
         // Original unchanged
@@ -442,16 +410,15 @@ class ClusterSpecTest {
 
     @Test
     void shouldRejectNullInWithVms() {
-        var spec = new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                1,
-                0,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO)
-        );
+        var spec = ClusterSpec.builder()
+                .name("staging")
+                .type(ClusterType.KUBEADM)
+                .masters(1)
+                .workers(0)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build();
 
         assertThatThrownBy(() -> spec.withVms(null))
                 .isInstanceOf(NullPointerException.class)
@@ -460,25 +427,23 @@ class ClusterSpecTest {
 
     @Test
     void shouldMakeDefensiveCopyOfVmsList() {
-        var vm = new VmConfig(
-                VmName.of("master-1"),
-                NodeRole.MASTER,
-                "192.168.56.10",
-                SizeProfile.MEDIUM,
-                Optional.empty(),
-                Optional.empty());
+        var vm = VmConfig.builder()
+                .name("master-1")
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
         var mutableList = new java.util.ArrayList<>(List.of(vm));
 
-        var spec = new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                1,
-                0,
-                SizeProfile.MEDIUM,
-                mutableList,
-                Optional.of(CniType.CALICO)
-        );
+        var spec = ClusterSpec.builder()
+                .name("staging")
+                .type(ClusterType.KUBEADM)
+                .masters(1)
+                .workers(0)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(mutableList)
+                .cni(CniType.CALICO)
+                .build();
 
         // Modify original list
         mutableList.clear();
@@ -489,31 +454,29 @@ class ClusterSpecTest {
 
     @Test
     void shouldReturnImmutableVmsList() {
-        var vm = new VmConfig(
-                VmName.of("master-1"),
-                NodeRole.MASTER,
-                "192.168.56.10",
-                SizeProfile.MEDIUM,
-                Optional.empty(),
-                Optional.empty());
+        var vm = VmConfig.builder()
+                .name("master-1")
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
 
-        var spec = new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                1,
-                0,
-                SizeProfile.MEDIUM,
-                List.of(vm),
-                Optional.of(CniType.CALICO)
-        );
+        var spec = ClusterSpec.builder()
+                .name("staging")
+                .type(ClusterType.KUBEADM)
+                .masters(1)
+                .workers(0)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of(vm))
+                .cni(CniType.CALICO)
+                .build();
 
         // Attempt to modify should fail
         assertThatThrownBy(() -> spec.vms().add(vm))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
-//    @Test
+    //    @Test
     void modelBrickContainsRequiredFields() {
         assertThat(GeneratorSpec.class.getDeclaredFields())
                 .extracting(Field::getName)

@@ -4,7 +4,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Unit tests for Result sealed interface and its implementations.
@@ -32,22 +33,22 @@ class ResultTest {
     @Test
     void shouldRejectNullSuccessValue() {
         assertThatThrownBy(() -> Result.success(null))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("success value cannot be null");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("success value cannot be null");
     }
 
     @Test
     void shouldRejectNullFailureValue() {
         assertThatThrownBy(() -> Result.failure(null))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("error value cannot be null");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("error value cannot be null");
     }
 
     @Test
     void shouldExtractSuccessValue() {
         Result<String, String> result = Result.success("test-value");
 
-        String value = result.orElseThrow(e -> new RuntimeException(e));
+        String value = result.orElseThrow(RuntimeException::new);
 
         assertThat(value).isEqualTo("test-value");
     }
@@ -57,8 +58,8 @@ class ResultTest {
         Result<String, String> result = Result.failure("test-error");
 
         assertThatThrownBy(() -> result.orElseThrow(RuntimeException::new))
-            .isInstanceOf(RuntimeException.class)
-            .hasMessage("test-error");
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("test-error");
     }
 
     @Test
@@ -97,7 +98,7 @@ class ResultTest {
 
         assertThat(mapped.isFailure()).isTrue();
         assertThatThrownBy(() -> mapped.orElseThrow(RuntimeException::new))
-            .hasMessage("error");
+                .hasMessage("error");
     }
 
     @Test
@@ -121,12 +122,12 @@ class ResultTest {
         Result<String, String> result = Result.failure("original error");
 
         Result<Integer, String> flatMapped = result.flatMap(str ->
-            Result.success(Integer.parseInt(str))
+                Result.success(Integer.parseInt(str))
         );
 
         assertThat(flatMapped.isFailure()).isTrue();
         assertThatThrownBy(() -> flatMapped.orElseThrow(RuntimeException::new))
-            .hasMessage("original error");
+                .hasMessage("original error");
     }
 
     @Test
@@ -137,7 +138,7 @@ class ResultTest {
 
         assertThat(mapped.isFailure()).isTrue();
         assertThatThrownBy(() -> mapped.orElseThrow(len -> new RuntimeException("Length: " + len)))
-            .hasMessage("Length: 5");
+                .hasMessage("Length: 5");
     }
 
     @Test
@@ -202,8 +203,8 @@ class ResultTest {
         Result<String, String> result = Result.success("test");
 
         assertThatThrownBy(() -> result.map(null))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("mapper cannot be null");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("mapper cannot be null");
     }
 
     @Test
@@ -211,8 +212,8 @@ class ResultTest {
         Result<String, String> result = Result.success("test");
 
         assertThatThrownBy(() -> result.flatMap(null))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("mapper cannot be null");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("mapper cannot be null");
     }
 
     @Test
@@ -220,8 +221,8 @@ class ResultTest {
         Result<String, String> result = Result.failure("error");
 
         assertThatThrownBy(() -> result.mapError(null))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("mapper cannot be null");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("mapper cannot be null");
     }
 
     @Test
@@ -229,7 +230,7 @@ class ResultTest {
         Result<String, String> result = Result.failure("error");
 
         assertThatThrownBy(() -> result.orElseThrow(null))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("exceptionMapper cannot be null");
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("exceptionMapper cannot be null");
     }
 }

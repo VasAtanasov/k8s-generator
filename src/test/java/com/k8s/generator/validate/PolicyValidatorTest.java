@@ -4,7 +4,6 @@ import com.k8s.generator.model.*;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -25,16 +24,15 @@ class PolicyValidatorTest {
 
     @Test
     void shouldAcceptSingleCluster() {
-        var cluster = new ClusterSpec(
-                ClusterName.of("dev"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                1,
-                2,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO)
-        );
+        var cluster = ClusterSpec.builder()
+                .name("dev")
+                .type(ClusterType.KUBEADM)
+                .masters(1)
+                .workers(2)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build();
 
         ValidationResult result = validator.validate(List.of(cluster));
 
@@ -43,26 +41,10 @@ class PolicyValidatorTest {
 
     @Test
     void shouldAcceptMultipleClustersWithUniqueNames() {
-        var cluster1 = new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.of("192.168.56.10"),
-                1,
-                2,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO)
-        );
-        var cluster2 = new ClusterSpec(
-                ClusterName.of("prod"),
-                ClusterType.KUBEADM,
-                Optional.of("192.168.56.20"),
-                3,
-                5,
-                SizeProfile.LARGE,
-                List.of(),
-                Optional.of(CniType.CALICO)
-        );
+        var cluster1 = ClusterSpec.builder().name("staging").type(ClusterType.KUBEADM)
+                .firstIp("192.168.56.10").masters(1).workers(2).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
+        var cluster2 = ClusterSpec.builder().name("prod").type(ClusterType.KUBEADM)
+                .firstIp("192.168.56.20").masters(3).workers(5).sizeProfile(SizeProfile.LARGE).vms(List.of()).cni(CniType.CALICO).build();
 
         ValidationResult result = validator.validate(List.of(cluster1, cluster2));
 
@@ -71,26 +53,10 @@ class PolicyValidatorTest {
 
     @Test
     void shouldRejectDuplicateClusterNames() {
-        var cluster1 = new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.of("192.168.56.10"),
-                1,
-                2,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO)
-        );
-        var cluster2 = new ClusterSpec(
-                ClusterName.of("staging"),  // Duplicate name
-                ClusterType.KIND,
-                Optional.of("192.168.56.20"),
-                0,
-                0,
-                SizeProfile.SMALL,
-                List.of(),
-                Optional.empty()
-        );
+        var cluster1 = ClusterSpec.builder().name("staging").type(ClusterType.KUBEADM)
+                .firstIp("192.168.56.10").masters(1).workers(2).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
+        var cluster2 = ClusterSpec.builder().name("staging").type(ClusterType.KIND)
+                .firstIp("192.168.56.20").masters(0).workers(0).sizeProfile(SizeProfile.SMALL).vms(List.of()).build();
 
         ValidationResult result = validator.validate(List.of(cluster1, cluster2));
 
@@ -104,10 +70,10 @@ class PolicyValidatorTest {
 
     @Test
     void shouldDetectMultipleDuplicateNames() {
-        var cluster1 = new ClusterSpec(ClusterName.of("dev"), ClusterType.KIND, Optional.empty(), 0, 0, SizeProfile.SMALL, List.of(), Optional.empty());
-        var cluster2 = new ClusterSpec(ClusterName.of("dev"), ClusterType.KIND, Optional.empty(), 0, 0, SizeProfile.SMALL, List.of(), Optional.empty());
-        var cluster3 = new ClusterSpec(ClusterName.of("prod"), ClusterType.KUBEADM, Optional.empty(), 1, 1, SizeProfile.MEDIUM, List.of(), Optional.of(CniType.CALICO));
-        var cluster4 = new ClusterSpec(ClusterName.of("prod"), ClusterType.KUBEADM, Optional.empty(), 1, 1, SizeProfile.MEDIUM, List.of(), Optional.of(CniType.CALICO));
+        var cluster1 = ClusterSpec.builder().name("dev").type(ClusterType.KIND).masters(0).workers(0).sizeProfile(SizeProfile.SMALL).vms(List.of()).build();
+        var cluster2 = ClusterSpec.builder().name("dev").type(ClusterType.KIND).masters(0).workers(0).sizeProfile(SizeProfile.SMALL).vms(List.of()).build();
+        var cluster3 = ClusterSpec.builder().name("prod").type(ClusterType.KUBEADM).masters(1).workers(1).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
+        var cluster4 = ClusterSpec.builder().name("prod").type(ClusterType.KUBEADM).masters(1).workers(1).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
 
         ValidationResult result = validator.validate(List.of(cluster1, cluster2, cluster3, cluster4));
 
@@ -121,16 +87,16 @@ class PolicyValidatorTest {
     void shouldRejectExcessiveTotalVmCount() {
         // Create 10 clusters with 6 VMs each = 60 total (exceeds limit of 50)
         var clusters = java.util.stream.IntStream.range(0, 10)
-                .mapToObj(i -> new ClusterSpec(
-                        ClusterName.of("cluster" + i),
-                        ClusterType.KUBEADM,
-                        Optional.of("192.168.56." + (10 + i * 10)),
-                        2,
-                        4,  // 6 VMs per cluster
-                        SizeProfile.MEDIUM,
-                        List.of(),
-                        Optional.of(CniType.CALICO)
-                ))
+                .mapToObj(i -> ClusterSpec.builder()
+                        .name("cluster" + i)
+                        .type(ClusterType.KUBEADM)
+                        .firstIp("192.168.56." + (10 + i * 10))
+                        .masters(2)
+                        .workers(4)
+                        .sizeProfile(SizeProfile.MEDIUM)
+                        .vms(List.of())
+                        .cni(CniType.CALICO)
+                        .build())
                 .toList();
 
         ValidationResult result = validator.validate(clusters);
@@ -144,10 +110,10 @@ class PolicyValidatorTest {
     @Test
     void shouldWarnWhenApproachingTotalVmLimit() {
         // Create clusters totaling 41 VMs (80% of 50)
-        var cluster1 = new ClusterSpec(ClusterName.of("cluster1"), ClusterType.KUBEADM, Optional.empty(), 3, 10, SizeProfile.MEDIUM, List.of(), Optional.of(CniType.CALICO));
-        var cluster2 = new ClusterSpec(ClusterName.of("cluster2"), ClusterType.KUBEADM, Optional.empty(), 3, 10, SizeProfile.MEDIUM, List.of(), Optional.of(CniType.CALICO));
-        var cluster3 = new ClusterSpec(ClusterName.of("cluster3"), ClusterType.KUBEADM, Optional.empty(), 3, 10, SizeProfile.MEDIUM, List.of(), Optional.of(CniType.CALICO));
-        var cluster4 = new ClusterSpec(ClusterName.of("cluster4"), ClusterType.KIND, Optional.empty(), 0, 0, SizeProfile.SMALL, List.of(), Optional.empty());  // +2 = 41 total
+        var cluster1 = ClusterSpec.builder().name("cluster1").type(ClusterType.KUBEADM).masters(3).workers(10).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
+        var cluster2 = ClusterSpec.builder().name("cluster2").type(ClusterType.KUBEADM).masters(3).workers(10).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
+        var cluster3 = ClusterSpec.builder().name("cluster3").type(ClusterType.KUBEADM).masters(3).workers(10).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
+        var cluster4 = ClusterSpec.builder().name("cluster4").type(ClusterType.KIND).masters(0).workers(0).sizeProfile(SizeProfile.SMALL).vms(List.of()).build();  // +2 = 41 total
 
         ValidationResult result = validator.validate(List.of(cluster1, cluster2, cluster3, cluster4));
 
@@ -158,16 +124,13 @@ class PolicyValidatorTest {
 
     @Test
     void shouldRejectClusterExceedingPerClusterLimit() {
-        var largeCluster = new ClusterSpec(
-                ClusterName.of("huge"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                5,
-                20,  // 25 VMs total (exceeds per-cluster limit of 20)
-                SizeProfile.LARGE,
-                List.of(),
-                Optional.of(CniType.CALICO)
-        );
+        var largeCluster = ClusterSpec.builder()
+                .name("huge").type(ClusterType.KUBEADM)
+                .masters(5).workers(20)
+                .sizeProfile(SizeProfile.LARGE)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build();
 
         ValidationResult result = validator.validate(List.of(largeCluster));
 
@@ -179,16 +142,13 @@ class PolicyValidatorTest {
 
     @Test
     void shouldAcceptClusterAtPerClusterLimit() {
-        var cluster = new ClusterSpec(
-                ClusterName.of("large"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                5,
-                15,  // 20 VMs total (exactly at limit)
-                SizeProfile.LARGE,
-                List.of(),
-                Optional.of(CniType.CALICO)
-        );
+        var cluster = ClusterSpec.builder()
+                .name("large").type(ClusterType.KUBEADM)
+                .masters(5).workers(15)
+                .sizeProfile(SizeProfile.LARGE)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build();
 
         ValidationResult result = validator.validate(List.of(cluster));
 
@@ -197,41 +157,23 @@ class PolicyValidatorTest {
 
     @Test
     void shouldDetectVmNameConflictAcrossClusters() {
-        var vm1 = new VmConfig(
-                VmName.of("master-1"),
-                NodeRole.MASTER,
-                "192.168.56.10",
-                SizeProfile.MEDIUM,
-                Optional.empty(),
-                Optional.empty());
-        var vm2 = new VmConfig(
-                VmName.of("master-1"), // Same name
-                NodeRole.MASTER,
-                "192.168.56.20",
-                SizeProfile.MEDIUM,
-                Optional.empty(),
-                Optional.empty());
+        var vm1 = VmConfig.builder()
+                .name("master-1")
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
+        var vm2 = VmConfig.builder()
+                .name("master-1") // Same name
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.20")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
 
-        var cluster1 = new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.of("192.168.56.10"),
-                1,
-                0,
-                SizeProfile.MEDIUM,
-                List.of(vm1),
-                Optional.of(CniType.CALICO)
-        );
-        var cluster2 = new ClusterSpec(
-                ClusterName.of("prod"),
-                ClusterType.KUBEADM,
-                Optional.of("192.168.56.20"),
-                1,
-                0,
-                SizeProfile.MEDIUM,
-                List.of(vm2),
-                Optional.of(CniType.CALICO)
-        );
+        var cluster1 = ClusterSpec.builder().name("staging").type(ClusterType.KUBEADM)
+                .firstIp("192.168.56.10").masters(1).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of(vm1)).cni(CniType.CALICO).build();
+        var cluster2 = ClusterSpec.builder().name("prod").type(ClusterType.KUBEADM)
+                .firstIp("192.168.56.20").masters(1).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of(vm2)).cni(CniType.CALICO).build();
 
         ValidationResult result = validator.validate(List.of(cluster1, cluster2));
 
@@ -245,34 +187,17 @@ class PolicyValidatorTest {
     @Test
     void shouldDetectConflictBetweenExplicitAndPredictedNames() {
         // Explicit VM with same name that cluster1 will generate
-        var vm = new VmConfig(
-                VmName.of("staging-master-1"),
-                NodeRole.MASTER,
-                "192.168.56.20",
-                SizeProfile.MEDIUM,
-                Optional.empty(),
-                Optional.empty());
+        var vm = VmConfig.builder()
+                .name("staging-master-1")
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.20")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
 
-        var cluster1 = new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.of("192.168.56.10"),
-                1,  // Will generate "staging-master-1"
-                0,
-                SizeProfile.MEDIUM,
-                List.of(),  // No explicit VMs, will be generated
-                Optional.of(CniType.CALICO)
-        );
-        var cluster2 = new ClusterSpec(
-                ClusterName.of("prod"),
-                ClusterType.KUBEADM,
-                Optional.of("192.168.56.20"),
-                1,
-                0,
-                SizeProfile.MEDIUM,
-                List.of(vm),  // Explicit "staging-master-1" conflicts with cluster1's predicted name
-                Optional.of(CniType.CALICO)
-        );
+        var cluster1 = ClusterSpec.builder().name("staging").type(ClusterType.KUBEADM)
+                .firstIp("192.168.56.10").masters(1).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
+        var cluster2 = ClusterSpec.builder().name("prod").type(ClusterType.KUBEADM)
+                .firstIp("192.168.56.20").masters(1).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of(vm)).cni(CniType.CALICO).build();
 
         ValidationResult result = validator.validate(List.of(cluster1, cluster2));
 
@@ -284,16 +209,8 @@ class PolicyValidatorTest {
 
     @Test
     void shouldCountKindAsOneVm() {
-        var cluster = new ClusterSpec(
-                ClusterName.of("dev"),
-                ClusterType.KIND,
-                Optional.empty(),
-                0,
-                0,
-                SizeProfile.SMALL,
-                List.of(),
-                Optional.empty()
-        );
+        var cluster = ClusterSpec.builder().name("dev").type(ClusterType.KIND)
+                .masters(0).workers(0).sizeProfile(SizeProfile.SMALL).vms(List.of()).build();
 
         ValidationResult result = validator.validate(List.of(cluster));
 
@@ -303,16 +220,8 @@ class PolicyValidatorTest {
 
     @Test
     void shouldCountMinikubeAsOneVm() {
-        var cluster = new ClusterSpec(
-                ClusterName.of("dev"),
-                ClusterType.MINIKUBE,
-                Optional.empty(),
-                0,
-                0,
-                SizeProfile.SMALL,
-                List.of(),
-                Optional.empty()
-        );
+        var cluster = ClusterSpec.builder().name("dev").type(ClusterType.MINIKUBE)
+                .masters(0).workers(0).sizeProfile(SizeProfile.SMALL).vms(List.of()).build();
 
         ValidationResult result = validator.validate(List.of(cluster));
 
@@ -322,16 +231,8 @@ class PolicyValidatorTest {
 
     @Test
     void shouldCountNoneAsOneVm() {
-        var cluster = new ClusterSpec(
-                ClusterName.of("mgmt"),
-                ClusterType.NONE,
-                Optional.empty(),
-                0,
-                0,
-                SizeProfile.SMALL,
-                List.of(),
-                Optional.empty()
-        );
+        var cluster = ClusterSpec.builder().name("mgmt").type(ClusterType.NONE)
+                .masters(0).workers(0).sizeProfile(SizeProfile.SMALL).vms(List.of()).build();
 
         ValidationResult result = validator.validate(List.of(cluster));
 
@@ -348,20 +249,19 @@ class PolicyValidatorTest {
 
     @Test
     void shouldCollectAllPolicyErrors() {
-        var vm = new VmConfig(
-                VmName.of("master-1"),
-                NodeRole.MASTER,
-                "192.168.56.10",
-                SizeProfile.MEDIUM,
-                Optional.empty(),
-                Optional.empty());
+        var vm = VmConfig.builder()
+                .name("master-1")
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
 
-        var cluster1 = new ClusterSpec(ClusterName.of("dup"), ClusterType.KUBEADM, Optional.empty(),
-                10, 15, SizeProfile.LARGE, List.of(), Optional.of(CniType.CALICO));  // Exceeds per-cluster limit
-        var cluster2 = new ClusterSpec(ClusterName.of("dup"), ClusterType.KUBEADM, Optional.empty(),  // Duplicate name
-                10, 15, SizeProfile.LARGE, List.of(), Optional.of(CniType.CALICO));
-        var cluster3 = new ClusterSpec(ClusterName.of("other"), ClusterType.KUBEADM, Optional.empty(),
-                1, 0, SizeProfile.MEDIUM, List.of(vm), Optional.of(CniType.CALICO));
+        var cluster1 = ClusterSpec.builder().name("dup").type(ClusterType.KUBEADM)
+                .masters(10).workers(15).sizeProfile(SizeProfile.LARGE).vms(List.of()).cni(CniType.CALICO).build();
+        var cluster2 = ClusterSpec.builder().name("dup").type(ClusterType.KUBEADM)
+                .masters(10).workers(15).sizeProfile(SizeProfile.LARGE).vms(List.of()).cni(CniType.CALICO).build();
+        var cluster3 = ClusterSpec.builder().name("other").type(ClusterType.KUBEADM)
+                .masters(1).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of(vm)).cni(CniType.CALICO).build();
 
         ValidationResult result = validator.validate(List.of(cluster1, cluster2, cluster3));
 

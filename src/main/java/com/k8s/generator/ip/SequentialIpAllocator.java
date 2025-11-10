@@ -64,11 +64,6 @@ public class SequentialIpAllocator implements IpAllocator {
     private static final IPAddress DEFAULT_BASE_IP = new IPAddressString("192.168.56.10").getAddress();
 
     /**
-     * Default subnet (used for multi-cluster overlap detection).
-     */
-    private static final IPAddress DEFAULT_SUBNET = new IPAddressString("192.168.56.0/24").getAddress();
-
-    /**
      * Default base IP for management (NONE) clusters when firstIp is not specified.
      */
     private static final IPAddress MGMT_DEFAULT_BASE_IP = new IPAddressString("192.168.56.5").getAddress();
@@ -98,6 +93,11 @@ public class SequentialIpAllocator implements IpAllocator {
         IPAddress ipAddress = spec.firstIp() != null
                 ? spec.firstIp()
                 : (spec.type() == ClusterType.NONE ? MGMT_DEFAULT_BASE_IP : DEFAULT_BASE_IP);
+
+        // Guard: allocator supports IPv4-only semantics (last-octet arithmetic, /24 boundary)
+        if (!ipAddress.isIPv4()) {
+            return Result.failure("Only IPv4 is supported for allocation: " + ipAddress.toCanonicalString());
+        }
 
         // 3. Calculate VM count based on cluster type
         int vmCount = calculateVmCount(spec);

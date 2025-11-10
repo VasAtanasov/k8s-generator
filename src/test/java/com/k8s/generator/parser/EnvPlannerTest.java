@@ -6,10 +6,10 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Comprehensive test suite for EnvPlanner.
@@ -35,60 +35,51 @@ class EnvPlannerTest {
     private static final VmName WORKER_VM_NAME = VmName.of("clu-m1-pt-kubeadm-worker-1");
 
     private static ClusterSpec kindCluster() {
-        return new ClusterSpec(
-                KIND_CLUSTER_NAME,
-                ClusterType.KIND,
-                Optional.empty(),  // firstIp
-                0, 0,              // masters, workers
-                SizeProfile.MEDIUM,
-                List.of(),         // vms
-                Optional.empty()   // cni
-        );
+        return ClusterSpec.builder()
+                .name(KIND_CLUSTER_NAME)
+                .type(ClusterType.KIND)
+                .masters(0).workers(0)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .build();
     }
 
     private static ClusterSpec kubeadmCluster() {
-        return new ClusterSpec(
-                KUBEADM_CLUSTER_NAME,
-                ClusterType.KUBEADM,
-                Optional.empty(),           // firstIp
-                1, 1,                       // masters, workers
-                SizeProfile.MEDIUM,
-                List.of(),                  // vms
-                Optional.of(CniType.CALICO) // cni
-        );
+        return ClusterSpec.builder()
+                .name(KUBEADM_CLUSTER_NAME)
+                .type(ClusterType.KUBEADM)
+                .masters(1).workers(1)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build();
     }
 
     private static VmConfig kindVm() {
-        return new VmConfig(
-                KIND_VM_NAME,
-                NodeRole.CLUSTER,
-                "192.168.56.10",
-                SizeProfile.MEDIUM,
-                Optional.empty(),
-                Optional.empty()
-        );
+        return VmConfig.builder()
+                .name(KIND_VM_NAME)
+                .role(NodeRole.CLUSTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
     }
 
     private static VmConfig masterVm() {
-        return new VmConfig(
-                MASTER_VM_NAME,
-                NodeRole.MASTER,
-                "192.168.56.10",
-                SizeProfile.MEDIUM,
-                Optional.empty(),
-                Optional.empty()
-        );
+        return VmConfig.builder()
+                .name(MASTER_VM_NAME)
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
     }
 
     private static VmConfig workerVm() {
-        return new VmConfig(
-                WORKER_VM_NAME,
-                NodeRole.WORKER,
-                "192.168.56.11",
-                SizeProfile.MEDIUM,
-                Optional.empty(),
-                Optional.empty()
-        );
+        return VmConfig.builder()
+                .name(WORKER_VM_NAME)
+                .role(NodeRole.WORKER)
+                .ip("192.168.56.11")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
     }
 
     @Test
@@ -254,38 +245,30 @@ class EnvPlannerTest {
     void build_multipleVms_eachHasUniquePerVmEnv() {
         // Given: Kubeadm cluster with 2 masters and 2 workers
         var cluster = kubeadmCluster();
-        var master1 = new VmConfig(
-                VmName.of("clu-m1-pt-kubeadm-master-1"),
-                NodeRole.MASTER,
-                "192.168.56.10",
-                SizeProfile.MEDIUM,
-                Optional.empty(),
-                Optional.empty()
-        );
-        var master2 = new VmConfig(
-                VmName.of("clu-m1-pt-kubeadm-master-2"),
-                NodeRole.MASTER,
-                "192.168.56.11",
-                SizeProfile.MEDIUM,
-                Optional.empty(),
-                Optional.empty()
-        );
-        var worker1 = new VmConfig(
-                VmName.of("clu-m1-pt-kubeadm-worker-1"),
-                NodeRole.WORKER,
-                "192.168.56.12",
-                SizeProfile.MEDIUM,
-                Optional.empty(),
-                Optional.empty()
-        );
-        var worker2 = new VmConfig(
-                VmName.of("clu-m1-pt-kubeadm-worker-2"),
-                NodeRole.WORKER,
-                "192.168.56.13",
-                SizeProfile.MEDIUM,
-                Optional.empty(),
-                Optional.empty()
-        );
+        var master1 = VmConfig.builder()
+                .name("clu-m1-pt-kubeadm-master-1")
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
+        var master2 = VmConfig.builder()
+                .name("clu-m1-pt-kubeadm-master-2")
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.11")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
+        var worker1 = VmConfig.builder()
+                .name("clu-m1-pt-kubeadm-worker-1")
+                .role(NodeRole.WORKER)
+                .ip("192.168.56.12")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
+        var worker2 = VmConfig.builder()
+                .name("clu-m1-pt-kubeadm-worker-2")
+                .role(NodeRole.WORKER)
+                .ip("192.168.56.13")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
         var vms = List.of(master1, master2, worker1, worker2);
 
         // When: Build environment
@@ -351,23 +334,19 @@ class EnvPlannerTest {
     @DisplayName("build() with minikube cluster produces correct environment")
     void build_minikubeCluster_producesCorrectEnv() {
         // Given: Minikube cluster
-        var cluster = new ClusterSpec(
-                ClusterName.of("clu-m1-pt-minikube"),
-                ClusterType.MINIKUBE,
-                Optional.empty(),  // firstIp
-                0, 0,              // masters, workers
-                SizeProfile.MEDIUM,
-                List.of(),         // vms
-                Optional.empty()   // cni
-        );
-        var vm = new VmConfig(
-                VmName.of("clu-m1-pt-minikube"),
-                NodeRole.CLUSTER,
-                "192.168.56.10",
-                SizeProfile.MEDIUM,
-                Optional.empty(),
-                Optional.empty()
-        );
+        var cluster = ClusterSpec.builder()
+                .name("clu-m1-pt-minikube")
+                .type(ClusterType.MINIKUBE)
+                .masters(0).workers(0)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .build();
+        var vm = VmConfig.builder()
+                .name("clu-m1-pt-minikube")
+                .role(NodeRole.CLUSTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
         var vms = List.of(vm);
 
         // When: Build environment
@@ -393,23 +372,19 @@ class EnvPlannerTest {
     @DisplayName("build() with management-only cluster (NONE type) produces correct environment")
     void build_managementOnlyCluster_producesCorrectEnv() {
         // Given: Management-only cluster (NONE type)
-        var cluster = new ClusterSpec(
-                ClusterName.of("mgmt-m7-hw"),
-                ClusterType.NONE,
-                Optional.empty(),  // firstIp
-                0, 0,              // masters, workers
-                SizeProfile.SMALL,
-                List.of(),         // vms
-                Optional.empty()   // cni
-        );
-        var vm = new VmConfig(
-                VmName.of("mgmt-m7-hw"),
-                NodeRole.MANAGEMENT,
-                "192.168.56.10",
-                SizeProfile.SMALL,
-                Optional.empty(),
-                Optional.empty()
-        );
+        var cluster = ClusterSpec.builder()
+                .name("mgmt-m7-hw")
+                .type(ClusterType.NONE)
+                .masters(0).workers(0)
+                .sizeProfile(SizeProfile.SMALL)
+                .vms(List.of())
+                .build();
+        var vm = VmConfig.builder()
+                .name("mgmt-m7-hw")
+                .role(NodeRole.MANAGEMENT)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.SMALL)
+                .build();
         var vms = List.of(vm);
 
         // When: Build environment

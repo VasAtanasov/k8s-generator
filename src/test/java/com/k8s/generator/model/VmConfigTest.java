@@ -4,9 +4,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Unit tests for VmConfig record.
@@ -15,135 +14,96 @@ class VmConfigTest {
 
     @Test
     void shouldCreateValidVmConfig() {
-        var vm = new VmConfig(
-            VmName.of("master-1"),
-            NodeRole.MASTER,
-            "192.168.56.10",
-            SizeProfile.MEDIUM,
-            Optional.empty(),
-            Optional.empty()
-        );
+        var vm = VmConfig.builder()
+                .name("master-1")
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
 
         assertThat(vm.name()).isEqualTo(VmName.of("master-1"));
         assertThat(vm.role()).isEqualTo(NodeRole.MASTER);
-        assertThat(vm.ip()).isEqualTo("192.168.56.10");
+        assertThat(vm.ip().toCanonicalString()).isEqualTo("192.168.56.10");
         assertThat(vm.sizeProfile()).isEqualTo(SizeProfile.MEDIUM);
-        assertThat(vm.cpuOverride()).isEmpty();
-        assertThat(vm.memoryMbOverride()).isEmpty();
+        assertThat(vm.cpuOverride()).isNull();
+        assertThat(vm.memoryMbOverride()).isNull();
     }
 
     @Test
     void shouldCreateVmConfigWithOverrides() {
-        var vm = new VmConfig(
-            VmName.of("worker-1"),
-            NodeRole.WORKER,
-            "192.168.56.11",
-            SizeProfile.LARGE,
-            Optional.of(8),
-            Optional.of(16384)
-        );
+        var vm = VmConfig.builder()
+                .name("worker-1")
+                .role(NodeRole.WORKER)
+                .ip("192.168.56.11")
+                .sizeProfile(SizeProfile.LARGE)
+                .cpuOverride(8)
+                .memoryMbOverride(16384)
+                .build();
 
-        assertThat(vm.cpuOverride()).contains(8);
-        assertThat(vm.memoryMbOverride()).contains(16384);
+        assertThat(vm.cpuOverride()).isEqualTo(8);
+        assertThat(vm.memoryMbOverride()).isEqualTo(16384);
     }
 
     @Test
     void shouldRejectNullName() {
-        assertThatThrownBy(() -> new VmConfig(
-            null,
-            NodeRole.MASTER,
-            "192.168.56.10",
-            SizeProfile.MEDIUM,
-            Optional.empty(),
-            Optional.empty()
-        ))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("name is required");
+        assertThatThrownBy(() -> VmConfig.builder()
+                .name((VmName) null)
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build())
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("name is required");
     }
 
     @Test
     void shouldRejectNullRole() {
-        assertThatThrownBy(() -> new VmConfig(
-            VmName.of("master-1"),
-            null,
-            "192.168.56.10",
-            SizeProfile.MEDIUM,
-            Optional.empty(),
-            Optional.empty()
-        ))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("role is required");
+        assertThatThrownBy(() -> VmConfig.builder()
+                .name("master-1")
+                .role(null)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build())
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("role is required");
     }
 
     @Test
     void shouldRejectNullIp() {
-        assertThatThrownBy(() -> new VmConfig(
-            VmName.of("master-1"),
-            NodeRole.MASTER,
-            null,
-            SizeProfile.MEDIUM,
-            Optional.empty(),
-            Optional.empty()
-        ))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("ip is required");
+        assertThatThrownBy(() -> VmConfig.builder()
+                .name("master-1")
+                .role(NodeRole.MASTER)
+                // no ip set -> null
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build())
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("ip is required");
     }
 
     @Test
     void shouldRejectNullSizeProfile() {
-        assertThatThrownBy(() -> new VmConfig(
-            VmName.of("master-1"),
-            NodeRole.MASTER,
-            "192.168.56.10",
-            null,
-            Optional.empty(),
-            Optional.empty()
-        ))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("sizeProfile is required");
+        assertThatThrownBy(() -> VmConfig.builder()
+                .name("master-1")
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.10")
+                .sizeProfile(null)
+                .build())
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("sizeProfile is required");
     }
 
-    @Test
-    void shouldRejectNullCpuOverride() {
-        assertThatThrownBy(() -> new VmConfig(
-            VmName.of("master-1"),
-            NodeRole.MASTER,
-            "192.168.56.10",
-            SizeProfile.MEDIUM,
-            null,
-            Optional.empty()
-        ))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("cpuOverride must be present");
-    }
-
-    @Test
-    void shouldRejectNullMemoryOverride() {
-        assertThatThrownBy(() -> new VmConfig(
-            VmName.of("master-1"),
-            NodeRole.MASTER,
-            "192.168.56.10",
-            SizeProfile.MEDIUM,
-            Optional.empty(),
-            null
-        ))
-            .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("memoryMbOverride must be present");
-    }
 
     @ParameterizedTest
     @ValueSource(strings = {"", "  ", "\t", "\n"})
     void shouldRejectBlankName(String blank) {
-        assertThatThrownBy(() -> new VmConfig(
-            VmName.of(blank),
-            NodeRole.MASTER,
-            "192.168.56.10",
-            SizeProfile.MEDIUM,
-            Optional.empty(),
-            Optional.empty()
-        ))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("name cannot be blank");
+        assertThatThrownBy(() -> VmConfig.builder()
+                .name(VmName.of(blank))
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("name cannot be blank");
     }
 
     // Test removed: With NodeRole enum, blank/invalid roles are prevented at compile time
@@ -152,116 +112,104 @@ class VmConfigTest {
     @ParameterizedTest
     @ValueSource(strings = {"", "  ", "\t", "\n"})
     void shouldRejectBlankIp(String blank) {
-        assertThatThrownBy(() -> new VmConfig(
-            VmName.of("master-1"),
-            NodeRole.MASTER,
-            blank,
-            SizeProfile.MEDIUM,
-            Optional.empty(),
-            Optional.empty()
-        ))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("ip cannot be blank");
+        assertThatThrownBy(() -> VmConfig.builder()
+                .name("master-1")
+                .role(NodeRole.MASTER)
+                .ip(blank)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("ip cannot be blank");
     }
 
     @ParameterizedTest
     @ValueSource(ints = {0, -1, -10})
     void shouldRejectNonPositiveCpuOverride(int invalidCpu) {
-        assertThatThrownBy(() -> new VmConfig(
-            VmName.of("master-1"),
-            NodeRole.MASTER,
-            "192.168.56.10",
-            SizeProfile.MEDIUM,
-            Optional.of(invalidCpu),
-            Optional.empty()
-        ))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("cpuOverride must be positive")
-            .hasMessageContaining(String.valueOf(invalidCpu));
+        assertThatThrownBy(() -> VmConfig.builder()
+                .name("master-1")
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .cpuOverride(invalidCpu)
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("cpuOverride must be positive")
+                .hasMessageContaining(String.valueOf(invalidCpu));
     }
 
     @ParameterizedTest
     @ValueSource(ints = {0, -1, -1024})
     void shouldRejectNonPositiveMemoryOverride(int invalidMemory) {
-        assertThatThrownBy(() -> new VmConfig(
-            VmName.of("master-1"),
-            NodeRole.MASTER,
-            "192.168.56.10",
-            SizeProfile.MEDIUM,
-            Optional.empty(),
-            Optional.of(invalidMemory)
-        ))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("memoryMbOverride must be positive")
-            .hasMessageContaining(String.valueOf(invalidMemory));
+        assertThatThrownBy(() -> VmConfig.builder()
+                .name("master-1")
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .memoryMbOverride(invalidMemory)
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("memoryMbOverride must be positive")
+                .hasMessageContaining(String.valueOf(invalidMemory));
     }
 
     @Test
     void shouldReturnEffectiveCpusFromProfile() {
-        var vm = new VmConfig(
-            VmName.of("master-1"),
-            NodeRole.MASTER,
-            "192.168.56.10",
-            SizeProfile.LARGE,
-            Optional.empty(),
-            Optional.empty()
-        );
+        var vm = VmConfig.builder()
+                .name("master-1")
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.LARGE)
+                .build();
 
         assertThat(vm.getEffectiveCpus()).isEqualTo(SizeProfile.LARGE.getCpus());
     }
 
     @Test
     void shouldReturnEffectiveCpusFromOverride() {
-        var vm = new VmConfig(
-            VmName.of("master-1"),
-            NodeRole.MASTER,
-            "192.168.56.10",
-            SizeProfile.SMALL,
-            Optional.of(8),
-            Optional.empty()
-        );
+        var vm = VmConfig.builder()
+                .name("master-1")
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.SMALL)
+                .cpuOverride(8)
+                .build();
 
         assertThat(vm.getEffectiveCpus()).isEqualTo(8);
     }
 
     @Test
     void shouldReturnEffectiveMemoryFromProfile() {
-        var vm = new VmConfig(
-            VmName.of("master-1"),
-            NodeRole.MASTER,
-            "192.168.56.10",
-            SizeProfile.MEDIUM,
-            Optional.empty(),
-            Optional.empty()
-        );
+        var vm = VmConfig.builder()
+                .name("master-1")
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
 
         assertThat(vm.getEffectiveMemoryMb()).isEqualTo(SizeProfile.MEDIUM.getMemoryMb());
     }
 
     @Test
     void shouldReturnEffectiveMemoryFromOverride() {
-        var vm = new VmConfig(
-            VmName.of("master-1"),
-            NodeRole.MASTER,
-            "192.168.56.10",
-            SizeProfile.SMALL,
-            Optional.empty(),
-            Optional.of(8192)
-        );
+        var vm = VmConfig.builder()
+                .name("master-1")
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.SMALL)
+                .memoryMbOverride(8192)
+                .build();
 
         assertThat(vm.getEffectiveMemoryMb()).isEqualTo(8192);
     }
 
     @Test
     void shouldIdentifyMasterRole() {
-        var master = new VmConfig(
-            VmName.of("master-1"),
-            NodeRole.MASTER,
-            "192.168.56.10",
-            SizeProfile.MEDIUM,
-            Optional.empty(),
-            Optional.empty()
-        );
+        var master = VmConfig.builder()
+                .name("master-1")
+                .role(NodeRole.MASTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
 
         assertThat(master.isMaster()).isTrue();
         assertThat(master.isWorker()).isFalse();
@@ -271,14 +219,12 @@ class VmConfigTest {
 
     @Test
     void shouldIdentifyWorkerRole() {
-        var worker = new VmConfig(
-            VmName.of("worker-1"),
-            NodeRole.WORKER,
-            "192.168.56.11",
-            SizeProfile.MEDIUM,
-            Optional.empty(),
-            Optional.empty()
-        );
+        var worker = VmConfig.builder()
+                .name("worker-1")
+                .role(NodeRole.WORKER)
+                .ip("192.168.56.11")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
 
         assertThat(worker.isMaster()).isFalse();
         assertThat(worker.isWorker()).isTrue();
@@ -288,14 +234,12 @@ class VmConfigTest {
 
     @Test
     void shouldIdentifyClusterRole() {
-        var cluster = new VmConfig(
-            VmName.of("cluster-1"),
-            NodeRole.CLUSTER,
-            "192.168.56.10",
-            SizeProfile.MEDIUM,
-            Optional.empty(),
-            Optional.empty()
-        );
+        var cluster = VmConfig.builder()
+                .name("cluster-1")
+                .role(NodeRole.CLUSTER)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.MEDIUM)
+                .build();
 
         assertThat(cluster.isMaster()).isFalse();
         assertThat(cluster.isWorker()).isFalse();
@@ -305,14 +249,12 @@ class VmConfigTest {
 
     @Test
     void shouldIdentifyManagementRole() {
-        var management = new VmConfig(
-            VmName.of("management-1"),
-            NodeRole.MANAGEMENT,
-            "192.168.56.10",
-            SizeProfile.SMALL,
-            Optional.empty(),
-            Optional.empty()
-        );
+        var management = VmConfig.builder()
+                .name("management-1")
+                .role(NodeRole.MANAGEMENT)
+                .ip("192.168.56.10")
+                .sizeProfile(SizeProfile.SMALL)
+                .build();
 
         assertThat(management.isMaster()).isFalse();
         assertThat(management.isWorker()).isFalse();

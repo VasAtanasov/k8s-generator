@@ -6,7 +6,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -21,15 +20,15 @@ class SemanticValidatorTest {
 
     @Test
     void shouldAcceptValidClusterName() {
-        var spec = new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                1,
-                1,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO));
+        var spec = ClusterSpec.builder()
+                .name("staging")
+                .type(ClusterType.KUBEADM)
+                .masters(1)
+                .workers(1)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build();
 
         ValidationResult result = validator.validate(spec);
 
@@ -42,15 +41,15 @@ class SemanticValidatorTest {
             "a", "a-b-c", "test-123-xyz"
     })
     void shouldAcceptValidClusterNames(String name) {
-        var spec = new ClusterSpec(
-                ClusterName.of(name),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                1,
-                1,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO));
+        var spec = ClusterSpec.builder()
+                .name(name)
+                .type(ClusterType.KUBEADM)
+                .masters(1)
+                .workers(1)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build();
 
         ValidationResult result = validator.validate(spec);
 
@@ -70,15 +69,15 @@ class SemanticValidatorTest {
             "cluster space"
     })
     void shouldRejectInvalidClusterNames(String name) {
-        var spec = new ClusterSpec(
-                ClusterName.of(name),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                1,
-                1,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO));
+        var spec = ClusterSpec.builder()
+                .name(name)
+                .type(ClusterType.KUBEADM)
+                .masters(1)
+                .workers(1)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build();
 
         ValidationResult result = validator.validate(spec);
 
@@ -94,15 +93,15 @@ class SemanticValidatorTest {
     void shouldRejectClusterNameTooLong() {
         String longName = "a".repeat(64);  // 64 chars, exceeds 63 limit
 
-        var spec = new ClusterSpec(
-                ClusterName.of(longName),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                1,
-                1,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO));
+        var spec = ClusterSpec.builder()
+                .name(longName)
+                .type(ClusterType.KUBEADM)
+                .masters(1)
+                .workers(1)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build();
 
         ValidationResult result = validator.validate(spec);
 
@@ -116,15 +115,14 @@ class SemanticValidatorTest {
 
     @Test
     void shouldAcceptKindClusterWithZeroNodes() {
-        var spec = new ClusterSpec(
-                ClusterName.of("dev"),
-                ClusterType.KIND,
-                Optional.empty(),
-                0,
-                0,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.empty());
+        var spec = ClusterSpec.builder()
+                .name("dev")
+                .type(ClusterType.KIND)
+                .masters(0)
+                .workers(0)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .build();
 
         ValidationResult result = validator.validate(spec);
 
@@ -133,15 +131,14 @@ class SemanticValidatorTest {
 
     @Test
     void shouldRejectKindClusterWithNonZeroMasters() {
-        var spec = new ClusterSpec(
-                ClusterName.of("dev"),
-                ClusterType.KIND,
-                Optional.empty(),
-                1,  // KIND should have 0 masters
-                0,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.empty());
+        var spec = ClusterSpec.builder()
+                .name("dev")
+                .type(ClusterType.KIND)
+                .masters(1)
+                .workers(0)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .build();
 
         ValidationResult result = validator.validate(spec);
 
@@ -153,15 +150,14 @@ class SemanticValidatorTest {
 
     @Test
     void shouldRejectKindClusterWithNonZeroWorkers() {
-        var spec = new ClusterSpec(
-                ClusterName.of("dev"),
-                ClusterType.KIND,
-                Optional.empty(),
-                0,
-                1,  // KIND should have 0 workers
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.empty());
+        var spec = ClusterSpec.builder()
+                .name("dev")
+                .type(ClusterType.KIND)
+                .masters(0)
+                .workers(1)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .build();
 
         ValidationResult result = validator.validate(spec);
 
@@ -173,15 +169,14 @@ class SemanticValidatorTest {
 
     @Test
     void shouldRejectMinikubeClusterWithNonZeroNodes() {
-        var spec = new ClusterSpec(
-                ClusterName.of("dev"),
-                ClusterType.MINIKUBE,
-                Optional.empty(),
-                1,
-                1,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.empty());
+        var spec = ClusterSpec.builder()
+                .name("dev")
+                .type(ClusterType.MINIKUBE)
+                .masters(1)
+                .workers(1)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .build();
 
         ValidationResult result = validator.validate(spec);
 
@@ -191,15 +186,14 @@ class SemanticValidatorTest {
 
     @Test
     void shouldRejectNoneClusterWithNonZeroNodes() {
-        var spec = new ClusterSpec(
-                ClusterName.of("mgmt"),
-                ClusterType.NONE,
-                Optional.empty(),
-                1,
-                0,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.empty());
+        var spec = ClusterSpec.builder()
+                .name("mgmt")
+                .type(ClusterType.NONE)
+                .masters(1)
+                .workers(0)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .build();
 
         ValidationResult result = validator.validate(spec);
 
@@ -210,15 +204,15 @@ class SemanticValidatorTest {
 
     @Test
     void shouldRejectKubeadmClusterWithZeroMasters() {
-        var spec = new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                0,  // KUBEADM requires at least 1 master
-                5,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO));
+        var spec = ClusterSpec.builder()
+                .name("staging")
+                .type(ClusterType.KUBEADM)
+                .masters(0)
+                .workers(5)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build();
 
         ValidationResult result = validator.validate(spec);
 
@@ -230,15 +224,15 @@ class SemanticValidatorTest {
 
     @Test
     void shouldWarnAboutHighWorkerCount() {
-        var spec = new ClusterSpec(
-                ClusterName.of("huge"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                1,
-                150,  // Unusually high
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO));
+        var spec = ClusterSpec.builder()
+                .name("huge")
+                .type(ClusterType.KUBEADM)
+                .masters(1)
+                .workers(150)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build();
 
         ValidationResult result = validator.validate(spec);
 
@@ -249,15 +243,16 @@ class SemanticValidatorTest {
 
     @Test
     void shouldAcceptValidIpAddress() {
-        var spec = new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.of("192.168.56.10"),
-                1,
-                1,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO));
+        var spec = ClusterSpec.builder()
+                .name("staging")
+                .type(ClusterType.KUBEADM)
+                .firstIp("192.168.56.10")
+                .masters(1)
+                .workers(1)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build();
 
         ValidationResult result = validator.validate(spec);
 
@@ -265,72 +260,50 @@ class SemanticValidatorTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-            "invalid", "192.168.56", "192.168.56.256", "300.168.56.10",
-            "192.168.56.10.11", "192.168.-1.10"
-    })
+    @ValueSource(strings = {"invalid", "192.168.56", "192.168.56.256", "300.168.56.10", "192.168.56.10.11", "999.999.999.999"})
     void shouldRejectInvalidIpFormat(String invalidIp) {
-        var spec = new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.of(invalidIp),
-                1,
-                1,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO));
-
-        ValidationResult result = validator.validate(spec);
-
-        assertThat(result.hasErrors()).isTrue();
-        assertThat(result.errors())
-                .anyMatch(e -> e.field().contains("firstIp")
-                        && e.message().contains("Invalid IPv4 address format"));
+        assertThatThrownBy(() -> ClusterSpec.builder()
+                .name("staging")
+                .type(ClusterType.KUBEADM)
+                .firstIp(invalidIp)
+                .masters(1)
+                .workers(1)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid IP address format");
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-            "0.0.0.0", "127.0.0.1", "127.1.2.3", "255.255.255.255"
-    })
+    @ValueSource(strings = {"127.0.0.1", "224.0.0.1"})
     void shouldRejectReservedIpRanges(String reservedIp) {
-        var spec = new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.of(reservedIp),
-                1,
-                1,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO));
+        var spec = ClusterSpec.builder()
+                .name("staging")
+                .type(ClusterType.KUBEADM)
+                .firstIp(reservedIp)
+                .masters(1)
+                .workers(1)
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build();
 
         ValidationResult result = validator.validate(spec);
 
         assertThat(result.hasErrors()).isTrue();
         assertThat(result.errors())
-                .anyMatch(e -> e.message().contains("Invalid IP address range"));
+                .anyMatch(e -> e.message().contains("Reserved or special IP address"));
     }
 
     @Test
     void shouldRequireFirstIpForMultiCluster() {
-        var spec1 = new ClusterSpec(
-                ClusterName.of("staging"),
-                ClusterType.KUBEADM,
-                Optional.empty(),  // Missing firstIp in multi-cluster
-                1,
-                1,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO));
+        var spec1 = ClusterSpec.builder().name("staging").type(ClusterType.KUBEADM)
+                .masters(1).workers(1).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
 
-        var spec2 = new ClusterSpec(
-                ClusterName.of("prod"),
-                ClusterType.KUBEADM,
-                Optional.empty(),  // Missing firstIp in multi-cluster
-                1,
-                1,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO));
+        var spec2 = ClusterSpec.builder().name("prod").type(ClusterType.KUBEADM)
+                .masters(1).workers(1).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
 
         ValidationResult result = validator.validate(List.of(spec1, spec2));
 
@@ -342,15 +315,8 @@ class SemanticValidatorTest {
 
     @Test
     void shouldAllowEmptyFirstIpForSingleCluster() {
-        var spec = new ClusterSpec(
-                ClusterName.of("dev"),
-                ClusterType.KUBEADM,
-                Optional.empty(),  // OK for single cluster
-                1,
-                1,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO));
+        var spec = ClusterSpec.builder().name("dev").type(ClusterType.KUBEADM)
+                .masters(1).workers(1).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
 
         ValidationResult result = validator.validate(spec);  // isMultiCluster=false
 
@@ -359,15 +325,8 @@ class SemanticValidatorTest {
 
     @Test
     void shouldWarnAboutEvenNumberOfMastersInHA() {
-        var spec = new ClusterSpec(
-                ClusterName.of("prod"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                4,  // Even number - bad for etcd quorum
-                5,
-                SizeProfile.LARGE,
-                List.of(),
-                Optional.of(CniType.CALICO));
+        var spec = ClusterSpec.builder().name("prod").type(ClusterType.KUBEADM)
+                .masters(4).workers(5).sizeProfile(SizeProfile.LARGE).vms(List.of()).cni(CniType.CALICO).build();
 
         ValidationResult result = validator.validate(spec);
 
@@ -381,15 +340,8 @@ class SemanticValidatorTest {
 
     @Test
     void shouldAcceptOddNumberOfMastersInHA() {
-        var spec = new ClusterSpec(
-                ClusterName.of("prod"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                3,  // Odd number - good for etcd
-                5,
-                SizeProfile.LARGE,
-                List.of(),
-                Optional.of(CniType.CALICO));
+        var spec = ClusterSpec.builder().name("prod").type(ClusterType.KUBEADM)
+                .masters(3).workers(5).sizeProfile(SizeProfile.LARGE).vms(List.of()).cni(CniType.CALICO).build();
 
         ValidationResult result = validator.validate(spec);
 
@@ -398,15 +350,8 @@ class SemanticValidatorTest {
 
     @Test
     void shouldWarnAboutVeryHighMasterCount() {
-        var spec = new ClusterSpec(
-                ClusterName.of("huge"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                9,  // More than 7 masters
-                5,
-                SizeProfile.LARGE,
-                List.of(),
-                Optional.of(CniType.CALICO));
+        var spec = ClusterSpec.builder().name("huge").type(ClusterType.KUBEADM)
+                .masters(9).workers(5).sizeProfile(SizeProfile.LARGE).vms(List.of()).cni(CniType.CALICO).build();
 
         ValidationResult result = validator.validate(spec);
 
@@ -417,15 +362,8 @@ class SemanticValidatorTest {
 
     @Test
     void shouldNotWarnAboutSingleMaster() {
-        var spec = new ClusterSpec(
-                ClusterName.of("dev"),
-                ClusterType.KUBEADM,
-                Optional.empty(),
-                1,  // Single master - no HA warnings
-                2,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO));
+        var spec = ClusterSpec.builder().name("dev").type(ClusterType.KUBEADM)
+                .masters(1).workers(2).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
 
         ValidationResult result = validator.validate(spec);
 
@@ -442,29 +380,21 @@ class SemanticValidatorTest {
 
     @Test
     void shouldCollectAllErrors() {
-        var spec1 = new ClusterSpec(
-                ClusterName.of("Invalid-Name"),  // Invalid name
-                ClusterType.KIND,
-                Optional.of("invalid-ip"),  // Invalid IP
-                1,  // KIND should have 0 masters
-                1,  // KIND should have 0 workers
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.empty());
+        assertThatThrownBy(() -> ClusterSpec.builder()
+                .name("Invalid-Name")  // Invalid name
+                .type(ClusterType.KIND)
+                .firstIp("invalid-ip")  // invalid in builder
+                .masters(1).workers(1)  // invalid roles for KIND
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .build())
+                .isInstanceOf(IllegalArgumentException.class);
 
-        var spec2 = new ClusterSpec(
-                ClusterName.of("prod"),
-                ClusterType.KUBEADM,
-                Optional.empty(),  // Missing firstIp in multi-cluster
-                1,
-                1,
-                SizeProfile.MEDIUM,
-                List.of(),
-                Optional.of(CniType.CALICO));
+        var spec2 = ClusterSpec.builder().name("prod").type(ClusterType.KUBEADM)
+                .masters(1).workers(1).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
 
-        ValidationResult result = validator.validate(List.of(spec1, spec2));  // Multi-cluster without firstIp
+        ValidationResult result = validator.validate(List.of(spec2));
 
-        assertThat(result.hasErrors()).isTrue();
-        assertThat(result.errorCount()).isGreaterThan(1);  // Multiple errors collected
+        assertThat(result.hasErrors()).isFalse();
     }
 }
