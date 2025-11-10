@@ -1,6 +1,6 @@
 ---
 status: Normative specification for the k8s-generator CLI.
-version: 1.17.0
+version: 1.18.0
 scope: Defines CLI behavior, inputs/outputs, conventions, and validation.
 ---
 
@@ -537,20 +537,29 @@ ai_working/202511-kubernetes/k8s-generator/
 - Explicit contracts between layers
 - No global mutable state
 - Fail-fast validations with clear messages
+- **Value Objects for Type Safety**: Wrap primitive types (like String, int) that have domain meaning into dedicated value objects (records). For example, use `NetworkCIDR` instead of `String` for CIDR notation. This practice, a core tenet of Domain-Driven Design, eliminates "primitive obsession" and moves validation to the constructor, ensuring that only valid objects can be created.
 
 **Type Safety**:
 ```java
+// Value Object for memory
+public record MemoryMb(int value) {
+    public MemoryMb {
+        if (value < 1024) {
+            throw new IllegalArgumentException("Memory must be >= 1024 MB");
+        }
+    }
+}
+
+// Node record using the Value Object for enhanced type safety
 public record Node(
     String name,
     InetAddress ip,
     NodeRole role,
-    int memoryMb,
+    MemoryMb memory, // Ensures memory is always valid
     int cpus
 ) {
     public Node {
-        if (memoryMb < 1024) {
-            throw new IllegalArgumentException("Memory must be >= 1024 MB");
-        }
+        Objects.requireNonNull(memory);
         if (cpus < 1) {
             throw new IllegalArgumentException("CPUs must be >= 1");
         }
@@ -2173,5 +2182,6 @@ if (overlaps(pod, svc)) {
 
 | Version | Date       | Author      | Changes                                                              |
 |---------|------------|-------------|----------------------------------------------------------------------|
+| 1.18.0  | 2025-11-10 | repo-maint  | Formalized use of DDD Value Objects as a core design principle.      |
 | 1.17.0  | 2025-11-10 | repo-maint  | Updated design principles to include builder pattern for complex models. |
 

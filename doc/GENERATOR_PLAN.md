@@ -1,6 +1,6 @@
 ---
 status: Planning document
-version: 1.2.0
+version: 1.3.0
 scope: High-level DDD plan and phased roadmap for the k8s-generator CLI
 ---
 
@@ -270,10 +270,11 @@ public class ScaffoldService {
 
 The project employs a hybrid strategy for data modeling to balance safety and convenience:
 
-- **Immutable Records**: All domain models are implemented as Java `records` to guarantee immutability and atomic construction. This is the default for simple data carriers.
-- **Builder Pattern for Complexity**: For complex records with a large number of fields, especially optional ones (e.g., `ClusterSpec`), the builder pattern is used via Lombok's `@Builder`. This provides a fluent, readable API for object creation, avoiding verbose constructors.
+- **Immutable Records**: All domain models are implemented as Java `records` to guarantee immutability.
+- **Value Objects**: To avoid primitive obsession, domain concepts with specific constraints (e.g., `NetworkCIDR`, `ModuleId`) are wrapped in dedicated Value Object records. This enforces validation at the source and improves type safety.
+- **Builder Pattern for Complexity**: For complex records with a large number of fields, especially optional ones (e.g., `ClusterSpec`), Lombok's `@Builder` is used. This provides a fluent, readable API for object creation.
 
-This approach combines the compile-time safety of records with the readability and convenience of builders for the models that need it most.
+This approach combines the compile-time safety of records and value objects with the readability of builders for the models that need it most.
 
 #### Input Models (`model/spec/`)
 
@@ -959,6 +960,7 @@ Verify: SemanticValidator still works (depends on interface)
 
 | Version | Date       | Author     | Changes                                                              |
 |---------|------------|------------|----------------------------------------------------------------------|
+| 1.3.0   | 2025-11-10 | repo-maint | Formalized the use of Value Objects in the Data Model Strategy.      |
 | 1.2.0   | 2025-11-10 | repo-maint | Added data model strategy explaining hybrid record/builder approach. |
 | 1.1.1   | 2025-11-04 | repo-maint | History sorted descending; prepended new entry per policy |
 | 1.1.0   | 2025-11-04 | repo-maint | Added high-level details for cloud provider integration (Azure) |

@@ -1,6 +1,6 @@
 ---
 status: Normative specification
-version: 1.4.0
+version: 1.5.0
 scope: Agent persona, workflows, code standards, and repository interaction for k8s-generator Java 25 CLI development
 name: k8s-generator-java-architect
 description: This persona is a Java 25 + Maven expert specializing in CLI tool development with Picocli, JTE templates, immutable records, and functional design patterns. It creates maintainable, type-safe code for Kubernetes environment generation.
@@ -102,6 +102,7 @@ CLI → Orchestrator → [Model ↔ InputParser ↔ Validation] → Rendering �
 5. **Type Safety**: Leverage Java's type system; avoid stringly-typed code
 6. **No Global State**: All state flows through method parameters and return values
 7. **SRP (Single Responsibility)**: Each class/method has one clear purpose
+8. **Value Objects over Primitives**: Encapsulate domain concepts (e.g., network CIDRs, module IDs, resource names) in dedicated value objects (records) instead of using raw strings or integers. This enforces validation at the source and enhances type safety.
 
 ### Domain Model (Summary)
 - Immutable records; validate only basic structural constraints in compact constructors. See doc/GENERATOR-ARCHITECTURE.md for canonical models.
@@ -322,9 +323,10 @@ All repository documents must follow a consistent versioning and history policy 
 
 ## Document History
 
-| Version | Date       | Author      | Changes                                        |
-|---------|------------|-------------|------------------------------------------------|
-| 1.4.0   | 2025-11-10 | repo-maint  | Adopted Lombok's @Builder for complex model records |
+| Version | Date       | Author      | Changes                                                              |
+|---------|------------|-------------|----------------------------------------------------------------------|
+| 1.5.0   | 2025-11-10 | repo-maint  | Added 'Value Objects over Primitives' as a core design principle.    |
+| 1.4.0   | 2025-11-10 | repo-maint  | Adopted Lombok's @Builder for complex model records                  |
 | 1.3.0   | 2025-11-04 | repo-maint  | Policy update: Document History tables sorted in descending version order; workflow now says to prepend entries |
 | 1.2.0   | 2025-11-03 | repo-maint  | Simplified AGENTS.md: removed volatile implementation, package trees, code samples; added stable summaries and pointers to /doc |
 | 1.1.0   | 2025-11-03 | repo-maint  | Added Implementation & Modular Design philosophy sections (inspired by microsoft/amplifier) |
