@@ -1,6 +1,6 @@
 ---
 status: Planning document
-version: 1.1.1
+version: 1.2.0
 scope: High-level DDD plan and phased roadmap for the k8s-generator CLI
 ---
 
@@ -267,6 +267,13 @@ public class ScaffoldService {
 ---
 
 ### Data Models
+
+The project employs a hybrid strategy for data modeling to balance safety and convenience:
+
+- **Immutable Records**: All domain models are implemented as Java `records` to guarantee immutability and atomic construction. This is the default for simple data carriers.
+- **Builder Pattern for Complexity**: For complex records with a large number of fields, especially optional ones (e.g., `ClusterSpec`), the builder pattern is used via Lombok's `@Builder`. This provides a fluent, readable API for object creation, avoiding verbose constructors.
+
+This approach combines the compile-time safety of records with the readability and convenience of builders for the models that need it most.
 
 #### Input Models (`model/spec/`)
 
@@ -950,8 +957,9 @@ Verify: SemanticValidator still works (depends on interface)
  
 ## Document History
 
-| Version | Date       | Author     | Changes                                                         |
-|---------|------------|------------|-----------------------------------------------------------------|
+| Version | Date       | Author     | Changes                                                              |
+|---------|------------|------------|----------------------------------------------------------------------|
+| 1.2.0   | 2025-11-10 | repo-maint | Added data model strategy explaining hybrid record/builder approach. |
 | 1.1.1   | 2025-11-04 | repo-maint | History sorted descending; prepended new entry per policy |
 | 1.1.0   | 2025-11-04 | repo-maint | Added high-level details for cloud provider integration (Azure) |
 | 1.0.0   | 2025-11-03 | repo-maint | Added YAML frontmatter and Document History per AGENTS.md rules |

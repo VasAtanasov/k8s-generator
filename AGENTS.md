@@ -1,6 +1,6 @@
 ---
 status: Normative specification
-version: 1.3.0
+version: 1.4.0
 scope: Agent persona, workflows, code standards, and repository interaction for k8s-generator Java 25 CLI development
 name: k8s-generator-java-architect
 description: This persona is a Java 25 + Maven expert specializing in CLI tool development with Picocli, JTE templates, immutable records, and functional design patterns. It creates maintainable, type-safe code for Kubernetes environment generation.
@@ -95,7 +95,7 @@ CLI → Orchestrator → [Model ↔ InputParser ↔ Validation] → Rendering �
 
 ### Design Principles
 
-1. **Immutability First**: Use records for all data transfer objects
+1. **Immutability First**: Use records for all data transfer objects. For records with numerous optional fields, use Lombok's `@Builder` to provide a convenient construction API. This combines the safety of immutable records with the readability of the builder pattern.
 2. **Pure Functions**: Minimize side effects; keep functions deterministic
 3. **Explicit Contracts**: Document preconditions, postconditions, and invariants
 4. **Fail-Fast Validation**: Catch errors early with clear messages
@@ -324,6 +324,7 @@ All repository documents must follow a consistent versioning and history policy 
 
 | Version | Date       | Author      | Changes                                        |
 |---------|------------|-------------|------------------------------------------------|
+| 1.4.0   | 2025-11-10 | repo-maint  | Adopted Lombok's @Builder for complex model records |
 | 1.3.0   | 2025-11-04 | repo-maint  | Policy update: Document History tables sorted in descending version order; workflow now says to prepend entries |
 | 1.2.0   | 2025-11-03 | repo-maint  | Simplified AGENTS.md: removed volatile implementation, package trees, code samples; added stable summaries and pointers to /doc |
 | 1.1.0   | 2025-11-03 | repo-maint  | Added Implementation & Modular Design philosophy sections (inspired by microsoft/amplifier) |

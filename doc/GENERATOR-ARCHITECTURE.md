@@ -1,6 +1,6 @@
 ---
 status: Normative specification for the k8s-generator CLI.
-version: 1.16.2
+version: 1.17.0
 scope: Defines CLI behavior, inputs/outputs, conventions, and validation.
 ---
 
@@ -532,7 +532,7 @@ ai_working/202511-kubernetes/k8s-generator/
 ### Design Principles
 
 **SOLID and Separation of Concerns**:
-- Immutable records for domain models
+- Immutable records for domain models, supplemented with the builder pattern (e.g., Lombok's @Builder) for complex objects with numerous optional fields.
 - Pure functions where possible
 - Explicit contracts between layers
 - No global mutable state
@@ -2168,3 +2168,10 @@ if (overlaps(pod, svc)) {
 | 1.2.0   | 2025-10-31 | spec-owner | Module+type composite workspace identifier; output directory collision policy and CLI notes |
 | 1.1.0   | 2025-10-31 | spec-owner | IP allocation policy added (single-cluster default, multi-cluster first_ip requirement), reserved mgmt IP, validations, examples |
 | 1.0.0   | 2025-10-31 | spec-owner | Initial normative baseline |
+
+## Document History
+
+| Version | Date       | Author      | Changes                                                              |
+|---------|------------|-------------|----------------------------------------------------------------------|
+| 1.17.0  | 2025-11-10 | repo-maint  | Updated design principles to include builder pattern for complex models. |
+

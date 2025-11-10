@@ -1,6 +1,6 @@
 ---
 status: Documentation Index
-version: 1.1.2
+version: 1.2.0
 scope: Overview and navigation guide for k8s-generator documentation
 ---
 
@@ -264,9 +264,13 @@ This keeps tests concise and decoupled from the IPAddress API.
 
 **A**: 80% of users need simple, single-cluster environments. Forcing YAML adds friction for beginners. The hybrid approach provides smooth evolution: start CLI, export spec when complexity justifies it.
 
-### Q: Why immutable records instead of builder pattern?
+### Q: Why a mix of records and builders (Lombok)?
 
-**A**: Immutable records are concise, type-safe, and make invalid states impossible. Builders add verbosity without significant benefits for our use case.
+**A**: The project uses a hybrid approach to model creation, leveraging the best of both native Java `records` and Lombok's `@Builder`:
+- **Native Records**: For simple data transfer objects with few fields, the canonical record constructor is preferred for its conciseness and compile-time safety.
+- **Records with `@Builder`**: For complex domain models with numerous fields, especially optional ones (`ClusterSpec`, `GeneratorSpec`), `@Builder` is used. This provides a fluent, readable API for object construction, avoiding unwieldy constructors with many parameters.
+
+This strategy combines the immutability and safety of records with the convenience and readability of the builder pattern where it adds the most value.
 
 ### Q: Why SPI for engines instead of hardcoded?
 
@@ -306,8 +310,9 @@ See [ARCHITECTURE-REVIEW-2025-11-03.md](ARCHITECTURE-REVIEW-2025-11-03.md) for r
 
 ## Document History
 
-| Version | Date       | Author      | Changes                    |
-|---------|------------|-------------|----------------------------|
+| Version | Date       | Author      | Changes                                                  |
+|---------|------------|-------------|----------------------------------------------------------|
+| 1.2.0   | 2025-11-10 | repo-maint  | Clarified use of builder pattern for complex models in Q&A. |
 | 1.1.2   | 2025-11-10 | repo-maint  | Add Testing Helpers section; recommend IpAssertions for IP lists |
 | 1.1.1   | 2025-11-04 | repo-maint  | Clarified: history tables sorted descending by version; prepend new rows |
 | 1.1.0   | 2025-11-04 | repo-maint  | Updated implementation status: Phase 1 & 2 complete, 296 tests passing, all P0 items implemented |

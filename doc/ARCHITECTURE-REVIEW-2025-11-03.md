@@ -1,6 +1,6 @@
 ---
 status: Architectural Review Recommendations
-version: 1.0.0
+version: 1.1.0
 scope: Priority changes and refinements from technical-software-architect review dated 2025-11-03
 ---
 
@@ -457,7 +457,7 @@ Phase 2 (kubeadm support) is complete when:
 | Decision | Trade-Off | Assessment |
 |----------|-----------|------------|
 | **CLI-first vs. YAML-first** | Simplicity vs. Completeness | ✅ Correct for learning tool |
-| **Immutable records** | Safety vs. Flexibility | ✅ Right for domain model |
+| **Immutable records with builders** | Safety vs. Verbosity | ✅ Hybrid approach adopted: Records for immutability, builders for convenient construction of complex objects. |
 | **JTE templates** | Type safety vs. Simplicity | ✅ Justified for maintainability |
 | **Hybrid validation** | UX vs. Simplicity | ✅ Best of both worlds |
 | **SPI for engines** | Extensibility vs. Complexity | ✅ Future-proof design |
@@ -485,6 +485,7 @@ Phase 2 (kubeadm support) is complete when:
 
 ## Document History
 
-| Version | Date       | Author      | Changes                                              |
-|---------|------------|-------------|------------------------------------------------------|
+| Version | Date       | Author      | Changes                                                              |
+|---------|------------|-------------|----------------------------------------------------------------------|
+| 1.1.0   | 2025-11-10 | repo-maint  | Updated design decisions table to reflect adoption of builder pattern. |
 | 1.0.0   | 2025-11-03 | repo-maint  | Initial architectural review recommendations capture |
