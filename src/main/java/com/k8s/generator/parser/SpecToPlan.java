@@ -5,7 +5,10 @@ import com.k8s.generator.ip.SequentialIpAllocator;
 import com.k8s.generator.model.*;
 import inet.ipaddr.IPAddress;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * Converts validated GeneratorSpec to template-ready ScaffoldPlan.
@@ -314,43 +317,5 @@ public final class SpecToPlan implements PlanBuilder {
         // TODO(P5): Extract from ManagementSpec when architecture review P5 is implemented
         // For now, return empty set (local-only clusters)
         return Set.of();
-    }
-
-    /**
-     * Builds environment variables map for bootstrap scripts.
-     *
-     * <p>Phase 2 Environment Variables:
-     * <ul>
-     *   <li><b>CLUSTER_NAME</b>: cluster.name() (e.g., "clu-m1-pt-kind")</li>
-     *   <li><b>NAMESPACE_DEFAULT</b>: module.defaultNamespace() (e.g., "ns-m1-pt")</li>
-     *   <li><b>CLUSTER_TYPE</b>: cluster.type() lowercase (e.g., "kind", "minikube", "kubeadm")</li>
-     *   <li><b>CNI_TYPE</b>: CNI plugin for kubeadm (e.g., "calico", "flannel") - only if CNI present</li>
-     * </ul>
-     *
-     * <p>Future phases may add:
-     * <ul>
-     *   <li>POD_NETWORK_CIDR (kubeadm)</li>
-     *   <li>SERVICE_CIDR (kubeadm)</li>
-     *   <li>CONTROL_PLANE_ENDPOINT (kubeadm HA)</li>
-     * </ul>
-     *
-     * @param module  module metadata
-     * @param cluster cluster specification
-     * @return environment variables map (LinkedHashMap for stable ordering)
-     * @deprecated Retained for binary compatibility in tests. Use {@link EnvPlanner#build} directly.
-     */
-    @Deprecated(since = "1.0.0", forRemoval = false)
-    private Map<String, String> buildEnvVars(ModuleInfo module, ClusterSpec cluster) {
-        return EnvPlanner.build(module, cluster, List.of(kindVm()), Set.of()).global();
-    }
-
-    // Minimal VM for backward compatibility
-    private VmConfig kindVm() {
-        return VmConfig.builder()
-                .name("dummy")
-                .role(NodeRole.CLUSTER)
-                .ip("192.168.56.10")
-                .sizeProfile(SizeProfile.MEDIUM)
-                .build();
     }
 }

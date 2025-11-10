@@ -183,7 +183,7 @@ public final class CliToSpec implements SpecConverter {
     }
 
     private SizeProfile resolveSize(String sizeToken) {
-        if (sizeToken == null || sizeToken.isBlank()) return SizeProfile.SMALL;
+        if (sizeToken == null || sizeToken.isBlank()) return SizeProfile.MEDIUM;
         return SizeProfile.fromString(sizeToken);
     }
 

@@ -20,5 +20,6 @@ public interface ClusterSpecValidator {
      * @param clusters cluster specification to validate (must not be null)
      * @return ValidationResult with semantic errors (empty if valid)
      * @throws NullPointerException if spec is null
-     */ ValidationResult validate(List<ClusterSpec> clusters);
+     */
+    ValidationResult validate(List<ClusterSpec> clusters);
 }

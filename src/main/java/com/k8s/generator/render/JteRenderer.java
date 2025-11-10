@@ -7,7 +7,7 @@ import gg.jte.TemplateEngine;
 import gg.jte.output.StringOutput;
 
 import java.util.HashMap;
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -45,7 +45,7 @@ public final class JteRenderer implements Renderer {
      * @param plan complete scaffold plan with VMs, module info, and environment variables
      * @return map of relative file path → file content
      * @throws IllegalArgumentException if plan is null
-     * @throws RuntimeException if template rendering fails
+     * @throws RuntimeException         if template rendering fails
      */
     @Override
     public Map<String, String> render(ScaffoldPlan plan) {
@@ -66,23 +66,22 @@ public final class JteRenderer implements Renderer {
      */
     private String renderVagrantfile(ScaffoldPlan plan) {
         var output = new StringOutput();
+        // Build merged env per VM: global then per-VM overrides
+        var envByVm = new LinkedHashMap<String, Map<String, String>>();
+        for (VmConfig vm : plan.vms()) {
+            var merged = new LinkedHashMap<>(plan.envVars());
+            var perVm = plan.vmEnv().get(vm.name());
+            if (perVm != null) merged.putAll(perVm);
+            envByVm.put(vm.name().value(), Map.copyOf(merged));
+        }
+        // Provide template parameters by name
         var params = new HashMap<String, Object>();
         params.put("moduleName", plan.module().num());
         params.put("vms", plan.vms());
-        // Build merged env per VM: global then per-VM overrides
-        var envByVm = new java.util.LinkedHashMap<String, Map<String, String>>();
-        for (VmConfig vm : plan.vms()) {
-            var merged = new java.util.LinkedHashMap<String, String>();
-            merged.putAll(plan.envVars());
-            var perVm = plan.vmEnv().get(vm.name());
-            if (perVm != null) merged.putAll(perVm);
-            envByVm.put(vm.name().value(), java.util.Map.copyOf(merged));
-        }
-        params.put("envByVm", java.util.Map.copyOf(envByVm));
+        params.put("envByVm", Map.copyOf(envByVm));
         try {
             engine.render("Vagrantfile", params, output);
         } catch (RuntimeException e) {
-            // Fallback to same name with extension (precompiled mapping may vary)
             engine.render("Vagrantfile.jte", params, output);
         }
         return output.toString();
