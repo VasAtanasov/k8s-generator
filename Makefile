@@ -7,7 +7,7 @@
 #   make test-class TEST_CLASS=SemanticValidatorTest
 #   make help                                       # Show all targets
 
-.PHONY: help package test test-class test-class-debug run run-kind run-minikube run-clean run-unique clean
+.PHONY: help package test test-class test-class-debug run run-clean run-unique clean
 
 MVN ?= mvnd
 MVN_FLAGS ?= -q -Dstyle.color=never
@@ -31,8 +31,6 @@ help:
 	@echo "  test-class         - Run specific test class (requires TEST_CLASS)"
 	@echo "  test-class-debug   - Run test class with debugger (requires TEST_CLASS)"
 	@echo "  run                - package + run (requires MODULE, TYPE, ENGINE)"
-	@echo "  run-kind           - package + run with kind (requires MODULE, TYPE)"
-	@echo "  run-minikube       - package + run with minikube (requires MODULE, TYPE)"
 	@echo "  run-clean          - Remove OUT dir then run (requires MODULE, TYPE, ENGINE)"
 	@echo "  run-unique         - Run with timestamp suffix (requires MODULE, TYPE, ENGINE)"
 	@echo "  clean              - mvn clean"
@@ -40,15 +38,13 @@ help:
 	@echo "Variables:"
 	@echo "  MODULE (required) - Module number (e.g., m1, m7)"
 	@echo "  TYPE (required) - Type (e.g., pt, hw, exam-prep)"
-	@echo "  ENGINE (required) for run/run-clean/run-unique) - Cluster engine (kind, minikube)"
+	@echo "  ENGINE (required) for run/run-clean/run-unique) - Cluster engine (kubeadm)"
 	@echo "  OUT (optional) - Output directory (default: TYPE-MODULE)"
 	@echo "  TEST_CLASS (required for test-class) - Test class name"
 	@echo "  DEBUG_PORT (default: $(DEBUG_PORT) - Debug port for test-class-debug"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make run MODULE=m1 TYPE=pt ENGINE=kind"
-	@echo "  make run-kind MODULE=m7 TYPE=hw"
-	@echo "  make run-minikube MODULE=m1 TYPE=exam-prep OUT=custom-dir"
+	@echo "  make run MODULE=m1 TYPE=pt ENGINE=kubeadm"
 	@echo "  make test-class TEST_CLASS=SemanticValidatorTest"
 	@echo "  make test-class-debug TEST_CLASS=PolicyValidatorTest"
 
@@ -82,7 +78,7 @@ test-class-debug:
 
 run: package
 	@if [ -z "$(MODULE)" ] || [ -z "$(TYPE)" ] || [ -z "$(ENGINE)" ]; then \
-		echo "Error: MODULE, TYPE, and ENGINE are required. Usage: make run MODULE=m1 TYPE=pt ENGINE=kind"; \
+		echo "Error: MODULE, TYPE, and ENGINE are required. Usage: make run MODULE=m1 TYPE=pt ENGINE=kubeadm"; \
 		exit 1; \
 	fi
 	@echo "Running: $(JAR) $(ARGS)"
@@ -90,18 +86,12 @@ run: package
 
 run-clean: package
 	@if [ -z "$(MODULE)" ] || [ -z "$(TYPE)" ] || [ -z "$(ENGINE)" ]; then \
-		echo "Error: MODULE, TYPE, and ENGINE are required. Usage: make run-clean MODULE=m1 TYPE=pt ENGINE=kind"; \
+		echo "Error: MODULE, TYPE, and ENGINE are required. Usage: make run-clean MODULE=m1 TYPE=pt ENGINE=kubeadm"; \
 		exit 1; \
 	fi
 	@echo "Removing existing OUT directory: $(OUT)" && rm -rf "$(OUT)" || true
 	@echo "Running: $(JAR) $(ARGS)"
 	$(JAVA) -jar $(JAR) $(ARGS)
-
-run-kind:
-	$(MAKE) run ENGINE=kind MODULE=$(MODULE) TYPE=$(TYPE)
-
-run-minikube:
-	$(MAKE) run ENGINE=minikube MODULE=$(MODULE) TYPE=$(TYPE)
 
 run-unique:
 	$(MAKE) run OUT=$(OUT)-$$(date +%Y%m%d%H%M%S) MODULE=$(MODULE) TYPE=$(TYPE) ENGINE=$(ENGINE)

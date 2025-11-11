@@ -66,7 +66,7 @@ final class EnvPlanner {
     /**
      * Builds environment variable sets for a cluster with default providers (no cloud providers).
      *
-     * <p>This is the standard method for local Kubernetes clusters (KIND, minikube, kubeadm).
+     * <p>This is the standard method for local Kubernetes clusters (kubeadm).
      * For Azure/cloud integration, use {@link #build(ModuleInfo, ClusterSpec, List, Set)}.
      *
      * @param module  module metadata (for namespace generation)
@@ -135,9 +135,9 @@ final class EnvPlanner {
      *
      * <p>Variables added:
      * <ul>
-     *   <li><b>CLUSTER_NAME</b>: Cluster name (e.g., "clu-m1-pt-kind")</li>
+     *   <li><b>CLUSTER_NAME</b>: Cluster name (e.g., "clu-m1-pt-kubeadm")</li>
      *   <li><b>NAMESPACE_DEFAULT</b>: Default namespace (e.g., "ns-m1-pt")</li>
-     *   <li><b>CLUSTER_TYPE</b>: Cluster type lowercase (e.g., "kind", "kubeadm")</li>
+     *   <li><b>CLUSTER_TYPE</b>: Cluster type lowercase (e.g., "kubeadm")</li>
      * </ul>
      *
      * @param out     output map (mutable)
@@ -156,7 +156,6 @@ final class EnvPlanner {
      * <p>Variables added based on cluster type:
      * <ul>
      *   <li><b>KUBEADM</b>: CNI_TYPE (if specified), KUBE_API_PORT, K8S_POD_CIDR, K8S_SVC_CIDR</li>
-     *   <li><b>KIND/MINIKUBE</b>: No additional variables</li>
      * </ul>
      *
      * @param out     output map (mutable)

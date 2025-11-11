@@ -23,8 +23,8 @@ import java.util.*;
  *
  * <p>Phase 1 MVP Scope:
  * <ul>
- *   <li><b>Single VM</b>: vms list always contains exactly 1 VM (kind or minikube)</li>
- *   <li><b>Hardcoded IP</b>: 192.168.56.10 (no IP allocator yet)</li>
+ *   <li><b>Single VM</b>: vms list always contains exactly 1 VM (mgmt)</li>
+ *   <li><b>Hardcoded IP</b>: 192.168.56.5 (no IP allocator yet)</li>
  *   <li><b>Simple environment</b>: CLUSTER_NAME, NAMESPACE_DEFAULT, CLUSTER_TYPE</li>
  * </ul>
  *
@@ -48,23 +48,23 @@ import java.util.*;
  *
  * <p>Example Usage:
  * <pre>{@code
- * // Phase 1 MVP: Single kind cluster
+ * // Phase 1 MVP: Single mgmt cluster
  * var plan = new ScaffoldPlan(
  *     new ModuleInfo("m1", "pt"),
  *     List.of(
  *         new VmConfig(
- *             "clu-m1-pt-kind",
- *             NodeRole.CLUSTER,
- *             "192.168.56.10",
+ *             "clu-m1-pt-mgmt",
+ *             NodeRole.MANAGEMENT,
+ *             "192.168.56.5",
  *             SizeProfile.MEDIUM,
  *             Optional.empty(),
  *             Optional.empty()
  *         )
  *     ),
  *     Map.of(
- *         "CLUSTER_NAME", "clu-m1-pt-kind",
+ *         "CLUSTER_NAME", "clu-m1-pt-mgmt",
  *         "NAMESPACE_DEFAULT", "ns-m1-pt",
- *         "CLUSTER_TYPE", "kind"
+ *         "CLUSTER_TYPE", "mgmt"
  *     )
  * );
  * }</pre>
@@ -189,7 +189,7 @@ public record ScaffoldPlan(
     /**
      * Returns the number of master VMs in this plan.
      *
-     * @return master count (0+ for KUBEADM, always 0 for KIND/MINIKUBE/NONE)
+     * @return master count (0+ for KUBEADM, always 0 for NONE)
      */
     public long masterCount() {
         return vms.stream().filter(vm -> vm.role() == NodeRole.MASTER).count();
@@ -198,16 +198,16 @@ public record ScaffoldPlan(
     /**
      * Returns the number of worker VMs in this plan.
      *
-     * @return worker count (0+ for KUBEADM, always 0 for KIND/MINIKUBE/NONE)
+     * @return worker count (0+ for KUBEADM, always 0 for NONE)
      */
     public long workerCount() {
         return vms.stream().filter(vm -> vm.role() == NodeRole.WORKER).count();
     }
 
     /**
-     * Returns the number of cluster VMs (single-node kind/minikube).
+     * Returns the number of cluster VMs.
      *
-     * @return cluster VM count (1 for KIND/MINIKUBE, 0 for KUBEADM/NONE)
+     * @return cluster VM count (0 for KUBEADM/NONE)
      */
     public long clusterVmCount() {
         return vms.stream().filter(vm -> vm.role() == NodeRole.CLUSTER).count();
@@ -233,7 +233,7 @@ public record ScaffoldPlan(
     }
 
     /**
-     * Checks if this is a single-VM plan (kind/minikube).
+     * Checks if this is a single-VM plan.
      *
      * @return true if vms.size() == 1
      */

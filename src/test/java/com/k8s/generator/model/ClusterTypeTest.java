@@ -98,7 +98,7 @@ class ClusterTypeTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"invalid", "k3s", "KIND", ""})
+    @ValueSource(strings = {"invalid", "k3s", ""})
     void shouldRejectInvalidIdsInById(String input) {
         assertThatThrownBy(() -> ClusterType.byId(input))
                 .isInstanceOf(IllegalArgumentException.class)

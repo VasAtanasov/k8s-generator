@@ -42,15 +42,15 @@ import com.k8s.generator.model.GeneratorSpec;
  * var command = new GenerateCommand();
  * command.module = "m1";
  * command.type = "pt";
- * command.clusterType = "kind";
+ * command.clusterType = "kubeadm";
  *
  * var converter = new CliToSpec();
  * GeneratorSpec spec = converter.convert(command);
  *
  * // Result:
  * // spec.module() = ModuleInfo("m1", "pt")
- * // spec.clusters().getFirst().name() = "clu-m1-pt-kind"
- * // spec.clusters().getFirst().type() = ClusterType.KIND
+ * // spec.clusters().getFirst().name() = "clu-m1-pt-kubeadm"
+ * // spec.clusters().getFirst().type() = ClusterType.KUBEADM
  * // spec.clusters().getFirst().sizeProfile() = SizeProfile.MEDIUM
  * }</pre>
  *

@@ -25,7 +25,6 @@ import java.util.Objects;
  * <ul>
  *   <li><b>MASTER</b>: Kubernetes control plane node (API server, etcd, scheduler, controller)</li>
  *   <li><b>WORKER</b>: Kubernetes worker node (runs application workloads)</li>
- *   <li><b>CLUSTER</b>: Single-node cluster (kind/minikube, hosts entire cluster)</li>
  *   <li><b>MANAGEMENT</b>: Management machine (no k8s, just kubectl/helm/tools)</li>
  * </ul>
  *
@@ -208,7 +207,7 @@ public record VmConfig(
     }
 
     /**
-     * Checks if this VM is a cluster node (kind/minikube single-node).
+     * Checks if this VM is a cluster node.
      *
      * @return true if role is NodeRole.CLUSTER
      */

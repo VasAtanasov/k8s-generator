@@ -31,13 +31,13 @@ import com.k8s.generator.model.ScaffoldPlan;
  *
  * <p>Phase 1 MVP Behavior:
  * <ul>
- *   <li>Single VM generation: 1 VM with NodeRole.CLUSTER for kind/minikube</li>
- *   <li>Hardcoded IP: 192.168.56.10 (no IpAllocator yet)</li>
+ *   <li>Single VM generation: 1 VM with NodeRole.MANAGEMENT for mgmt</li>
+ *   <li>Hardcoded IP: 192.168.56.5 (no IpAllocator yet)</li>
  *   <li>Environment variables:
  *       <ul>
  *         <li>CLUSTER_NAME: clu-{num}-{type}-{engine}</li>
  *         <li>NAMESPACE_DEFAULT: ns-{num}-{type}</li>
- *         <li>CLUSTER_TYPE: kind|minikube</li>
+ *         <li>CLUSTER_TYPE: mgmt</li>
  *       </ul>
  *   </li>
  *   <li>Size profile: Use SizeProfile from ClusterSpec (defaults to SMALL)</li>
@@ -49,7 +49,7 @@ import com.k8s.generator.model.ScaffoldPlan;
  * var spec = new GeneratorSpec(
  *     new ModuleInfo("m1", "pt"),
  *     List.of(
- *         new ClusterSpec("clu-m1-pt-kind", ClusterType.KIND, null, 0, 0,
+ *         new ClusterSpec("clu-m1-pt-mgmt", ClusterType.NONE, null, 0, 0,
  *                        SizeProfile.MEDIUM, List.of())
  *     )
  * );
@@ -59,11 +59,11 @@ import com.k8s.generator.model.ScaffoldPlan;
  *
  * // Result:
  * // plan.vms().size() = 1
- * // plan.vms().getFirst().name() = "clu-m1-pt-kind"
- * // plan.vms().getFirst().role() = NodeRole.CLUSTER
- * // plan.vms().getFirst().ip() = "192.168.56.10"
- * // plan.envVars().get("CLUSTER_NAME") = "clu-m1-pt-kind"
- * // plan.envVars().get("CLUSTER_TYPE") = "kind"
+ * // plan.vms().getFirst().name() = "clu-m1-pt-mgmt"
+ * // plan.vms().getFirst().role() = NodeRole.MANAGEMENT
+ * // plan.vms().getFirst().ip() = "192.168.56.5"
+ * // plan.envVars().get("CLUSTER_NAME") = "clu-m1-pt-mgmt"
+ * // plan.envVars().get("CLUSTER_TYPE") = "mgmt"
  * }</pre>
  *
  * @see GeneratorSpec

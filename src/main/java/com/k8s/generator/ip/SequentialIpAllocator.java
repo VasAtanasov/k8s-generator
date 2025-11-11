@@ -21,7 +21,7 @@ import java.util.*;
  * <pre>
  * 1. Determine base IP from ClusterSpec.firstIp() or use default
  * 2. Calculate VM count:
- *    - KIND/MINIKUBE/NONE: 1 VM
+ *    - NONE: 1 VM
  *    - KUBEADM: masters + workers VMs
  * 3. Generate sequential IPs starting from base:
  *    - Increment IP address for each VM
@@ -32,16 +32,16 @@ import java.util.*;
  *
  * <p>Example Allocations:
  * <pre>
- * // Single KIND cluster (default IP)
- * ClusterSpec: KIND, firstIp=empty
- * Result: ["192.168.56.10"]
+ * // Single NONE cluster (default IP)
+ * ClusterSpec: NONE, firstIp=empty
+ * Result: ["192.168.56.5"]
  *
  * // Kubeadm 1m,2w (explicit IP)
  * ClusterSpec: KUBEADM, firstIp=192.168.56.20, masters=1, workers=2
  * Result: ["192.168.56.20", "192.168.56.21", "192.168.56.22"]
  *
  * // Edge case: Skip reserved .5
- * ClusterSpec: KIND, firstIp=192.168.56.4
+ * ClusterSpec: KUBEADM, firstIp=192.168.56.4, masters=1, workers=0
  * Result: ["192.168.56.4"]  // .5 would be skipped if needed
  *
  * // Boundary violation

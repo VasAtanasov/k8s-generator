@@ -25,7 +25,6 @@ import java.util.*;
  *   <li><b>Multi-node support</b>: KUBEADM generates (masters + workers) VMs</li>
  *   <li><b>Role-based generation</b>:
  *       <ul>
- *         <li>KIND/MINIKUBE: 1 VM with NodeRole.CLUSTER</li>
  *         <li>KUBEADM: (masters) VMs with NodeRole.MASTER + (workers) VMs with NodeRole.WORKER</li>
  *         <li>NONE: 1 VM with NodeRole.MANAGEMENT</li>
  *       </ul>
@@ -34,7 +33,7 @@ import java.util.*;
  *       <ul>
  *         <li>CLUSTER_NAME: cluster name from spec</li>
  *         <li>NAMESPACE_DEFAULT: derived from module (ns-{num}-{type})</li>
- *         <li>CLUSTER_TYPE: engine name (kind, minikube, kubeadm)</li>
+ *         <li>CLUSTER_TYPE: engine name (kubeadm)</li>
  *         <li>CNI_TYPE: CNI plugin for kubeadm (calico, flannel, etc.)</li>
  *       </ul>
  *   </li>
@@ -42,8 +41,6 @@ import java.util.*;
  *
  * <p>VM Generation Rules (Phase 2):
  * <pre>
- * Kind                  → 1 VM with NodeRole.CLUSTER, IP from IpAllocator
- * Minikube              → 1 VM with NodeRole.CLUSTER, IP from IpAllocator
  * Kubeadm               → (masters + workers) VMs, IPs from IpAllocator
  * NoneCluster           → 1 VM with NodeRole.MANAGEMENT, IP from IpAllocator
  * </pre>
@@ -60,10 +57,10 @@ import java.util.*;
  *     new ModuleInfo("m1", "pt"),
  *     List.of(
  *         new ClusterSpec(
- *             "clu-m1-pt-kind",
- *             ClusterType.KIND,
+ *             "clu-m1-pt-kubeadm",
+ *             ClusterType.KUBEADM,
  *             Optional.empty(),
- *             0, 0,
+ *             1, 1,
  *             SizeProfile.MEDIUM,
  *             List.of()
  *         )
@@ -74,19 +71,19 @@ import java.util.*;
  * ScaffoldPlan plan = builder.build(spec);
  *
  * // Result:
- * // plan.vms().size() = 1
+ * // plan.vms().size() = 2
  * // plan.vms().getFirst() = VmConfig(
- * //     name="clu-m1-pt-kind",
- * //     role=NodeRole.CLUSTER,
+ * //     name="clu-m1-pt-kubeadm-master-1",
+ * //     role=NodeRole.MASTER,
  * //     ip="192.168.56.10",
  * //     sizeProfile=SizeProfile.MEDIUM,
  * //     cpuOverride=Optional.empty(),
  * //     memoryMbOverride=Optional.empty()
  * // )
  * // plan.envVars() = {
- * //     CLUSTER_NAME: "clu-m1-pt-kind",
+ * //     CLUSTER_NAME: "clu-m1-pt-kubeadm",
  * //     NAMESPACE_DEFAULT: "ns-m1-pt",
- * //     CLUSTER_TYPE: "kind"
+ * //     CLUSTER_TYPE: "kubeadm"
  * // }
  * }</pre>
  *
@@ -167,7 +164,6 @@ public final class SpecToPlan implements PlanBuilder {
      *
      * <p>Phase 2 Implementation:
      * <ul>
-     *   <li>KIND/MINIKUBE: 1 VM with NodeRole.CLUSTER</li>
      *   <li>KUBEADM: (masters + workers) VMs with appropriate roles</li>
      *   <li>NONE: 1 VM with NodeRole.MANAGEMENT</li>
      * </ul>
@@ -192,30 +188,7 @@ public final class SpecToPlan implements PlanBuilder {
         };
     }
 
-    /**
-     * Creates a single-node VM for kind or minikube cluster.
-     *
-     * <p>VM Configuration:
-     * <ul>
-     *   <li>Name: cluster name (e.g., "clu-m1-pt-kind")</li>
-     *   <li>Role: NodeRole.CLUSTER</li>
-     *   <li>IP: From IpAllocator</li>
-     *   <li>Size: From cluster.sizeProfile()</li>
-     *   <li>Overrides: None (use size profile defaults)</li>
-     * </ul>
-     *
-     * @param cluster cluster specification
-     * @param ip      allocated IP address
-     * @return VmConfig for single-node cluster
-     */
-    private VmConfig createSingleNodeVm(ClusterSpec cluster, IPAddress ip) {
-        return VmConfig.builder()
-                .name(cluster.name().value())
-                .role(NodeRole.CLUSTER)
-                .ip(ip)
-                .sizeProfile(cluster.sizeProfile())
-                .build();
-    }
+
 
     /**
      * Creates a management VM (NoneCluster).

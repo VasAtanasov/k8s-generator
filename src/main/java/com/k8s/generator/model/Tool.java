@@ -28,7 +28,6 @@ import java.util.Set;
  *   <li><b>aws_cli</b>: AWS CLI - requires AWS provider</li>
  *   <li><b>gcloud</b>: Google Cloud SDK - requires GCP provider</li>
  *   <li><b>kube_binaries</b>: kubeadm, kubelet, kubectl binaries</li>
- *   <li><b>kind</b>: Kubernetes in Docker</li>
  *   <li><b>k3s</b>: Lightweight Kubernetes</li>
  * </ul>
  *
@@ -83,10 +82,8 @@ public record Tool(String value) {
             "aws_cli",
             "gcloud",
             "kube_binaries",
-            "kind",
             "k3s",
             "docker",
-            "minikube",
             "containerd"
     );
 
@@ -206,15 +203,6 @@ public record Tool(String value) {
     }
 
     /**
-     * Creates a Tool for kind (Kubernetes in Docker).
-     *
-     * @return Tool instance for kind
-     */
-    public static Tool kind() {
-        return new Tool("kind");
-    }
-
-    /**
      * Creates a Tool for docker.
      *
      * @return Tool instance for docker
@@ -232,14 +220,7 @@ public record Tool(String value) {
         return new Tool("containerd");
     }
 
-    /**
-     * Creates a Tool for minikube.
-     *
-     * @return Tool instance for minikube
-     */
-    public static Tool minikube() {
-        return new Tool("minikube");
-    }
+
 
     /**
      * Checks if this tool requires a cloud provider to be configured.

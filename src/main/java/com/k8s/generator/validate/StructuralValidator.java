@@ -129,7 +129,6 @@ public class StructuralValidator implements ClusterSpecValidator {
     private void validateVmRoles(ClusterSpec spec, List<ValidationError> errors) {
         // With NodeRole enum, structural validation is handled by the type system.
         // Future semantic validations could check:
-        // - KIND/MINIKUBE should only have CLUSTER role VMs
         // - KUBEADM should only have MASTER/WORKER role VMs
         // - NONE should only have MANAGEMENT role VMs
         // These are semantic rules, not structural, so they belong in SemanticValidator.

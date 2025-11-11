@@ -39,8 +39,8 @@ import java.util.Objects;
  *
  * // Cluster without VMs
  * var clusterSpec = new ClusterSpec(
- *     "dev", ClusterType.KIND,
- *     Optional.empty(), 0, 0,
+ *     "dev", ClusterType.KUBEADM,
+ *     Optional.empty(), 1, 1,
  *     SizeProfile.MEDIUM,
  *     List.of(),  // Empty VMs list
  *     Optional.empty()
@@ -50,7 +50,7 @@ import java.util.Objects;
  * var result = orchestrator.orchestrate(clusterSpec);
  * if (result.isSuccess()) {
  *     ClusterSpec enriched = result.orElseThrow();
- *     // enriched.vms() = [VmConfig("dev", CLUSTER, "192.168.56.10", ...)]
+ *     // enriched.vms() = [VmConfig("dev-master-1", MASTER, "192.168.56.10", ...)]
  * }
  * }</pre>
  *

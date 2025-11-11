@@ -305,7 +305,7 @@ class SemanticValidatorTest {
         assertThatThrownBy(() -> ClusterSpec.builder()
                 .name("Invalid-Name")  // Invalid name
                 .firstIp("invalid-ip")  // invalid in builder
-                .nodes(NodeTopology.of(1,1))  // invalid roles for KIND
+                .nodes(NodeTopology.of(1,1))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .build())

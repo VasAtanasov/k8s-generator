@@ -137,7 +137,7 @@ public final class CliToSpec implements SpecConverter {
     /**
      * Parses cluster type from CLI string.
      * <p>
-     * Supports kind, minikube, kubeadm, and mgmt (maps to NONE).
+     * Supports kubeadm, and mgmt (maps to NONE).
      *
      * @param clusterType cluster type string (case-insensitive)
      * @return ClusterType enum value
@@ -163,8 +163,7 @@ public final class CliToSpec implements SpecConverter {
      *
      * <p>Examples:
      * <ul>
-     *   <li>module=m1, type=pt, engine=kind → "clu-m1-pt-kind"</li>
-     *   <li>module=m7, type=exam-prep, engine=minikube → "clu-m7-exam-prep-minikube"</li>
+     *   <li>module=m1, type=pt, engine=kubeadm → "clu-m1-pt-kubeadm"</li>
      * </ul>
      *
      * @param module      module info

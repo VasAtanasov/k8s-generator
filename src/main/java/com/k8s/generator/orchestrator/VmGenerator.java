@@ -15,14 +15,13 @@ import java.util.List;
  *
  * <p>Generation Rules:
  * <ul>
- *   <li><b>KIND/MINIKUBE</b>: Generates 1 VM with name=cluster-name, role=CLUSTER</li>
  *   <li><b>NONE (management)</b>: Generates 1 VM with name=cluster-name, role=MANAGEMENT</li>
  *   <li><b>KUBEADM</b>: Generates master VMs ({cluster}-master-{n}) and worker VMs ({cluster}-worker-{n})</li>
  * </ul>
  *
  * <p>Naming Convention:
  * <ul>
- *   <li>KIND/MINIKUBE/NONE: VM name = cluster name (e.g., "dev", "staging")</li>
+ *   <li>NONE: VM name = cluster name (e.g., "dev", "staging")</li>
  *   <li>KUBEADM masters: "{cluster-name}-master-{n}" (e.g., "prod-master-1")</li>
  *   <li>KUBEADM workers: "{cluster-name}-worker-{n}" (e.g., "prod-worker-1")</li>
  * </ul>
@@ -37,15 +36,6 @@ import java.util.List;
  * <p>Example Usage:
  * <pre>{@code
  * var generator = new DefaultVmGenerator();
- *
- * // KIND cluster: 1 VM
- * var kindCluster = new ClusterSpec(
- *     "dev", ClusterType.KIND,
- *     Optional.empty(), 0, 0,
- *     SizeProfile.MEDIUM, List.of(), Optional.empty()
- * );
- * var kindVms = generator.generate(kindCluster, List.of("192.168.56.10"));
- * // Result: [VmConfig("dev", CLUSTER, "192.168.56.10", MEDIUM, ...)]
  *
  * // KUBEADM cluster: 1 master + 2 workers = 3 VMs
  * var kubeadmCluster = new ClusterSpec(
@@ -83,7 +73,7 @@ public interface VmGenerator {
      *
      * <p>Expected VM Counts:
      * <ul>
-     *   <li>KIND/MINIKUBE/NONE: 1 VM</li>
+     *   <li>NONE: 1 VM</li>
      *   <li>KUBEADM: masters + workers VMs</li>
      * </ul>
      *

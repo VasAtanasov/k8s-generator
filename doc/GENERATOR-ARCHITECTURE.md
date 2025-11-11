@@ -192,14 +192,7 @@ Generation metadata `.k8s-generator.yaml` is created in output directory to dete
 
 ```
 # Default: fail if modified files are detected
-k8s-gen --module m1 --type pt kind --out pt-m1/
-# → ERROR: Generated files have been modified. Use --force to overwrite.
 
-# Force: overwrite all regeneratable files
-k8s-gen --module m1 --type pt kind --out pt-m1/ --force
-
-# Future: three-way merge (defer to v2.0)
-k8s-gen --module m1 --type pt kind --out pt-m1/ --merge
 ```
 
 ## Provisioning (Deferred Automation)
@@ -221,8 +214,7 @@ src/main/resources/templates/
 ├── Vagrantfile.jte              # Main VM topology
 ├── bootstrap.sh.jte             # Main bootstrap script
 └── partials/
-    ├── minikube-setup.jte       # Minikube-specific setup
-    ├── kind-setup.jte           # Kind-specific setup
+
     ├── kubeadm-master.jte       # Kubeadm master setup
     └── kubeadm-worker.jte       # Kubeadm worker setup
 ```

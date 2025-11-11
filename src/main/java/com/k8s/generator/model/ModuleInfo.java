@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
  * <p>Used to generate consistent naming across all generated artifacts:
  * <ul>
  *   <li>Output directory: {@code <type>-<num>/} (e.g., "pt-m1/", "exam-prep-m7/")</li>
- *   <li>Cluster names: {@code clu-<num>-<type>-<engine>} (e.g., "clu-m1-pt-kind")</li>
+ *   <li>Cluster names: {@code clu-<num>-<type>-<engine>} (e.g., "clu-m1-pt-kubeadm")</li>
  *   <li>Namespaces: {@code ns-<num>-<type>} (e.g., "ns-m1-pt")</li>
  * </ul>
  *
@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
  * // Practice task for module 1
  * var practice = new ModuleInfo("m1", "pt");
  * // → Output dir: "pt-m1/"
- * // → Cluster: "clu-m1-pt-kind"
+ * // → Cluster: "clu-m1-pt-kubeadm"
  * // → Namespace: "ns-m1-pt"
  *
  * // Exam prep for module 7
@@ -129,7 +129,7 @@ public record ModuleInfo(String num, String type) {
 
     /**
      * Returns a cluster name for this module and engine.
-     * Format: {@code clu-<num>-<type>-<engine>} (e.g., "clu-m1-pt-kind")
+     * Format: {@code clu-<num>-<type>-<engine>} (e.g., "clu-m1-pt-kubeadm")
      *
      * @param engine cluster engine type
      * @return cluster name

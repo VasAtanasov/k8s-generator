@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * <ul>
  *   <li>P0 fixes: Empty VMs validation, constants usage, determinism</li>
  *   <li>P1 fixes: Provider support (Azure), kubeadm-specific variables</li>
- *   <li>Engine-specific behavior: KIND, minikube, kubeadm, management-only</li>
+ *   <li>Engine-specific behavior: kubeadm, management-only</li>
  *   <li>Per-VM environment isolation and role-based variables</li>
  * </ul>
  *
@@ -28,9 +28,7 @@ class EnvPlannerTest {
 
     // Test fixtures
     private static final ModuleInfo MODULE = new ModuleInfo("m1", "pt");
-    private static final ClusterName KIND_CLUSTER_NAME = ClusterName.of("clu-m1-pt-kind");
     private static final ClusterName KUBEADM_CLUSTER_NAME = ClusterName.of("clu-m1-pt-kubeadm");
-    private static final VmName KIND_VM_NAME = VmName.of("clu-m1-pt-kind");
     private static final VmName MASTER_VM_NAME = VmName.of("clu-m1-pt-kubeadm-master-1");
     private static final VmName WORKER_VM_NAME = VmName.of("clu-m1-pt-kubeadm-worker-1");
 

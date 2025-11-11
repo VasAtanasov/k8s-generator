@@ -26,7 +26,7 @@ import java.util.Map;
  *   <li>Determine base IP (firstIp or default 192.168.56.10)</li>
  *   <li>Calculate VM count based on cluster type:
  *       <ul>
- *         <li>KIND/MINIKUBE/NONE: 1 VM</li>
+ *         <li>NONE: 1 VM</li>
  *         <li>KUBEADM: masters + workers VMs</li>
  *       </ul>
  *   </li>
@@ -37,14 +37,14 @@ import java.util.Map;
  * <p>Example Usage:
  * <pre>{@code
  * // Single-cluster allocation (default IP)
- * var kindCluster = new ClusterSpec(
- *     "dev", ClusterType.KIND,
- *     Optional.empty(),  // Uses default 192.168.56.10
+ * var noneCluster = new ClusterSpec(
+ *     "dev", ClusterType.NONE,
+ *     Optional.empty(),  // Uses default 192.168.56.5
  *     0, 0, SizeProfile.MEDIUM, List.of(), Optional.empty()
  * );
  * var allocator = new SequentialIpAllocator();
- * var result = allocator.allocate(kindCluster);
- * // result = Success(["192.168.56.10"])
+ * var result = allocator.allocate(noneCluster);
+ * // result = Success(["192.168.56.5"])
  *
  * // Multi-node kubeadm cluster
  * var kubeadmCluster = new ClusterSpec(

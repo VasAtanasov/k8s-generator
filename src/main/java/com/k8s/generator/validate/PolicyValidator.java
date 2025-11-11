@@ -121,7 +121,6 @@ public class PolicyValidator implements ClusterSpecValidator {
      * <p>Rules:
      * <ul>
      *   <li>KUBEADM: CNI MUST be specified (required for networking)</li>
-     *   <li>KIND/MINIKUBE: CNI MUST NOT be specified (they bundle CNI)</li>
      *   <li>NONE: CNI MUST NOT be specified (no Kubernetes cluster)</li>
      * </ul>
      */
@@ -308,7 +307,6 @@ public class PolicyValidator implements ClusterSpecValidator {
      *
      * <p>Naming Convention:
      * <ul>
-     *   <li>KIND/MINIKUBE: "{cluster-name}" (single VM named after cluster)</li>
      *   <li>NONE: "{cluster-name}" (management VM named after cluster)</li>
      *   <li>KUBEADM: "{cluster-name}-master-{n}", "{cluster-name}-worker-{n}"</li>
      * </ul>

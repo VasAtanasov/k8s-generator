@@ -60,7 +60,7 @@ public class DefaultVmGenerator implements VmGenerator {
     }
 
     /**
-     * Generates a single VM for KIND/MINIKUBE/NONE cluster types.
+     * Generates a single VM for NONE cluster types.
      * VM name equals cluster name.
      */
     private List<VmConfig> generateSingleVm(ClusterSpec cluster, IPAddress ip, NodeRole role) {

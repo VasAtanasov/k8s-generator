@@ -242,7 +242,6 @@ When generating or modifying scripts, keep behavior and structure consistent acr
 - Role/cluster semantics (generator policy):
   - Management-only clusters are single-VM; no roles specified.
   - `kubeadm` supports roles `bastion|master|worker`; generated bootstraps install prerequisites only (no `kubeadm init/join`), preserving the learning objective to do cluster bring-up manually. Master/worker templates print clear next-step commands.
-  - For `aks`, disallow heavy local cluster tools (e.g., `minikube`, `kube_binaries`, `kind`, `k3s`). For hybrid on a single VM, use `minikube` with `--azure` (using `azure_cli` via `--tools` is deprecated).
 
 - Safe customizations (never overwritten by generators):
   - Local overrides file `Vagrantfile.local.rb` is loaded after the generated base file.

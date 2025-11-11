@@ -18,7 +18,6 @@ package com.k8s.generator.model;
  * <p>Usage Context:
  * <ul>
  *   <li><b>KUBEADM clusters</b>: Require CNI to be explicitly specified</li>
- *   <li><b>KIND/MINIKUBE clusters</b>: Should NOT have CNI (they bundle their own)</li>
  *   <li><b>NONE (management)</b>: Should NOT have CNI (no Kubernetes cluster)</li>
  * </ul>
  *
@@ -35,15 +34,15 @@ package com.k8s.generator.model;
  *     Optional.of(CniType.CALICO)
  * );
  *
- * // Kind cluster (no CNI specified - uses bundled CNI)
- * var kindCluster = new ClusterSpec(
+ * // Management cluster (no CNI specified)
+ * var mgmtCluster = new ClusterSpec(
  *     "dev",
- *     ClusterType.KIND,
+ *     ClusterType.NONE,
  *     Optional.empty(),
  *     0, 0,
  *     SizeProfile.MEDIUM,
  *     List.of(),
- *     Optional.empty()  // No CNI for KIND
+ *     Optional.empty()  // No CNI for NONE
  * );
  * }</pre>
  *

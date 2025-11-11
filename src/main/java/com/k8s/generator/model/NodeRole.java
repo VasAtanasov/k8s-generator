@@ -9,9 +9,6 @@ package com.k8s.generator.model;
  *       <br>- Used with ClusterType.NONE
  *       <br>- Tools: kubectl, helm, kubectx, kubens, etc.
  *       <br>- Can aggregate kubeconfigs from multiple clusters</li>
- *   <li><b>CLUSTER</b>: Single-node cluster VM (kind/minikube)
- *       <br>- Used with ClusterType.KIND or ClusterType.MINIKUBE
- *       <br>- Entire cluster runs on one VM</li>
  *   <li><b>MASTER</b>: Control plane node (kubeadm)
  *       <br>- Used with ClusterType.KUBEADM
  *       <br>- Runs kube-apiserver, etcd, scheduler, controller-manager</li>
@@ -23,8 +20,6 @@ package com.k8s.generator.model;
  * <p>Role Assignment Rules:
  * <pre>{@code
  * ClusterType.NONE      → NodeRole.MANAGEMENT (1 VM)
- * ClusterType.KIND      → NodeRole.CLUSTER (1 VM)
- * ClusterType.MINIKUBE  → NodeRole.CLUSTER (1 VM)
  * ClusterType.KUBEADM   → NodeRole.MASTER (1+ VMs) + NodeRole.WORKER (0+ VMs)
  * }</pre>
  *
@@ -37,16 +32,6 @@ package com.k8s.generator.model;
  *     NodeRole.MANAGEMENT,
  *     2,
  *     2048,
- *     "ubuntu/jammy64"
- * );
- *
- * // Kind single-node cluster
- * var kindVm = new VmConfig(
- *     "kind-cluster",
- *     "192.168.56.10",
- *     NodeRole.CLUSTER,
- *     4,
- *     8192,
  *     "ubuntu/jammy64"
  * );
  *
@@ -67,7 +52,7 @@ public enum NodeRole {
     MANAGEMENT,
 
     /**
-     * Single-node cluster VM (kind or minikube).
+     * Single-node cluster VM.
      * Entire cluster runs on this one VM.
      */
     CLUSTER,
