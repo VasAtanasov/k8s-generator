@@ -12,7 +12,6 @@ import java.util.Objects;
  *
  * <p>Generates VM configurations following these naming conventions:
  * <ul>
- *   <li>KIND/MINIKUBE: Single VM named after cluster (role: CLUSTER)</li>
  *   <li>NONE: Single VM named after cluster (role: MANAGEMENT)</li>
  *   <li>KUBEADM: Multi-node with prefix pattern "{cluster-name}-{role}-{n}"</li>
  * </ul>
@@ -45,8 +44,6 @@ public class DefaultVmGenerator implements VmGenerator {
         }
 
         return switch (cluster.type()) {
-            case Kind k -> generateSingleVm(cluster, allocatedIps.getFirst(), NodeRole.CLUSTER);
-            case Minikube m -> generateSingleVm(cluster, allocatedIps.getFirst(), NodeRole.CLUSTER);
             case NoneCluster nc -> generateSingleVm(cluster, allocatedIps.getFirst(), NodeRole.MANAGEMENT);
             case Kubeadm ku -> generateKubeadmVms(cluster, allocatedIps);
         };
@@ -57,10 +54,8 @@ public class DefaultVmGenerator implements VmGenerator {
         Objects.requireNonNull(cluster, "cluster cannot be null");
 
         return switch (cluster.type()) {
-            case Kind k -> 1;
-            case Minikube m -> 1;
             case NoneCluster nc -> 1;
-            case Kubeadm ku -> cluster.masters() + cluster.workers();
+            case Kubeadm ku -> cluster.nodes().masters() + cluster.nodes().workers();
         };
     }
 
@@ -86,7 +81,7 @@ public class DefaultVmGenerator implements VmGenerator {
         int ipIndex = 0;
 
         // Generate master nodes: {cluster-name}-master-{n}
-        for (int i = 1; i <= cluster.masters(); i++) {
+        for (int i = 1; i <= cluster.nodes().masters(); i++) {
             var vm = VmConfig.builder()
                     .name(VmName.of(String.format("%s-master-%d", cluster.name(), i)))
                     .role(NodeRole.MASTER)
@@ -97,7 +92,7 @@ public class DefaultVmGenerator implements VmGenerator {
         }
 
         // Generate worker nodes: {cluster-name}-worker-{n}
-        for (int i = 1; i <= cluster.workers(); i++) {
+        for (int i = 1; i <= cluster.nodes().workers(); i++) {
             var vm = VmConfig.builder()
                     .name(VmName.of(String.format("%s-worker-%d", cluster.name(), i)))
                     .role(NodeRole.WORKER)
