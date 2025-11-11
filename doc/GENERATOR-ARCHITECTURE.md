@@ -10,7 +10,7 @@ scope: Defines CLI behavior, engines, validation, templates, and generation cont
 
 - CLI-first (80%): single cluster, smart defaults, zero YAML
 - YAML optional (20%): multi-cluster, custom networking, per-node shaping
-- Engines map 1:1 to `cluster-type`: `mgmt→none`, `kind→kind`, `minikube→minikube`, `kubeadm→kubeadm`
+- Engines map 1:1 to `cluster-type`: `mgmt→none`, `kubeadm→kubeadm`
 - Deterministic and idempotent generation; atomic writes; clear validation errors
 
 ## Architecture (6 Bricks + Orchestrator)
@@ -34,7 +34,7 @@ This document is self-contained; future notes and reviews are omitted.
   - Positional: `k8s-gen <mN> <type> <cluster-type> [modifiers]`
 - Required
   - `--module <mN>` (e.g., m1, m7), `--type <type>` (e.g., pt, hw, exam, exam-prep)
-  - `<cluster-type>`: `mgmt|minikube|kind|kubeadm`
+  - `<cluster-type>`: `mgmt|kubeadm`
 - Modifiers
   - `--size small|medium|large`, `--nodes 1m,2w` (kubeadm), `--azure`, `--out`, `--dry-run`
 - Naming & paths
@@ -47,7 +47,6 @@ This document is self-contained; future notes and reviews are omitted.
 ## Conventions
 
 - Opinionated defaults
-  - Engine explicit; independent from `--type`
   - kubeadm: containerd; CNI=Calico; Pod CIDR `10.244.0.0/16`; Svc CIDR `10.96.0.0/12`
   - Sizing profiles: `small|medium|large` (default: medium → 4 CPU, 8192 MB)
   - Naming: `clu-<module>-<type>-<engine>`, namespaces `ns-<module>-<type>`
@@ -165,27 +164,7 @@ Exit Codes
 - Pod/Svc CIDR overlap → Semantic
 - Kubeadm missing CNI → Structural
 
-## Engine Extensibility
 
-### Engine Contract (Java SPI)
-
-```java
-public interface Engine {
-  String id();                            // e.g., "kubeadm", "kind", "minikube", "none"
-  Set<BaseModel> supports();              // MANAGEMENT, SINGLE_NODE, MULTI_NODE, MULTI_CLUSTER
-  List<String> requiredTools();           // immutable set
-  List<String> recommendedTools();        // optional
-  List<String> forbiddenTools();          // conflicts
-  void validate(PlanInput input) throws ValidationException; // engine-specific rules
-  String vagrantfileTemplateKey();        // template path key for VM topology
-  String bootstrapTemplateKey();          // template path key for bootstrap
-}
-```
-
-Registry & discovery
-- `EngineRegistry` uses ServiceLoader; CLI validates `<cluster-type>` against registered ids
-- Templates live under `templates/engines/<id>/...`; engines reference installer names
-- Add engines via SPI without changing core bricks
 
 ## Atomic File Generation
 
@@ -255,14 +234,6 @@ public record VagrantfileContext(
     String moduleName,
     List<VmConfig> vms,
     Map<String, String> envVars
-) {}
-
-public record VmConfig(
-    String name,
-    String ip,
-    int cpus,
-    int memoryMb,
-    String boxImage
 ) {}
 ```
 
@@ -346,6 +317,7 @@ Reference library
 
 | Version | Date       | Author      | Changes                                                              |
 |---------|------------|-------------|----------------------------------------------------------------------|
+| 1.20.0  | 2025-11-11 | repo-maint  | Removed kind and minikube support; simplified to kubeadm-only architecture. |
 | 1.19.2  | 2025-11-11 | repo-maint  | Made spec self-contained: removed cross-references and external doc links; minor clarifications. |
 | 1.19.1  | 2025-11-11 | repo-maint  | Distilled normative spec; removed verbose examples; consolidated future notes; aligned title/version. |
 | 1.19.0  | 2025-11-11 | repo-maint  | Aligned with architecture reviews: added Atomic Writes, Regeneration Strategy, updated package structure. |

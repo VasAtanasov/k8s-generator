@@ -29,7 +29,7 @@ k8s-generator is a CLI tool that generates complete, working Kubernetes learning
 
 - **CLI-first approach**: 80% of users get instant results with smart defaults (zero YAML)
 - **Hybrid architecture**: Optional YAML specs for complex scenarios (multi-cluster, custom networking)
-- **Multiple engines**: kind, minikube, kubeadm, management-only (extensible via SPI)
+- **Two modes**: kubeadm (multi-node clusters), management-only (no cluster)
 - **Convention-over-configuration**: Sensible defaults with override capability
 - **Immutable domain model**: Type-safe records with validation in compact constructors
 - **Template-based generation**: JTE for type-safe, compile-time validated templates
@@ -57,11 +57,11 @@ CLI → Orchestrator → [Model ↔ InputParser ↔ Validation] → Rendering �
 6. **I/O** (`com.k8s.generator.fs`): File system operations with atomic writes
 7. **Orchestrator** (`com.k8s.generator.app`): Coordinates the pipeline
 
-### Engines & SPI
+### Cluster Modes
 
-- Internal engines map 1:1 to the CLI `cluster-type` values.
-- Provide an `Engine` interface with `id()` and render/orchestration hooks; register via an `EngineRegistry`.
-- New engines (e.g., k3s, microk8s) integrate via SPI without modifying core bricks.
+- **Kubeadm**: Multi-node Kubernetes cluster with manual setup (educational focus)
+- **Management-only**: Standalone machine for multi-cluster labs (no Kubernetes installed)
+- Extensibility via sealed interface pattern allows future cloud engines (AKS, EKS) if needed
 
 ## Implementation Philosophy
 
@@ -240,7 +240,7 @@ When generating or modifying scripts, keep behavior and structure consistent acr
 - Templates also support `shell.path` (Vagrant upload) by falling back to `/vagrant/scripts` when resolving `lib.sh` and installers. Both styles work; inline is the recommended default for clarity.
 
 - Role/cluster semantics (generator policy):
-  - `minikube` and `aks` are always single-node management VMs; any `--role` input is ignored by design.
+  - Management-only clusters are single-VM; no roles specified.
   - `kubeadm` supports roles `bastion|master|worker`; generated bootstraps install prerequisites only (no `kubeadm init/join`), preserving the learning objective to do cluster bring-up manually. Master/worker templates print clear next-step commands.
   - For `aks`, disallow heavy local cluster tools (e.g., `minikube`, `kube_binaries`, `kind`, `k3s`). For hybrid on a single VM, use `minikube` with `--azure` (using `azure_cli` via `--tools` is deprecated).
 
@@ -325,6 +325,7 @@ All repository documents must follow a consistent versioning and history policy 
 
 | Version | Date       | Author      | Changes                                                              |
 |---------|------------|-------------|----------------------------------------------------------------------|
+| 1.6.0   | 2025-11-11 | repo-maint  | Removed kind and minikube support; simplified to kubeadm-only architecture. |
 | 1.5.0   | 2025-11-10 | repo-maint  | Added 'Value Objects over Primitives' as a core design principle.    |
 | 1.4.0   | 2025-11-10 | repo-maint  | Adopted Lombok's @Builder for complex model records                  |
 | 1.3.0   | 2025-11-04 | repo-maint  | Policy update: Document History tables sorted in descending version order; workflow now says to prepend entries |
