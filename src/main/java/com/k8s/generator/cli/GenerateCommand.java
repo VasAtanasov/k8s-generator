@@ -18,11 +18,9 @@ import java.util.concurrent.Callable;
                 "Generate Kubernetes learning environments using convention-over-configuration.",
                 "",
                 "Examples:",
-                "  k8s-gen --module m1 --type pt kind",
-                "  k8s-gen --module m1 --type pt minikube --out pt-m1/",
                 "  k8s-gen --module m7 --type hw kubeadm --nodes 1m,2w --cni calico --size large",
                 "  k8s-gen --module m9 --type lab mgmt",
-                "  k8s-gen --module m1 --type pt kind --dry-run"
+                "  k8s-gen --module m1 --type pt kubeadm --dry-run"
         }
 )
 public final class GenerateCommand implements Callable<Integer> {
@@ -33,7 +31,7 @@ public final class GenerateCommand implements Callable<Integer> {
     @Option(names = {"--type"}, required = true, description = "Type (e.g., pt, hw, exam, exam-prep)")
     public String type;
 
-    @Parameters(index = "0", description = "Cluster type: kind|minikube|kubeadm|mgmt")
+    @Parameters(index = "0", description = "Cluster type: kubeadm|mgmt")
     public String clusterType;
 
     @Option(names = {"--out"}, description = "Output directory; default is <type>-<module>/")
