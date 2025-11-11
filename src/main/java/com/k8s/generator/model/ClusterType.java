@@ -31,20 +31,6 @@ import java.util.List;
  *     <th>Use Case</th>
  *   </tr>
  *   <tr>
- *     <td>KIND</td>
- *     <td>kind</td>
- *     <td>No</td>
- *     <td>No</td>
- *     <td>Fast containerized cluster, learning</td>
- *   </tr>
- *   <tr>
- *     <td>MINIKUBE</td>
- *     <td>minikube</td>
- *     <td>No</td>
- *     <td>No</td>
- *     <td>Single-node with addons, testing</td>
- *   </tr>
- *   <tr>
  *     <td>KUBEADM</td>
  *     <td>kubeadm</td>
  *     <td>Yes</td>
@@ -62,8 +48,6 @@ import java.util.List;
  *
  * <p>Migration from ClusterType enum:
  * <ul>
- *   <li>{@code ClusterType.KIND} → {@code Kind.INSTANCE}</li>
- *   <li>{@code ClusterType.MINIKUBE} → {@code Minikube.INSTANCE}</li>
  *   <li>{@code ClusterType.KUBEADM} → {@code Kubeadm.INSTANCE}</li>
  *   <li>{@code ClusterType.NONE} → {@code NoneCluster.INSTANCE}</li>
  * </ul>
@@ -72,39 +56,35 @@ import java.util.List;
  * <pre>{@code
  * // Pattern matching with exhaustiveness checking
  * int vmCount = switch (clusterType) {
- *     case Kind k -> 1;
- *     case Minikube m -> 1;
  *     case Kubeadm ku -> ku.masters() + ku.workers();
  *     case NoneCluster nc -> 1;
  * };
  *
  * // String parsing (case-insensitive)
- * ClusterType type = ClusterType.fromString("KIND");  // Returns Kind.INSTANCE
+ * ClusterType type = ClusterType.fromString("KUBEADM");  // Returns Kubeadm.INSTANCE
  *
  * // ID-based lookup (lowercase)
- * ClusterType type = ClusterType.byId("kind");  // Returns Kind.INSTANCE
+ * ClusterType type = ClusterType.byId("KUBEADM");  // Returns Kubeadm.INSTANCE
  * }</pre>
  *
- * @see Kind
- * @see Minikube
  * @see Kubeadm
  * @see NoneCluster
  * @since 2.0.0 (refactored from enum in 1.0.0)
  */
-public sealed interface ClusterType permits Kind, Minikube, Kubeadm, NoneCluster {
+public sealed interface ClusterType permits Kubeadm, NoneCluster {
 
     /**
      * Returns the unique identifier for this cluster type (lowercase).
      * <p>
      * This ID is used for:
      * <ul>
-     *   <li>Template selection (e.g., "templates/engines/kind/")</li>
+     *   <li>Template selection (e.g., "templates/engines/kubeadm/")</li>
      *   <li>User-facing output and logs</li>
      *   <li>Engine registry lookup</li>
      *   <li>Cluster naming conventions</li>
      * </ul>
      *
-     * @return lowercase identifier (e.g., "kind", "minikube", "kubeadm", "none")
+     * @return lowercase identifier (e.g., "kubeadm", "none")
      */
     String id();
 
@@ -112,7 +92,7 @@ public sealed interface ClusterType permits Kind, Minikube, Kubeadm, NoneCluster
      * Returns the display name for this cluster type.
      * Used in help text, error messages, and user-facing documentation.
      *
-     * @return human-readable name (e.g., "KIND (Kubernetes IN Docker)")
+     * @return human-readable name (e.g., "KUBEADM (Kubernetes IN Docker)")
      */
     String displayName();
 
@@ -149,9 +129,9 @@ public sealed interface ClusterType permits Kind, Minikube, Kubeadm, NoneCluster
     /**
      * Parses a string into a ClusterType instance (case-insensitive).
      * <p>
-     * Accepted values: "kind", "minikube", "kubeadm", "none" (and case variants)
+     * Accepted values: "kubeadm", "none" (and case variants)
      *
-     * @param value string value to parse (e.g., "KIND", "kind", "Kind")
+     * @param value string value to parse (e.g., "KUBEADM", "kubeadm", "Kubeadm")
      * @return matching ClusterType singleton instance
      * @throws IllegalArgumentException if value doesn't match any cluster type
      * @throws IllegalArgumentException if value is null
@@ -162,12 +142,10 @@ public sealed interface ClusterType permits Kind, Minikube, Kubeadm, NoneCluster
         }
 
         return switch (value.trim().toLowerCase()) {
-            case "kind" -> Kind.INSTANCE;
-            case "minikube" -> Minikube.INSTANCE;
             case "kubeadm" -> Kubeadm.INSTANCE;
             case "none" -> NoneCluster.INSTANCE;
             default -> throw new IllegalArgumentException(
-                    String.format("Invalid cluster type: '%s'. Valid values: kind, minikube, kubeadm, none", value)
+                    String.format("Invalid cluster type: '%s'. Valid values: kubeadm, none", value)
             );
         };
     }
@@ -178,7 +156,7 @@ public sealed interface ClusterType permits Kind, Minikube, Kubeadm, NoneCluster
      * This method is used when the id is already normalized (e.g., from
      * template paths or internal lookups).
      *
-     * @param id lowercase cluster type id (e.g., "kind", "minikube")
+     * @param id lowercase cluster type id (e.g., "kubeadm")
      * @return matching ClusterType singleton instance
      * @throws IllegalArgumentException if id doesn't match any cluster type
      * @throws IllegalArgumentException if id is null
@@ -189,23 +167,21 @@ public sealed interface ClusterType permits Kind, Minikube, Kubeadm, NoneCluster
         }
 
         return switch (id) {
-            case "kind" -> Kind.INSTANCE;
-            case "minikube" -> Minikube.INSTANCE;
             case "kubeadm" -> Kubeadm.INSTANCE;
             case "none" -> NoneCluster.INSTANCE;
             default -> throw new IllegalArgumentException(
-                    String.format("Unknown cluster type id: '%s'. Valid ids: kind, minikube, kubeadm, none", id)
+                    String.format("Unknown cluster type id: '%s'. Valid ids: kubeadm, none", id)
             );
         };
     }
 
     /**
      * Returns all available cluster types.
-     * Order: Kind, Minikube, Kubeadm, Management
+     * Order: Kubeadm, Management
      *
      * @return immutable list of all cluster types
      */
     static List<ClusterType> values() {
-        return List.of(Kind.INSTANCE, Minikube.INSTANCE, Kubeadm.INSTANCE, NoneCluster.INSTANCE);
+        return List.of(Kubeadm.INSTANCE, NoneCluster.INSTANCE);
     }
 }
