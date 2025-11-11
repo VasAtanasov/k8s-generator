@@ -26,9 +26,7 @@ public final class ToolInstallers {
             case "helm" -> Optional.of("install_helm.sh");
             case "azure_cli" -> Optional.of("install_azure_cli.sh");
             case "kube_binaries" -> Optional.of("install_kube_binaries.sh");
-            case "kind" -> Optional.of("install_kind.sh");
             case "docker" -> Optional.of("install_docker.sh");
-            case "minikube" -> Optional.of("install_minikube.sh");
             case "containerd" -> Optional.of("install_containerd.sh");
             default -> Optional.empty();
         };
