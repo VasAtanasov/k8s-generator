@@ -21,8 +21,7 @@ class ClusterSpecTest {
                 .name("staging")
                 .type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.10")
-                .masters(3)
-                .workers(5)
+                .nodes(NodeTopology.of(3,5))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .cni(CniType.CALICO)
@@ -32,29 +31,13 @@ class ClusterSpecTest {
         assertThat(spec.type()).isEqualTo(Kubeadm.INSTANCE);
         assertThat(spec.firstIp()).isNotNull();
         assertThat(spec.firstIp().toCanonicalString()).isEqualTo("192.168.56.10");
-        assertThat(spec.masters()).isEqualTo(3);
-        assertThat(spec.workers()).isEqualTo(5);
+        assertThat(spec.nodes().masters()).isEqualTo(3);
+        assertThat(spec.nodes().workers()).isEqualTo(5);
         assertThat(spec.sizeProfile()).isEqualTo(SizeProfile.MEDIUM);
         assertThat(spec.vms()).isEmpty();
     }
 
-    @Test
-    void shouldCreateValidKindCluster() {
-        var spec = ClusterSpec.builder()
-                .name("dev")
-                .type(Kind.INSTANCE)
-                .masters(0)
-                .workers(0)
-                .sizeProfile(SizeProfile.SMALL)
-                .vms(List.of())
-                .build();
 
-        assertThat(spec.name().toString()).isEqualTo("dev");
-        assertThat(spec.type()).isEqualTo(Kind.INSTANCE);
-        assertThat(spec.firstIp()).isNull();
-        assertThat(spec.masters()).isZero();
-        assertThat(spec.workers()).isZero();
-    }
 
     @Test
     void shouldCreateClusterWithExplicitVms() {
@@ -75,8 +58,7 @@ class ClusterSpecTest {
                 .name("staging")
                 .type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.10")
-                .masters(1)
-                .workers(1)
+                .nodes(NodeTopology.of(1,1))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of(vm1, vm2))
                 .cni(CniType.CALICO)
@@ -91,8 +73,7 @@ class ClusterSpecTest {
         assertThatThrownBy(() -> ClusterSpec.builder()
                 .name((ClusterName) null)
                 .type(Kubeadm.INSTANCE)
-                .masters(1)
-                .workers(1)
+                .nodes(NodeTopology.of(1,1))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .cni(CniType.CALICO)
@@ -106,8 +87,7 @@ class ClusterSpecTest {
         assertThatThrownBy(() -> ClusterSpec.builder()
                 .name("staging")
                 .type(null)
-                .masters(1)
-                .workers(1)
+                .nodes(NodeTopology.of(1,1))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .cni(CniType.CALICO)
@@ -121,8 +101,7 @@ class ClusterSpecTest {
         var spec = ClusterSpec.builder()
                 .name("staging")
                 .type(Kubeadm.INSTANCE)
-                .masters(1)
-                .workers(1)
+                .nodes(NodeTopology.of(1,1))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .cni(CniType.CALICO)
@@ -135,8 +114,7 @@ class ClusterSpecTest {
         assertThatThrownBy(() -> ClusterSpec.builder()
                 .name("staging")
                 .type(Kubeadm.INSTANCE)
-                .masters(1)
-                .workers(1)
+                .nodes(NodeTopology.of(1,1))
                 .sizeProfile(null)
                 .vms(List.of())
                 .cni(CniType.CALICO)
@@ -150,8 +128,7 @@ class ClusterSpecTest {
         assertThatThrownBy(() -> ClusterSpec.builder()
                 .name("staging")
                 .type(Kubeadm.INSTANCE)
-                .masters(1)
-                .workers(1)
+                .nodes(NodeTopology.of(1,1))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(null)
                 .cni(CniType.CALICO)
@@ -166,8 +143,7 @@ class ClusterSpecTest {
         assertThatThrownBy(() -> ClusterSpec.builder()
                 .name(ClusterName.of(blank))
                 .type(Kubeadm.INSTANCE)
-                .masters(1)
-                .workers(1)
+                .nodes(NodeTopology.of(1,1))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .cni(CniType.CALICO)
@@ -176,43 +152,14 @@ class ClusterSpecTest {
                 .hasMessageContaining("name cannot be blank");
     }
 
-    @Test
-    void shouldRejectNegativeMasters() {
-        assertThatThrownBy(() -> ClusterSpec.builder()
-                .name("staging")
-                .type(Kubeadm.INSTANCE)
-                .masters(-1)
-                .workers(1)
-                .sizeProfile(SizeProfile.MEDIUM)
-                .vms(List.of())
-                .cni(CniType.CALICO)
-                .build())
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("masters must be >= 0");
-    }
 
-    @Test
-    void shouldRejectNegativeWorkers() {
-        assertThatThrownBy(() -> ClusterSpec.builder()
-                .name("staging")
-                .type(Kubeadm.INSTANCE)
-                .masters(1)
-                .workers(-1)
-                .sizeProfile(SizeProfile.MEDIUM)
-                .vms(List.of())
-                .cni(CniType.CALICO)
-                .build())
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("workers must be >= 0");
-    }
 
     @Test
     void shouldRejectKubeadmClusterWithZeroNodes() {
         assertThatThrownBy(() -> ClusterSpec.builder()
                 .name("staging")
                 .type(Kubeadm.INSTANCE)
-                .masters(0)
-                .workers(0)
+                .nodes(NodeTopology.of(0,0))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .cni(CniType.CALICO)
@@ -221,49 +168,20 @@ class ClusterSpecTest {
                 .hasMessageContaining("KUBEADM cluster requires at least one node");
     }
 
-    @Test
-    void shouldAllowKindClusterWithZeroNodes() {
-        var spec = ClusterSpec.builder()
-                .name("dev")
-                .type(Kind.INSTANCE)
-                .masters(0)
-                .workers(0)
-                .sizeProfile(SizeProfile.MEDIUM)
-                .vms(List.of())
-                .build();
 
-        assertThat(spec.masters()).isZero();
-        assertThat(spec.workers()).isZero();
-    }
-
-    @Test
-    void shouldAllowMinikubeClusterWithZeroNodes() {
-        var spec = ClusterSpec.builder()
-                .name("dev")
-                .type(Minikube.INSTANCE)
-                .masters(0)
-                .workers(0)
-                .sizeProfile(SizeProfile.MEDIUM)
-                .vms(List.of())
-                .build();
-
-        assertThat(spec.masters()).isZero();
-        assertThat(spec.workers()).isZero();
-    }
 
     @Test
     void shouldAllowNoneClusterWithZeroNodes() {
         var spec = ClusterSpec.builder()
                 .name("mgmt")
                 .type(NoneCluster.INSTANCE)
-                .masters(0)
-                .workers(0)
+                .nodes(NodeTopology.of(0,0))
                 .sizeProfile(SizeProfile.SMALL)
                 .vms(List.of())
                 .build();
 
-        assertThat(spec.masters()).isZero();
-        assertThat(spec.workers()).isZero();
+        assertThat(spec.nodes().masters()).isZero();
+        assertThat(spec.nodes().workers()).isZero();
     }
 
     @Test
@@ -283,8 +201,7 @@ class ClusterSpecTest {
         assertThatThrownBy(() -> ClusterSpec.builder()
                 .name("staging")
                 .type(Kubeadm.INSTANCE)
-                .masters(1)
-                .workers(0)
+                .nodes(NodeTopology.of(1,0))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(listWithNull)
                 .cni(CniType.CALICO)
@@ -298,8 +215,7 @@ class ClusterSpecTest {
         var spec = ClusterSpec.builder()
                 .name("staging")
                 .type(Kubeadm.INSTANCE)
-                .masters(3)
-                .workers(5)
+                .nodes(NodeTopology.of(3,5))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .cni(CniType.CALICO)
@@ -308,27 +224,14 @@ class ClusterSpecTest {
         assertThat(spec.totalNodes()).isEqualTo(8);
     }
 
-    @Test
-    void shouldReturnZeroTotalNodesForKind() {
-        var spec = ClusterSpec.builder()
-                .name("dev")
-                .type(Kind.INSTANCE)
-                .masters(0)
-                .workers(0)
-                .sizeProfile(SizeProfile.MEDIUM)
-                .vms(List.of())
-                .build();
 
-        assertThat(spec.totalNodes()).isZero();
-    }
 
     @Test
     void shouldDetectHighAvailability() {
         var haCluster = ClusterSpec.builder()
                 .name("prod")
                 .type(Kubeadm.INSTANCE)
-                .masters(3)
-                .workers(5)
+                .nodes(NodeTopology.of(3,5))
                 .sizeProfile(SizeProfile.LARGE)
                 .vms(List.of())
                 .cni(CniType.CALICO)
@@ -337,8 +240,7 @@ class ClusterSpecTest {
         var singleMaster = ClusterSpec.builder()
                 .name("dev")
                 .type(Kubeadm.INSTANCE)
-                .masters(1)
-                .workers(2)
+                .nodes(NodeTopology.of(1,2))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .cni(CniType.CALICO)
@@ -360,8 +262,7 @@ class ClusterSpecTest {
         var withVms = ClusterSpec.builder()
                 .name("staging")
                 .type(Kubeadm.INSTANCE)
-                .masters(1)
-                .workers(0)
+                .nodes(NodeTopology.of(1,0))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of(vm))
                 .cni(CniType.CALICO)
@@ -370,8 +271,7 @@ class ClusterSpecTest {
         var withoutVms = ClusterSpec.builder()
                 .name("staging")
                 .type(Kubeadm.INSTANCE)
-                .masters(1)
-                .workers(0)
+                .nodes(NodeTopology.of(1,0))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .cni(CniType.CALICO)
@@ -386,8 +286,7 @@ class ClusterSpecTest {
         var original = ClusterSpec.builder()
                 .name("staging")
                 .type(Kubeadm.INSTANCE)
-                .masters(1)
-                .workers(0)
+                .nodes(NodeTopology.of(1,0))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .cni(CniType.CALICO)
@@ -413,8 +312,7 @@ class ClusterSpecTest {
         var spec = ClusterSpec.builder()
                 .name("staging")
                 .type(Kubeadm.INSTANCE)
-                .masters(1)
-                .workers(0)
+                .nodes(NodeTopology.of(1,0))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .cni(CniType.CALICO)
@@ -438,8 +336,7 @@ class ClusterSpecTest {
         var spec = ClusterSpec.builder()
                 .name("staging")
                 .type(Kubeadm.INSTANCE)
-                .masters(1)
-                .workers(0)
+                .nodes(NodeTopology.of(1,0))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(mutableList)
                 .cni(CniType.CALICO)
@@ -464,8 +361,7 @@ class ClusterSpecTest {
         var spec = ClusterSpec.builder()
                 .name("staging")
                 .type(Kubeadm.INSTANCE)
-                .masters(1)
-                .workers(0)
+                .nodes(NodeTopology.of(1,0))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of(vm))
                 .cni(CniType.CALICO)

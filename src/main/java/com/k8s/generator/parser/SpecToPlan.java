@@ -179,24 +179,6 @@ public final class SpecToPlan implements PlanBuilder {
      */
     private List<VmConfig> generateVms(ClusterSpec cluster, List<IPAddress> allocatedIps) {
         return switch (cluster.type()) {
-            case Kind k -> {
-                if (allocatedIps.size() != 1) {
-                    throw new IllegalStateException(
-                            String.format("Expected 1 IP for %s cluster, got %d",
-                                    cluster.type().displayName(), allocatedIps.size())
-                    );
-                }
-                yield List.of(createSingleNodeVm(cluster, allocatedIps.getFirst()));
-            }
-            case Minikube m -> {
-                if (allocatedIps.size() != 1) {
-                    throw new IllegalStateException(
-                            String.format("Expected 1 IP for %s cluster, got %d",
-                                    cluster.type().displayName(), allocatedIps.size())
-                    );
-                }
-                yield List.of(createSingleNodeVm(cluster, allocatedIps.getFirst()));
-            }
             case Kubeadm ku -> createKubeadmVms(cluster, allocatedIps);
             case NoneCluster nc -> {
                 if (allocatedIps.size() != 1) {
@@ -280,12 +262,12 @@ public final class SpecToPlan implements PlanBuilder {
      * @throws IllegalStateException if IP count doesn't match masters + workers
      */
     private List<VmConfig> createKubeadmVms(ClusterSpec cluster, List<IPAddress> allocatedIps) {
-        int expectedVmCount = cluster.masters() + cluster.workers();
+        int expectedVmCount = cluster.nodes().masters() + cluster.nodes().workers();
         if (allocatedIps.size() != expectedVmCount) {
             throw new IllegalStateException(
                     String.format(
                             "IP count mismatch for kubeadm cluster '%s': expected %d (masters=%d, workers=%d), got %d IPs",
-                            cluster.name(), expectedVmCount, cluster.masters(), cluster.workers(), allocatedIps.size()
+                            cluster.name(), expectedVmCount, cluster.nodes().masters(), cluster.nodes().workers(), allocatedIps.size()
                     )
             );
         }
@@ -294,7 +276,7 @@ public final class SpecToPlan implements PlanBuilder {
         int ipIndex = 0;
 
         // Create master VMs
-        for (int i = 1; i <= cluster.masters(); i++) {
+        for (int i = 1; i <= cluster.nodes().masters(); i++) {
             vms.add(VmConfig.builder()
                     .name(VmName.of(String.format("%s-master-%d", cluster.name(), i)))
                     .role(NodeRole.MASTER)
@@ -304,7 +286,7 @@ public final class SpecToPlan implements PlanBuilder {
         }
 
         // Create worker VMs
-        for (int i = 1; i <= cluster.workers(); i++) {
+        for (int i = 1; i <= cluster.nodes().workers(); i++) {
             vms.add(VmConfig.builder()
                     .name(VmName.of(String.format("%s-worker-%d", cluster.name(), i)))
                     .role(NodeRole.WORKER)

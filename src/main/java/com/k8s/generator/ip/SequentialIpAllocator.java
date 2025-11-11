@@ -175,10 +175,8 @@ public class SequentialIpAllocator implements IpAllocator {
      */
     private int calculateVmCount(ClusterSpec spec) {
         return switch (spec.type()) {
-            case Kind k -> 1;
-            case Minikube m -> 1;
             case NoneCluster nc -> 1;
-            case Kubeadm ku -> spec.masters() + spec.workers();
+            case Kubeadm ku -> spec.nodes().masters() + spec.nodes().workers();
         };
     }
 

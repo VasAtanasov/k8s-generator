@@ -34,35 +34,20 @@ class EnvPlannerTest {
     private static final VmName MASTER_VM_NAME = VmName.of("clu-m1-pt-kubeadm-master-1");
     private static final VmName WORKER_VM_NAME = VmName.of("clu-m1-pt-kubeadm-worker-1");
 
-    private static ClusterSpec kindCluster() {
-        return ClusterSpec.builder()
-                .name(KIND_CLUSTER_NAME)
-                .type(Kind.INSTANCE)
-                .masters(0).workers(0)
-                .sizeProfile(SizeProfile.MEDIUM)
-                .vms(List.of())
-                .build();
-    }
+
 
     private static ClusterSpec kubeadmCluster() {
         return ClusterSpec.builder()
                 .name(KUBEADM_CLUSTER_NAME)
                 .type(Kubeadm.INSTANCE)
-                .masters(1).workers(1)
+                .nodes(NodeTopology.of(1,1))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .cni(CniType.CALICO)
                 .build();
     }
 
-    private static VmConfig kindVm() {
-        return VmConfig.builder()
-                .name(KIND_VM_NAME)
-                .role(NodeRole.CLUSTER)
-                .ip("192.168.56.10")
-                .sizeProfile(SizeProfile.MEDIUM)
-                .build();
-    }
+
 
     private static VmConfig masterVm() {
         return VmConfig.builder()
@@ -82,24 +67,7 @@ class EnvPlannerTest {
                 .build();
     }
 
-    @Test
-    @DisplayName("build() with KIND cluster produces correct global environment")
-    void build_kindCluster_producesCorrectGlobalEnv() {
-        // Given: KIND cluster with single VM
-        var cluster = kindCluster();
-        var vms = List.of(kindVm());
 
-        // When: Build environment
-        var envSet = EnvPlanner.build(MODULE, cluster, vms);
-
-        // Then: Global environment has base variables only (no CNI)
-        assertThat(envSet.global())
-                .containsEntry("CLUSTER_NAME", "clu-m1-pt-kind")
-                .containsEntry("NAMESPACE_DEFAULT", "ns-m1-pt")
-                .containsEntry("CLUSTER_TYPE", "kind")
-                .doesNotContainKey("CNI_TYPE")  // KIND doesn't expose CNI
-                .doesNotContainKey("KUBE_API_PORT");  // Only kubeadm
-    }
 
     @Test
     @DisplayName("build() with kubeadm cluster includes CNI type and API port")
@@ -150,8 +118,8 @@ class EnvPlannerTest {
     @DisplayName("build() is deterministic - same inputs produce same output")
     void build_deterministic_sameInputsProduceSameOutput() {
         // Given: Same cluster and VMs
-        var cluster = kindCluster();
-        var vms = List.of(kindVm());
+        var cluster = kubeadmCluster();
+        var vms = List.of(masterVm());
 
         // When: Build environment twice
         var envSet1 = EnvPlanner.build(MODULE, cluster, vms);
@@ -166,7 +134,7 @@ class EnvPlannerTest {
     @DisplayName("build() with empty VMs list throws IllegalArgumentException")
     void build_emptyVmsList_throwsIllegalArgumentException() {
         // Given: Empty VMs list
-        var cluster = kindCluster();
+        var cluster = kubeadmCluster();
         var vms = List.<VmConfig>of();
 
         // When/Then: Build throws exception
@@ -178,9 +146,8 @@ class EnvPlannerTest {
     @Test
     @DisplayName("build() with null parameters throws NullPointerException")
     void build_nullParameters_throwsNullPointerException() {
-        // Given: Valid inputs
-        var cluster = kindCluster();
-        var vms = List.of(kindVm());
+        var cluster = kubeadmCluster();
+        var vms = List.of(masterVm());
 
         // When/Then: Null module throws
         assertThatThrownBy(() -> EnvPlanner.build(null, cluster, vms))
@@ -243,8 +210,14 @@ class EnvPlannerTest {
     @Test
     @DisplayName("build() with multiple VMs produces isolated per-VM environments")
     void build_multipleVms_eachHasUniquePerVmEnv() {
-        // Given: Kubeadm cluster with 2 masters and 2 workers
-        var cluster = kubeadmCluster();
+        var cluster = ClusterSpec.builder()
+                .name(KUBEADM_CLUSTER_NAME)
+                .type(Kubeadm.INSTANCE)
+                .nodes(NodeTopology.of(2,2))
+                .sizeProfile(SizeProfile.MEDIUM)
+                .vms(List.of())
+                .cni(CniType.CALICO)
+                .build();
         var master1 = VmConfig.builder()
                 .name("clu-m1-pt-kubeadm-master-1")
                 .role(NodeRole.MASTER)
@@ -310,8 +283,8 @@ class EnvPlannerTest {
     @DisplayName("build() returns immutable EnvSet")
     void build_returnsImmutableEnvSet() {
         // Given: Valid cluster and VMs
-        var cluster = kindCluster();
-        var vms = List.of(kindVm());
+        var cluster = kubeadmCluster();
+        var vms = List.of(masterVm());
 
         // When: Build environment
         var envSet = EnvPlanner.build(MODULE, cluster, vms);
@@ -321,52 +294,16 @@ class EnvPlannerTest {
                 .isInstanceOf(UnsupportedOperationException.class);
 
         // Then: Per-VM map is immutable
-        assertThatThrownBy(() -> envSet.perVm().put(KIND_VM_NAME, Map.of("NEW_KEY", "value")))
+        assertThatThrownBy(() -> envSet.perVm().put(MASTER_VM_NAME, Map.of("NEW_KEY", "value")))
                 .isInstanceOf(UnsupportedOperationException.class);
 
         // Then: Per-VM inner map is immutable
-        Map<String, String> kindEnv = envSet.perVm().get(KIND_VM_NAME);
-        assertThatThrownBy(() -> kindEnv.put("NEW_KEY", "value"))
+        Map<String, String> masterEnv = envSet.perVm().get(MASTER_VM_NAME);
+        assertThatThrownBy(() -> masterEnv.put("NEW_KEY", "value"))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
-    @Test
-    @DisplayName("build() with minikube cluster produces correct environment")
-    void build_minikubeCluster_producesCorrectEnv() {
-        // Given: Minikube cluster
-        var cluster = ClusterSpec.builder()
-                .name("clu-m1-pt-minikube")
-                .type(Minikube.INSTANCE)
-                .masters(0).workers(0)
-                .sizeProfile(SizeProfile.MEDIUM)
-                .vms(List.of())
-                .build();
-        var vm = VmConfig.builder()
-                .name("clu-m1-pt-minikube")
-                .role(NodeRole.CLUSTER)
-                .ip("192.168.56.10")
-                .sizeProfile(SizeProfile.MEDIUM)
-                .build();
-        var vms = List.of(vm);
 
-        // When: Build environment
-        var envSet = EnvPlanner.build(MODULE, cluster, vms);
-
-        // Then: Global environment has base variables only
-        assertThat(envSet.global())
-                .containsEntry("CLUSTER_NAME", "clu-m1-pt-minikube")
-                .containsEntry("NAMESPACE_DEFAULT", "ns-m1-pt")
-                .containsEntry("CLUSTER_TYPE", "minikube")
-                .doesNotContainKey("CNI_TYPE")
-                .doesNotContainKey("KUBE_API_PORT");
-
-        // Then: Per-VM environment is correct
-        assertThat(envSet.perVm().get(vm.name()))
-                .containsEntry("VM_NAME", "clu-m1-pt-minikube")
-                .containsEntry("ROLE", "cluster")
-                .containsEntry("VM_IP", "192.168.56.10")
-                .doesNotContainKey("CONTROL_PLANE");
-    }
 
     @Test
     @DisplayName("build() with management-only cluster (NONE type) produces correct environment")
@@ -375,7 +312,7 @@ class EnvPlannerTest {
         var cluster = ClusterSpec.builder()
                 .name("mgmt-m7-hw")
                 .type(NoneCluster.INSTANCE)
-                .masters(0).workers(0)
+                .nodes(NodeTopology.of(0,0))
                 .sizeProfile(SizeProfile.SMALL)
                 .vms(List.of())
                 .build();

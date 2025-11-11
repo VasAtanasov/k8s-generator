@@ -100,23 +100,23 @@ public class StructuralValidator implements ClusterSpecValidator {
         long masterCount = spec.vms().stream().filter(vm -> vm.role() == NodeRole.MASTER).count();
         long workerCount = spec.vms().stream().filter(vm -> vm.role() == NodeRole.WORKER).count();
 
-        if (masterCount != spec.masters()) {
+        if (masterCount != spec.nodes().masters()) {
             errors.add(new ValidationError(
                     String.format("clusters[name='%s'].vms", spec.name()),
                     ValidationLevel.STRUCTURAL,
                     String.format("VM list contains %d master(s) but masters=%d declared",
-                            masterCount, spec.masters()),
-                    String.format("Ensure VMs list has exactly %d VM(s) with role='master'", spec.masters())
+                            masterCount, spec.nodes().masters()),
+                    String.format("Ensure VMs list has exactly %d VM(s) with role='master'", spec.nodes().masters())
             ));
         }
 
-        if (workerCount != spec.workers()) {
+        if (workerCount != spec.nodes().workers()) {
             errors.add(new ValidationError(
                     String.format("clusters[name='%s'].vms", spec.name()),
                     ValidationLevel.STRUCTURAL,
                     String.format("VM list contains %d worker(s) but workers=%d declared",
-                            workerCount, spec.workers()),
-                    String.format("Ensure VMs list has exactly %d VM(s) with role='worker'", spec.workers())
+                            workerCount, spec.nodes().workers()),
+                    String.format("Ensure VMs list has exactly %d VM(s) with role='worker'", spec.nodes().workers())
             ));
         }
     }

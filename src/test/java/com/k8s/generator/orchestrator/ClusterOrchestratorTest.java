@@ -43,62 +43,9 @@ class ClusterOrchestratorTest {
 
     // ==================== Single Cluster Orchestration ====================
 
-    @Test
-    void shouldOrchestrateKindCluster() {
-        // Given: KIND cluster without VMs
-        var cluster = ClusterSpec.builder()
-                .name("dev")
-                .type(Kind.INSTANCE)
-                .masters(0).workers(0)
-                .sizeProfile(SizeProfile.MEDIUM)
-                .vms(List.of())
-                .build();
 
-        // When: orchestrate
-        var result = orchestrator.orchestrate(cluster);
 
-        // Then: success with enriched cluster
-        assertThat(result.isSuccess()).isTrue();
 
-        var enriched = result.orElseThrow();
-        assertThat(enriched.vms()).hasSize(1);
-        assertThat(enriched.vms().getFirst())
-                .satisfies(vm -> {
-                    assertThat(vm.name()).isEqualTo(VmName.of("dev"));
-                    assertThat(vm.role()).isEqualTo(NodeRole.CLUSTER);
-                    assertThat(vm.ip().toCanonicalString()).isEqualTo("192.168.56.10");  // Default IP
-                    assertThat(vm.sizeProfile()).isEqualTo(SizeProfile.MEDIUM);
-                });
-    }
-
-    @Test
-    void shouldOrchestrateMinikubeCluster() {
-        // Given: MINIKUBE cluster with explicit IP
-        var cluster = ClusterSpec.builder()
-                .name("staging")
-                .type(Minikube.INSTANCE)
-                .firstIp("192.168.56.20")
-                .masters(0).workers(0)
-                .sizeProfile(SizeProfile.LARGE)
-                .vms(List.of())
-                .build();
-
-        // When: orchestrate
-        var result = orchestrator.orchestrate(cluster);
-
-        // Then: success with correct IP
-        assertThat(result.isSuccess()).isTrue();
-
-        var enriched = result.orElseThrow();
-        assertThat(enriched.vms()).hasSize(1);
-        assertThat(enriched.vms().getFirst())
-                .satisfies(vm -> {
-                    assertThat(vm.name()).isEqualTo(VmName.of("staging"));
-                    assertThat(vm.role()).isEqualTo(NodeRole.CLUSTER);
-                    assertThat(vm.ip().toCanonicalString()).isEqualTo("192.168.56.20");
-                    assertThat(vm.sizeProfile()).isEqualTo(SizeProfile.LARGE);
-                });
-    }
 
     @Test
     void shouldOrchestrateNoneCluster() {
@@ -107,7 +54,7 @@ class ClusterOrchestratorTest {
                 .name("mgmt")
                 .type(NoneCluster.INSTANCE)
                 .firstIp("192.168.56.6")
-                .masters(0).workers(0)
+                .nodes(NodeTopology.of(0,0))
                 .sizeProfile(SizeProfile.SMALL)
                 .vms(List.of())
                 .build();
@@ -135,7 +82,7 @@ class ClusterOrchestratorTest {
                 .name("dev")
                 .type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.30")
-                .masters(1).workers(0)
+                .nodes(NodeTopology.of(1,0))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .cni(CniType.FLANNEL)
@@ -164,7 +111,7 @@ class ClusterOrchestratorTest {
                 .name("prod")
                 .type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.40")
-                .masters(2).workers(3)
+                .nodes(NodeTopology.of(2,3))
                 .sizeProfile(SizeProfile.LARGE)
                 .vms(List.of())
                 .cni(CniType.CALICO)
@@ -231,8 +178,8 @@ class ClusterOrchestratorTest {
 
         var cluster = ClusterSpec.builder()
                 .name("custom")
-                .type(Kind.INSTANCE)
-                .masters(0).workers(0)
+                .type(NoneCluster.INSTANCE)
+                .nodes(NodeTopology.of(0,0))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of(explicitVm))
                 .build();
@@ -252,9 +199,9 @@ class ClusterOrchestratorTest {
         // Given: cluster with invalid IP format
         var cluster = ClusterSpec.builder()
                 .name("bad-ip")
-                .type(Kind.INSTANCE)
+                .type(NoneCluster.INSTANCE)
                 .firstIp("fe80::1")
-                .masters(0).workers(0)
+                .nodes(NodeTopology.of(0,0))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .build();
@@ -280,19 +227,11 @@ class ClusterOrchestratorTest {
 
     @Test
     void shouldOrchestrateMultipleClustersIndependently() {
-        // Given: 3 different clusters
-        var kindCluster = ClusterSpec.builder()
-                .name("dev").type(Kind.INSTANCE)
-                .firstIp("192.168.56.10")
-                .masters(0).workers(0)
-                .sizeProfile(SizeProfile.MEDIUM)
-                .vms(List.of())
-                .build();
-
+        // Given: 2 different clusters
         var kubeadmCluster = ClusterSpec.builder()
                 .name("staging").type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.20")
-                .masters(1).workers(2)
+                .nodes(NodeTopology.of(1,2))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .cni(CniType.CALICO)
@@ -301,12 +240,12 @@ class ClusterOrchestratorTest {
         var mgmtCluster = ClusterSpec.builder()
                 .name("mgmt").type(NoneCluster.INSTANCE)
                 .firstIp("192.168.56.30")
-                .masters(0).workers(0)
+                .nodes(NodeTopology.of(0,0))
                 .sizeProfile(SizeProfile.SMALL)
                 .vms(List.of())
                 .build();
 
-        var clusters = List.of(kindCluster, kubeadmCluster, mgmtCluster);
+        var clusters = List.of(kubeadmCluster, mgmtCluster);
 
         // When: orchestrateMulti
         var result = orchestrator.orchestrateMulti(clusters);
@@ -315,24 +254,19 @@ class ClusterOrchestratorTest {
         assertThat(result.isSuccess()).isTrue();
 
         var enrichedClusters = result.orElseThrow();
-        assertThat(enrichedClusters).hasSize(3);
-
-        // Verify dev (KIND)
-        assertThat(enrichedClusters.getFirst().name()).isEqualTo(DEV);
-        assertThat(enrichedClusters.getFirst().vms()).hasSize(1);
-        assertThat(enrichedClusters.getFirst().vms().getFirst().ip().toCanonicalString()).isEqualTo("192.168.56.10");
+        assertThat(enrichedClusters).hasSize(2);
 
         // Verify staging (KUBEADM 1m,2w)
-        assertThat(enrichedClusters.get(1).name()).isEqualTo(STAGING);
-        assertThat(enrichedClusters.get(1).vms()).hasSize(3);
-        assertThat(enrichedClusters.get(1).vms().getFirst().ip().toCanonicalString()).isEqualTo("192.168.56.20");
-        assertThat(enrichedClusters.get(1).vms().get(1).ip().toCanonicalString()).isEqualTo("192.168.56.21");
-        assertThat(enrichedClusters.get(1).vms().get(2).ip().toCanonicalString()).isEqualTo("192.168.56.22");
+        assertThat(enrichedClusters.getFirst().name()).isEqualTo(STAGING);
+        assertThat(enrichedClusters.getFirst().vms()).hasSize(3);
+        assertThat(enrichedClusters.getFirst().vms().getFirst().ip().toCanonicalString()).isEqualTo("192.168.56.20");
+        assertThat(enrichedClusters.getFirst().vms().get(1).ip().toCanonicalString()).isEqualTo("192.168.56.21");
+        assertThat(enrichedClusters.getFirst().vms().get(2).ip().toCanonicalString()).isEqualTo("192.168.56.22");
 
         // Verify mgmt (NONE)
-        assertThat(enrichedClusters.get(2).name()).isEqualTo(MGMT);
-        assertThat(enrichedClusters.get(2).vms()).hasSize(1);
-        assertThat(enrichedClusters.get(2).vms().getFirst().ip().toCanonicalString()).isEqualTo("192.168.56.30");
+        assertThat(enrichedClusters.get(1).name()).isEqualTo(MGMT);
+        assertThat(enrichedClusters.get(1).vms()).hasSize(1);
+        assertThat(enrichedClusters.get(1).vms().getFirst().ip().toCanonicalString()).isEqualTo("192.168.56.30");
     }
 
     @Test
@@ -352,25 +286,25 @@ class ClusterOrchestratorTest {
     void shouldFailFastOnFirstClusterError() {
         // Given: 3 clusters, second one has invalid IP
         var cluster1 = ClusterSpec.builder()
-                .name("valid1").type(Kind.INSTANCE)
+                .name("valid1").type(NoneCluster.INSTANCE)
                 .firstIp("192.168.56.10")
-                .masters(0).workers(0)
+                .nodes(NodeTopology.of(0,0))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .build();
 
         var cluster2 = ClusterSpec.builder()
-                .name("invalid").type(Kind.INSTANCE)
+                .name("invalid").type(NoneCluster.INSTANCE)
                 .firstIp("fe80::1")  // Invalid for IPv4 allocation
-                .masters(0).workers(0)
+                .nodes(NodeTopology.of(0,0))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .build();
 
         var cluster3 = ClusterSpec.builder()
-                .name("valid3").type(Kind.INSTANCE)
+                .name("valid3").type(NoneCluster.INSTANCE)
                 .firstIp("192.168.56.30")
-                .masters(0).workers(0)
+                .nodes(NodeTopology.of(0,0))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .build();
@@ -399,15 +333,15 @@ class ClusterOrchestratorTest {
 
         var cluster1 = ClusterSpec.builder()
                 .name("explicit").type(NoneCluster.INSTANCE)
-                .masters(0).workers(0)
+                .nodes(NodeTopology.of(0,0))
                 .sizeProfile(SizeProfile.SMALL)
                 .vms(List.of(explicitVm))
                 .build();
 
         var cluster2 = ClusterSpec.builder()
-                .name("generated").type(Kind.INSTANCE)
+                .name("generated").type(NoneCluster.INSTANCE)
                 .firstIp("192.168.56.20")
-                .masters(0).workers(0)
+                .nodes(NodeTopology.of(0,0))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .build();
@@ -447,7 +381,7 @@ class ClusterOrchestratorTest {
         var cluster = ClusterSpec.builder()
                 .name("test").type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.3")
-                .masters(3).workers(0)
+                .nodes(NodeTopology.of(3,0))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .cni(CniType.CALICO)
@@ -472,7 +406,7 @@ class ClusterOrchestratorTest {
         var cluster = ClusterSpec.builder()
                 .name("boundary-test").type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.252")
-                .masters(3).workers(2)
+                .nodes(NodeTopology.of(3,2))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .cni(CniType.CALICO)
@@ -494,10 +428,8 @@ class ClusterOrchestratorTest {
     void shouldFollowNamingConventionConsistently() {
         // Given: various cluster types
         var clusters = List.of(
-                ClusterSpec.builder().name("dev").type(Kind.INSTANCE).firstIp("192.168.56.10").masters(0).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).build(),
-                ClusterSpec.builder().name("staging").type(Minikube.INSTANCE).firstIp("192.168.56.20").masters(0).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).build(),
-                ClusterSpec.builder().name("mgmt").type(NoneCluster.INSTANCE).firstIp("192.168.56.30").masters(0).workers(0).sizeProfile(SizeProfile.SMALL).vms(List.of()).build(),
-                ClusterSpec.builder().name("prod").type(Kubeadm.INSTANCE).firstIp("192.168.56.40").masters(2).workers(3).sizeProfile(SizeProfile.LARGE).vms(List.of()).cni(CniType.CALICO).build()
+                ClusterSpec.builder().name("mgmt").type(NoneCluster.INSTANCE).firstIp("192.168.56.30").nodes(NodeTopology.of(0,0)).sizeProfile(SizeProfile.SMALL).vms(List.of()).build(),
+                ClusterSpec.builder().name("prod").type(Kubeadm.INSTANCE).firstIp("192.168.56.40").nodes(NodeTopology.of(2,3)).sizeProfile(SizeProfile.LARGE).vms(List.of()).cni(CniType.CALICO).build()
         );
 
         // When: orchestrateMulti
@@ -507,20 +439,14 @@ class ClusterOrchestratorTest {
         assertThat(result.isSuccess()).isTrue();
         var enriched = result.orElseThrow();
 
-        // KIND: VM name = cluster name
-        assertThat(enriched.getFirst().vms().getFirst().name()).isEqualTo(VmName.of("dev"));
-
-        // MINIKUBE: VM name = cluster name
-        assertThat(enriched.get(1).vms().getFirst().name()).isEqualTo(VmName.of("staging"));
-
         // NONE: VM name = cluster name
-        assertThat(enriched.get(2).vms().getFirst().name()).isEqualTo(VmName.of("mgmt"));
+        assertThat(enriched.getFirst().vms().getFirst().name()).isEqualTo(VmName.of("mgmt"));
 
         // KUBEADM: cluster-prefixed names
-        assertThat(enriched.get(3).vms().getFirst().name()).isEqualTo(PROD_MASTER_1);
-        assertThat(enriched.get(3).vms().get(1).name()).isEqualTo(PROD_MASTER_2);
-        assertThat(enriched.get(3).vms().get(2).name()).isEqualTo(PROD_WORKER_1);
-        assertThat(enriched.get(3).vms().get(3).name()).isEqualTo(PROD_WORKER_2);
-        assertThat(enriched.get(3).vms().get(4).name()).isEqualTo(PROD_WORKER_3);
+        assertThat(enriched.get(1).vms().getFirst().name()).isEqualTo(PROD_MASTER_1);
+        assertThat(enriched.get(1).vms().get(1).name()).isEqualTo(PROD_MASTER_2);
+        assertThat(enriched.get(1).vms().get(2).name()).isEqualTo(PROD_WORKER_1);
+        assertThat(enriched.get(1).vms().get(3).name()).isEqualTo(PROD_WORKER_2);
+        assertThat(enriched.get(1).vms().get(4).name()).isEqualTo(PROD_WORKER_3);
     }
 }

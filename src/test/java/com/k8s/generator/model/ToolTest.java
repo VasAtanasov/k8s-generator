@@ -59,12 +59,7 @@ class ToolTest {
             assertThat(tool.value()).isEqualTo("kube_binaries");
         }
 
-        @Test
-        @DisplayName("should create valid Tool for kind")
-        void shouldCreateValidToolForKind() {
-            Tool tool = Tool.of("kind");
-            assertThat(tool.value()).isEqualTo("kind");
-        }
+
 
         @Test
         @DisplayName("should create valid Tool for k3s")
@@ -245,21 +240,9 @@ class ToolTest {
             assertThat(tool).isEqualTo(Tool.of("kube_binaries"));
         }
 
-        @Test
-        @DisplayName("kind() should create kind tool")
-        void kindShouldCreateKindTool() {
-            Tool tool = Tool.kind();
-            assertThat(tool.value()).isEqualTo("kind");
-            assertThat(tool).isEqualTo(Tool.of("kind"));
-        }
 
-        @Test
-        @DisplayName("docker() should create docker tool")
-        void dockerShouldCreateDockerTool() {
-            Tool tool = Tool.docker();
-            assertThat(tool.value()).isEqualTo("docker");
-            assertThat(tool).isEqualTo(Tool.of("docker"));
-        }
+
+
     }
 
     @Nested
@@ -308,19 +291,9 @@ class ToolTest {
             assertThat(tool.requiresCloudProvider()).isFalse();
         }
 
-        @Test
-        @DisplayName("should return false for kind")
-        void shouldReturnFalseForKind() {
-            Tool tool = Tool.kind();
-            assertThat(tool.requiresCloudProvider()).isFalse();
-        }
 
-        @Test
-        @DisplayName("should return false for k3s")
-        void shouldReturnFalseForK3s() {
-            Tool tool = Tool.docker();
-            assertThat(tool.requiresCloudProvider()).isFalse();
-        }
+
+
     }
 
     @Nested
@@ -397,8 +370,6 @@ class ToolTest {
             assertThat(Tool.awsCli().toString()).isEqualTo("aws_cli");
             assertThat(Tool.gcloud().toString()).isEqualTo("gcloud");
             assertThat(Tool.kubeBinaries().toString()).isEqualTo("kube_binaries");
-            assertThat(Tool.kind().toString()).isEqualTo("kind");
-            assertThat(Tool.docker().toString()).isEqualTo("docker");
         }
     }
 }

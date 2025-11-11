@@ -33,43 +33,9 @@ class SequentialIpAllocatorTest {
 
     // ==================== Single Cluster Allocation ====================
 
-    @Test
-    void shouldAllocateDefaultIpForKindCluster() {
-        // Given: KIND cluster without explicit firstIp
-        var cluster = ClusterSpec.builder()
-                .name("dev")
-                .type(Kind.INSTANCE)
-                .masters(0).workers(0)
-                .sizeProfile(SizeProfile.MEDIUM)
-                .vms(List.of())
-                .build();
 
-        // When: allocate
-        var result = allocator.allocate(cluster);
 
-        // Then: default IP 192.168.56.10
-        assertThat(result.isSuccess()).isTrue();
-        assertIps(result.orElseThrow(), "192.168.56.10");
-    }
 
-    @Test
-    void shouldAllocateExplicitIpForMinikubeCluster() {
-        // Given: MINIKUBE cluster with explicit firstIp
-        var cluster = ClusterSpec.builder()
-                .name("staging").type(Minikube.INSTANCE)
-                .firstIp("192.168.56.20")
-                .masters(0).workers(0)
-                .sizeProfile(SizeProfile.LARGE)
-                .vms(List.of())
-                .build();
-
-        // When: allocate
-        var result = allocator.allocate(cluster);
-
-        // Then: explicit IP
-        assertThat(result.isSuccess()).isTrue();
-        assertIps(result.orElseThrow(), "192.168.56.20");
-    }
 
     @Test
     void shouldAllocateSingleIpForNoneCluster() {
@@ -77,7 +43,7 @@ class SequentialIpAllocatorTest {
         var cluster = ClusterSpec.builder()
                 .name("mgmt").type(NoneCluster.INSTANCE)
                 .firstIp("192.168.56.6")
-                .masters(0).workers(0)
+                .nodes(NodeTopology.of(0,0))
                 .sizeProfile(SizeProfile.SMALL)
                 .vms(List.of())
                 .build();
@@ -96,7 +62,7 @@ class SequentialIpAllocatorTest {
         var cluster = ClusterSpec.builder()
                 .name("prod").type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.30")
-                .masters(1).workers(2)
+                .nodes(NodeTopology.of(1,2))
                 .sizeProfile(SizeProfile.LARGE)
                 .vms(List.of())
                 .cni(CniType.CALICO)
@@ -119,7 +85,7 @@ class SequentialIpAllocatorTest {
         var cluster = ClusterSpec.builder()
                 .name("ha-cluster").type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.50")
-                .masters(3).workers(5)
+                .nodes(NodeTopology.of(3,5))
                 .sizeProfile(SizeProfile.LARGE)
                 .vms(List.of())
                 .cni(CniType.CALICO)
@@ -146,7 +112,7 @@ class SequentialIpAllocatorTest {
         var cluster = ClusterSpec.builder()
                 .name("test").type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.0")
-                .masters(2).workers(0)
+                .nodes(NodeTopology.of(2,0))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .cni(CniType.CALICO)
@@ -166,7 +132,7 @@ class SequentialIpAllocatorTest {
         var cluster = ClusterSpec.builder()
                 .name("test").type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.0")
-                .masters(4).workers(0)
+                .nodes(NodeTopology.of(4,0))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .cni(CniType.CALICO)
@@ -189,7 +155,7 @@ class SequentialIpAllocatorTest {
     void shouldSkipReservedIp5() {
         // Given: cluster starting at .3 needing 4 IPs
         var cluster = ClusterSpec.builder().name("test").type(Kubeadm.INSTANCE)
-                .firstIp("192.168.56.3").masters(4).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
+                .firstIp("192.168.56.3").nodes(NodeTopology.of(4,0)).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
 
         // When: allocate
         var result = allocator.allocate(cluster);
@@ -208,7 +174,7 @@ class SequentialIpAllocatorTest {
     void shouldHandleStartingAtReservedIp() {
         // Given: cluster starting exactly at reserved .5
         var cluster = ClusterSpec.builder().name("test").type(Kubeadm.INSTANCE)
-                .firstIp("192.168.56.5").masters(2).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
+                .firstIp("192.168.56.5").nodes(NodeTopology.of(2,0)).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
 
         // When: allocate
         var result = allocator.allocate(cluster);
@@ -220,24 +186,7 @@ class SequentialIpAllocatorTest {
 
     // ==================== Subnet Boundary Tests ====================
 
-    @Test
-    void shouldAllowIpAt254() {
-        // Given: cluster requesting exactly .254 (last usable IP)
-        var cluster = ClusterSpec.builder()
-                .name("boundary").type(Kind.INSTANCE)
-                .firstIp("192.168.56.254")
-                .masters(0).workers(0)
-                .sizeProfile(SizeProfile.MEDIUM)
-                .vms(List.of())
-                .build();
 
-        // When: allocate
-        var result = allocator.allocate(cluster);
-
-        // Then: success with .254
-        assertThat(result.isSuccess()).isTrue();
-        assertIps(result.orElseThrow(), "192.168.56.254");
-    }
 
     @Test
     void shouldRejectIpExceeding254() {
@@ -245,7 +194,7 @@ class SequentialIpAllocatorTest {
         var cluster = ClusterSpec.builder()
                 .name("boundary").type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.253")
-                .masters(3).workers(0)
+                .nodes(NodeTopology.of(3,0))
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
                 .cni(CniType.CALICO)
@@ -267,7 +216,7 @@ class SequentialIpAllocatorTest {
         var cluster = ClusterSpec.builder()
                 .name("large").type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.250")
-                .masters(5).workers(5)
+                .nodes(NodeTopology.of(5,5))
                 .sizeProfile(SizeProfile.LARGE)
                 .vms(List.of())
                 .cni(CniType.CALICO)
@@ -287,8 +236,8 @@ class SequentialIpAllocatorTest {
     @Test
     void shouldRejectInvalidIpFormat() {
         // Given: cluster with invalid IP format
-        var cluster = ClusterSpec.builder().name("bad-ip").type(Kind.INSTANCE)
-                .firstIp("fe80::1").masters(0).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).build();
+        var cluster = ClusterSpec.builder().name("bad-ip").type(Kubeadm.INSTANCE)
+                .firstIp("fe80::1").nodes(NodeTopology.of(1,0)).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).build();
 
         // When: allocate
         var result = allocator.allocate(cluster);
@@ -311,17 +260,14 @@ class SequentialIpAllocatorTest {
 
     @Test
     void shouldAllocateMultipleClustersWithoutOverlap() {
-        // Given: 3 clusters with non-overlapping IPs
-        var cluster1 = ClusterSpec.builder().name("dev").type(Kind.INSTANCE)
-                .firstIp("192.168.56.10").masters(0).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).build();
+        // Given: 2 clusters with non-overlapping IPs
+        var cluster1 = ClusterSpec.builder().name("staging").type(Kubeadm.INSTANCE)
+                .firstIp("192.168.56.20").nodes(NodeTopology.of(1,2)).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
 
-        var cluster2 = ClusterSpec.builder().name("staging").type(Kubeadm.INSTANCE)
-                .firstIp("192.168.56.20").masters(1).workers(2).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
+        var cluster2 = ClusterSpec.builder().name("mgmt").type(NoneCluster.INSTANCE)
+                .firstIp("192.168.56.30").nodes(NodeTopology.of(0,0)).sizeProfile(SizeProfile.SMALL).vms(List.of()).build();
 
-        var cluster3 = ClusterSpec.builder().name("mgmt").type(NoneCluster.INSTANCE)
-                .firstIp("192.168.56.30").masters(0).workers(0).sizeProfile(SizeProfile.SMALL).vms(List.of()).build();
-
-        var clusters = List.of(cluster1, cluster2, cluster3);
+        var clusters = List.of(cluster1, cluster2);
 
         // When: allocateMulti
         var result = allocator.allocateMulti(clusters);
@@ -330,9 +276,8 @@ class SequentialIpAllocatorTest {
         assertThat(result.isSuccess()).isTrue();
 
         var allocations = result.orElseThrow();
-        assertThat(allocations).hasSize(3);
+        assertThat(allocations).hasSize(2);
 
-        assertIps(allocations.get(ClusterName.of("dev")), "192.168.56.10");
         assertIps(allocations.get(ClusterName.of("staging")), "192.168.56.20", "192.168.56.21", "192.168.56.22");
         assertIps(allocations.get(ClusterName.of("mgmt")), "192.168.56.30");
     }
@@ -341,10 +286,10 @@ class SequentialIpAllocatorTest {
     void shouldDetectIpOverlapBetweenClusters() {
         // Given: 2 clusters with overlapping IPs
         var cluster1 = ClusterSpec.builder().name("cluster1").type(Kubeadm.INSTANCE)
-                .firstIp("192.168.56.10").masters(1).workers(2).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
+                .firstIp("192.168.56.10").nodes(NodeTopology.of(1,2)).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
 
         var cluster2 = ClusterSpec.builder().name("cluster2").type(Kubeadm.INSTANCE)
-                .firstIp("192.168.56.12").masters(1).workers(1).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
+                .firstIp("192.168.56.12").nodes(NodeTopology.of(1,1)).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
 
         var clusters = List.of(cluster1, cluster2);
 
@@ -358,26 +303,7 @@ class SequentialIpAllocatorTest {
                 .contains("192.168.56.12");
     }
 
-    @Test
-    void shouldRequireExplicitFirstIpForMultiCluster() {
-        // Given: multi-cluster with one missing firstIp
-        var cluster1 = ClusterSpec.builder().name("cluster1").type(Kind.INSTANCE)
-                .firstIp("192.168.56.10").masters(0).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).build();
 
-        var cluster2 = ClusterSpec.builder().name("cluster2").type(Kind.INSTANCE)
-                .masters(0).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).build();
-
-        var clusters = List.of(cluster1, cluster2);
-
-        // When: allocateMulti
-        var result = allocator.allocateMulti(clusters);
-
-        // Then: failure
-        assertThat(result.isFailure()).isTrue();
-        assertThat(result.getError())
-                .contains("Multi-cluster configuration requires explicit firstIp")
-                .contains("cluster2");
-    }
 
     @Test
     void shouldHandleEmptyClusterListInMultiAllocation() {
@@ -395,14 +321,14 @@ class SequentialIpAllocatorTest {
     @Test
     void shouldFailFastOnInvalidIpInMultiCluster() {
         // Given: 3 clusters, second has invalid IP
-        var cluster1 = ClusterSpec.builder().name("valid1").type(Kind.INSTANCE)
-                .firstIp("192.168.56.10").masters(0).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).build();
+        var cluster1 = ClusterSpec.builder().name("valid1").type(Kubeadm.INSTANCE)
+                .firstIp("192.168.56.10").nodes(NodeTopology.of(1,0)).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).build();
 
-        var cluster2 = ClusterSpec.builder().name("invalid").type(Kind.INSTANCE)
-                .firstIp("fe80::1").masters(0).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).build();
+        var cluster2 = ClusterSpec.builder().name("invalid").type(Kubeadm.INSTANCE)
+                .firstIp("fe80::1").nodes(NodeTopology.of(1,0)).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).build();
 
-        var cluster3 = ClusterSpec.builder().name("valid3").type(Kind.INSTANCE)
-                .firstIp("192.168.56.30").masters(0).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).build();
+        var cluster3 = ClusterSpec.builder().name("valid3").type(Kubeadm.INSTANCE)
+                .firstIp("192.168.56.30").nodes(NodeTopology.of(1,0)).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).build();
 
         var clusters = List.of(cluster1, cluster2, cluster3);
 
@@ -429,7 +355,7 @@ class SequentialIpAllocatorTest {
     void shouldHandleLargeKubeadmCluster() {
         // Given: large cluster (3 masters, 10 workers)
         var cluster = ClusterSpec.builder().name("large").type(Kubeadm.INSTANCE)
-                .firstIp("192.168.56.100").masters(3).workers(10).sizeProfile(SizeProfile.LARGE).vms(List.of()).cni(CniType.CALICO).build();
+                .firstIp("192.168.56.100").nodes(NodeTopology.of(3,10)).sizeProfile(SizeProfile.LARGE).vms(List.of()).cni(CniType.CALICO).build();
 
         // When: allocate
         var result = allocator.allocate(cluster);
@@ -442,25 +368,13 @@ class SequentialIpAllocatorTest {
         assertThat(ips.get(12).toCanonicalString()).isEqualTo("192.168.56.112");
     }
 
-    @Test
-    void shouldHandleClusterStartingAtZero() {
-        // Given: cluster starting at .0
-        var cluster = ClusterSpec.builder().name("zero-start").type(Kind.INSTANCE)
-                .firstIp("192.168.56.0").masters(0).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).build();
 
-        // When: allocate
-        var result = allocator.allocate(cluster);
-
-        // Then: success with .0
-        assertThat(result.isSuccess()).isTrue();
-        assertIps(result.orElseThrow(), "192.168.56.0");
-    }
 
     @Test
     void shouldAllocateMultipleReservedIpSkips() {
         // Given: cluster spanning multiple reserved IPs
         var cluster = ClusterSpec.builder().name("multi-skip").type(Kubeadm.INSTANCE)
-                .firstIp("192.168.56.0").masters(7).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
+                .firstIp("192.168.56.0").nodes(NodeTopology.of(7,0)).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).cni(CniType.CALICO).build();
 
         // When: allocate
         var result = allocator.allocate(cluster);

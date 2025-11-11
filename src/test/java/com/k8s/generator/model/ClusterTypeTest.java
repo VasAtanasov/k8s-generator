@@ -16,10 +16,8 @@ class ClusterTypeTest {
     void shouldHaveAllExpectedTypes() {
         var types = ClusterType.values();
 
-        assertThat(types).hasSize(4);
+        assertThat(types).hasSize(2);
         assertThat(types).containsExactlyInAnyOrder(
-                Kind.INSTANCE,
-                Minikube.INSTANCE,
                 Kubeadm.INSTANCE,
                 NoneCluster.INSTANCE
         );
@@ -27,59 +25,37 @@ class ClusterTypeTest {
 
     @Test
     void shouldReturnCorrectIds() {
-        assertThat(Kind.INSTANCE.id()).isEqualTo("kind");
-        assertThat(Minikube.INSTANCE.id()).isEqualTo("minikube");
         assertThat(Kubeadm.INSTANCE.id()).isEqualTo("kubeadm");
         assertThat(NoneCluster.INSTANCE.id()).isEqualTo("none");
     }
 
     @Test
     void shouldReturnCorrectDisplayNames() {
-        assertThat(Kind.INSTANCE.displayName()).isEqualTo("KIND (Kubernetes IN Docker)");
-        assertThat(Minikube.INSTANCE.displayName()).isEqualTo("Minikube");
         assertThat(Kubeadm.INSTANCE.displayName()).isEqualTo("Kubeadm");
         assertThat(NoneCluster.INSTANCE.displayName()).isEqualTo("Management Machine");
     }
 
     @Test
     void shouldReportMultiNodeSupport() {
-        assertThat(Kind.INSTANCE.supportsMultiNode()).isFalse();
-        assertThat(Minikube.INSTANCE.supportsMultiNode()).isFalse();
         assertThat(Kubeadm.INSTANCE.supportsMultiNode()).isTrue();
         assertThat(NoneCluster.INSTANCE.supportsMultiNode()).isFalse();
     }
 
     @Test
     void shouldReportRoleSupport() {
-        assertThat(Kind.INSTANCE.supportsRoles()).isFalse();
-        assertThat(Minikube.INSTANCE.supportsRoles()).isFalse();
         assertThat(Kubeadm.INSTANCE.supportsRoles()).isTrue();
         assertThat(NoneCluster.INSTANCE.supportsRoles()).isFalse();
     }
 
     @Test
     void shouldReturnCorrectRequiredTools() {
-        assertThat(Kind.INSTANCE.requiredTools())
-                .containsExactly(Tool.kubectl(), Tool.of("docker"), Tool.kind());
-        assertThat(Minikube.INSTANCE.requiredTools())
-                .containsExactly(Tool.kubectl(), Tool.of("docker"), Tool.of("minikube"));
         assertThat(Kubeadm.INSTANCE.requiredTools())
                 .containsExactly(Tool.kubectl(), Tool.of("containerd"), Tool.kubeBinaries());
         assertThat(NoneCluster.INSTANCE.requiredTools())
                 .containsExactly(Tool.kubectl());
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"kind", "KIND", "Kind", "kInD"})
-    void shouldParseCaseInsensitiveKind(String input) {
-        assertThat(ClusterType.fromString(input)).isSameAs(Kind.INSTANCE);
-    }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"minikube", "MINIKUBE", "Minikube"})
-    void shouldParseCaseInsensitiveMinikube(String input) {
-        assertThat(ClusterType.fromString(input)).isSameAs(Minikube.INSTANCE);
-    }
 
     @ParameterizedTest
     @ValueSource(strings = {"kubeadm", "KUBEADM", "Kubeadm"})
@@ -95,8 +71,6 @@ class ClusterTypeTest {
 
     @Test
     void shouldLookupById() {
-        assertThat(ClusterType.byId("kind")).isSameAs(Kind.INSTANCE);
-        assertThat(ClusterType.byId("minikube")).isSameAs(Minikube.INSTANCE);
         assertThat(ClusterType.byId("kubeadm")).isSameAs(Kubeadm.INSTANCE);
         assertThat(ClusterType.byId("none")).isSameAs(NoneCluster.INSTANCE);
     }
@@ -135,51 +109,49 @@ class ClusterTypeTest {
     void shouldIncludeValidValuesInFromStringErrorMessage() {
         assertThatThrownBy(() -> ClusterType.fromString("invalid"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("kind, minikube, kubeadm, none");
+                .hasMessageContaining("kubeadm, none");
     }
 
     @Test
     void shouldIncludeValidIdsInByIdErrorMessage() {
         assertThatThrownBy(() -> ClusterType.byId("invalid"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("kind, minikube, kubeadm, none");
+                .hasMessageContaining("kubeadm, none");
     }
 
     @Test
     void shouldUseSingletonInstances() {
         // Verify that parsing returns the same singleton instance
-        ClusterType kind1 = ClusterType.fromString("kind");
-        ClusterType kind2 = ClusterType.fromString("KIND");
-        ClusterType kind3 = ClusterType.byId("kind");
+        ClusterType kubeadm1 = ClusterType.fromString("kubeadm");
+        ClusterType kubeadm2 = ClusterType.fromString("KUBEADM");
+        ClusterType kubeadm3 = ClusterType.byId("kubeadm");
 
-        assertThat(kind1).isSameAs(Kind.INSTANCE);
-        assertThat(kind2).isSameAs(Kind.INSTANCE);
-        assertThat(kind3).isSameAs(Kind.INSTANCE);
+        assertThat(kubeadm1).isSameAs(Kubeadm.INSTANCE);
+        assertThat(kubeadm2).isSameAs(Kubeadm.INSTANCE);
+        assertThat(kubeadm3).isSameAs(Kubeadm.INSTANCE);
     }
 
     @Test
     void shouldSupportPatternMatching() {
         // Verify exhaustiveness checking compiles
-        ClusterType type = Kind.INSTANCE;
+        ClusterType type = Kubeadm.INSTANCE;
 
         int vmCount = switch (type) {
-            case Kind k -> 1;
-            case Minikube m -> 1;
             case Kubeadm ku -> 3;  // example value
             case NoneCluster nc -> 1;
         };
 
-        assertThat(vmCount).isEqualTo(1);
+        assertThat(vmCount).isEqualTo(3);
     }
 
     @Test
     void shouldSupportInstanceofChecks() {
-        ClusterType kind = Kind.INSTANCE;
         ClusterType kubeadm = Kubeadm.INSTANCE;
+        ClusterType none = NoneCluster.INSTANCE;
 
-        assertThat(kind).isInstanceOf(Kind.class);
-        assertThat(kind).isNotInstanceOf(Kubeadm.class);
         assertThat(kubeadm).isInstanceOf(Kubeadm.class);
-        assertThat(kubeadm).isNotInstanceOf(Kind.class);
+        assertThat(kubeadm).isNotInstanceOf(NoneCluster.class);
+        assertThat(none).isInstanceOf(NoneCluster.class);
+        assertThat(none).isNotInstanceOf(Kubeadm.class);
     }
 }

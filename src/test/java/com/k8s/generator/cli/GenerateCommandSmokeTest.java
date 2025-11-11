@@ -13,13 +13,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 class GenerateCommandSmokeTest {
 
     @Test
-    void generatesKindWorkspaceWithExpectedFiles() throws Exception {
-        Path out = Files.createTempDirectory("k8s-gen-kind-" + UUID.randomUUID()).resolve("pt-m1");
+    void generatesKubeadmWorkspaceWithExpectedFiles() throws Exception {
+        Path out = Files.createTempDirectory("k8s-gen-kubeadm-" + UUID.randomUUID()).resolve("pt-m1");
 
         GenerateCommand cmd = new GenerateCommand();
         cmd.module = "m1";
         cmd.type = "pt";
-        cmd.clusterType = "kind";
+        cmd.clusterType = "kubeadm";
+        cmd.nodes = "1m,2w";
+        cmd.cni = "calico";
         cmd.outDir = out.toString();
 
         int code = ScaffoldService.create().scaffold(cmd);
@@ -28,21 +30,23 @@ class GenerateCommandSmokeTest {
         assertThat(Files.exists(out.resolve("Vagrantfile"))).isTrue();
         assertThat(Files.exists(out.resolve("scripts/bootstrap.sh"))).isTrue();
         assertThat(Files.exists(out.resolve(".gitignore"))).isTrue();
-        assertThat(Files.exists(out.resolve("scripts/install_kind.sh"))).isTrue();
+        assertThat(Files.exists(out.resolve("scripts/install_kube_binaries.sh"))).isTrue();
 
         String vf = Files.readString(out.resolve("Vagrantfile"), StandardCharsets.UTF_8);
-        assertThat(vf).contains("private_network");
+        assertThat(vf).contains("clu-m1-pt-kubeadm-master-1");
+        assertThat(vf).contains("clu-m1-pt-kubeadm-worker-1");
+        assertThat(vf).contains("clu-m1-pt-kubeadm-worker-2");
         assertThat(vf).contains("192.168.56.10");
     }
 
     @Test
-    void generatesMinikubeWorkspaceWithExpectedFiles() throws Exception {
-        Path out = Files.createTempDirectory("k8s-gen-minikube-" + UUID.randomUUID()).resolve("pt-m1");
+    void generatesMgmtWorkspaceWithExpectedFiles() throws Exception {
+        Path out = Files.createTempDirectory("k8s-gen-mgmt-" + UUID.randomUUID()).resolve("pt-m1");
 
         GenerateCommand cmd = new GenerateCommand();
         cmd.module = "m1";
         cmd.type = "pt";
-        cmd.clusterType = "minikube";
+        cmd.clusterType = "mgmt";
         cmd.outDir = out.toString();
 
         int code = ScaffoldService.create().scaffold(cmd);
@@ -51,10 +55,12 @@ class GenerateCommandSmokeTest {
         assertThat(Files.exists(out.resolve("Vagrantfile"))).isTrue();
         assertThat(Files.exists(out.resolve("scripts/bootstrap.sh"))).isTrue();
         assertThat(Files.exists(out.resolve(".gitignore"))).isTrue();
-        assertThat(Files.exists(out.resolve("scripts/install_minikube.sh"))).isTrue();
 
-        String bs = Files.readString(out.resolve("scripts/bootstrap.sh"), StandardCharsets.UTF_8);
-        assertThat(bs).contains("install_kubectl.sh");
+        String vf = Files.readString(out.resolve("Vagrantfile"), StandardCharsets.UTF_8);
+        assertThat(vf).contains("node.vm.hostname = \"clu-m1-pt-none\"");
+        assertThat(vf).contains("vb.name = \"clu-m1-pt-none\"");
+        assertThat(vf).contains("\"CLUSTER_NAME\" => \"clu-m1-pt-none\"");
+        assertThat(vf).contains("192.168.56.5");
     }
 }
 

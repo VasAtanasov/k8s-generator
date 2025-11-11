@@ -14,7 +14,7 @@ class HelpMessageTest {
         assertThat(usage).contains("--module");
         assertThat(usage).contains("--type");
         assertThat(usage).contains("<clusterType>");  // Picocli uses camelCase by default
-        assertThat(usage).contains("kind|minikube|kubeadm|mgmt");
+        assertThat(usage).contains("kubeadm|mgmt");
     }
 }
 
