@@ -25,7 +25,7 @@ class DefaultVmGeneratorTest {
     void shouldGenerateSingleVmForKindCluster() {
         var cluster = ClusterSpec.builder()
                 .name("dev")
-                .type(ClusterType.KIND)
+                .type(Kind.INSTANCE)
                 .masters(0)
                 .workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -50,7 +50,7 @@ class DefaultVmGeneratorTest {
     void shouldGenerateSingleVmForMinikubeCluster() {
         var cluster = ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.MINIKUBE)
+                .type(Minikube.INSTANCE)
                 .masters(0)
                 .workers(0)
                 .sizeProfile(SizeProfile.LARGE)
@@ -75,7 +75,7 @@ class DefaultVmGeneratorTest {
     void shouldGenerateSingleVmForNoneCluster() {
         var cluster = ClusterSpec.builder()
                 .name("mgmt")
-                .type(ClusterType.NONE)
+                .type(NoneCluster.INSTANCE)
                 .masters(0)
                 .workers(0)
                 .sizeProfile(SizeProfile.SMALL)
@@ -100,7 +100,7 @@ class DefaultVmGeneratorTest {
     void shouldGenerateMultipleVmsForKubeadmCluster() {
         var cluster = ClusterSpec.builder()
                 .name("prod")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.20")
                 .masters(2)
                 .workers(3)
@@ -161,7 +161,7 @@ class DefaultVmGeneratorTest {
     void shouldGenerateSingleMasterKubeadmCluster() {
         var cluster = ClusterSpec.builder()
                 .name("dev")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .masters(1)
                 .workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -186,7 +186,7 @@ class DefaultVmGeneratorTest {
     void shouldCalculateVmCountForKind() {
         var cluster = ClusterSpec.builder()
                 .name("dev")
-                .type(ClusterType.KIND)
+                .type(Kind.INSTANCE)
                 .masters(0)
                 .workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -200,7 +200,7 @@ class DefaultVmGeneratorTest {
     void shouldCalculateVmCountForMinikube() {
         var cluster = ClusterSpec.builder()
                 .name("dev")
-                .type(ClusterType.MINIKUBE)
+                .type(Minikube.INSTANCE)
                 .masters(0)
                 .workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -214,7 +214,7 @@ class DefaultVmGeneratorTest {
     void shouldCalculateVmCountForNone() {
         var cluster = ClusterSpec.builder()
                 .name("mgmt")
-                .type(ClusterType.NONE)
+                .type(NoneCluster.INSTANCE)
                 .masters(0)
                 .workers(0)
                 .sizeProfile(SizeProfile.SMALL)
@@ -228,7 +228,7 @@ class DefaultVmGeneratorTest {
     void shouldCalculateVmCountForKubeadm() {
         var cluster = ClusterSpec.builder()
                 .name("prod")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .masters(3)
                 .workers(10)
                 .sizeProfile(SizeProfile.LARGE)
@@ -251,7 +251,7 @@ class DefaultVmGeneratorTest {
     @Test
     void shouldRejectNullIpList() {
         var cluster = ClusterSpec.builder()
-                .name("dev").type(ClusterType.KIND)
+                .name("dev").type(Kind.INSTANCE)
                 .masters(0).workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
@@ -265,7 +265,7 @@ class DefaultVmGeneratorTest {
     @Test
     void shouldRejectIpCountMismatch() {
         var cluster = ClusterSpec.builder()
-                .name("prod").type(ClusterType.KUBEADM)
+                .name("prod").type(Kubeadm.INSTANCE)
                 .masters(2).workers(3)
                 .sizeProfile(SizeProfile.LARGE)
                 .vms(List.of())
@@ -286,19 +286,19 @@ class DefaultVmGeneratorTest {
     @Test
     void shouldUseClusterNameForSingleVmClusters() {
         // KIND cluster
-        var kindCluster = ClusterSpec.builder().name("my-kind").type(ClusterType.KIND)
+        var kindCluster = ClusterSpec.builder().name("my-kind").type(Kind.INSTANCE)
                 .masters(0).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).build();
         var kindVms = generator.generate(kindCluster, List.of(new IPAddressString("192.168.56.10").getAddress()));
         assertThat(kindVms.getFirst().name()).isEqualTo(VmName.of("my-kind"));
 
         // MINIKUBE cluster
-        var minikubeCluster = ClusterSpec.builder().name("my-minikube").type(ClusterType.MINIKUBE)
+        var minikubeCluster = ClusterSpec.builder().name("my-minikube").type(Minikube.INSTANCE)
                 .masters(0).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).build();
         var minikubeVms = generator.generate(minikubeCluster, List.of(new IPAddressString("192.168.56.20").getAddress()));
         assertThat(minikubeVms.getFirst().name()).isEqualTo(VmName.of("my-minikube"));
 
         // NONE cluster
-        var noneCluster = ClusterSpec.builder().name("my-mgmt").type(ClusterType.NONE)
+        var noneCluster = ClusterSpec.builder().name("my-mgmt").type(NoneCluster.INSTANCE)
                 .masters(0).workers(0).sizeProfile(SizeProfile.SMALL).vms(List.of()).build();
         var noneVms = generator.generate(noneCluster, List.of(new IPAddressString("192.168.56.30").getAddress()));
         assertThat(noneVms.getFirst().name()).isEqualTo(VmName.of("my-mgmt"));
@@ -308,7 +308,7 @@ class DefaultVmGeneratorTest {
     void shouldUsePrefixedNamesForKubeadmClusters() {
         var cluster = ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .masters(1)
                 .workers(2)
                 .sizeProfile(SizeProfile.MEDIUM)

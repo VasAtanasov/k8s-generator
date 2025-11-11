@@ -1,5 +1,10 @@
 package com.k8s.generator.parser;
 
+import com.k8s.generator.model.Kind;
+import com.k8s.generator.model.Minikube;
+import com.k8s.generator.model.Kubeadm;
+import com.k8s.generator.model.NoneCluster;
+
 import com.k8s.generator.cli.GenerateCommand;
 import com.k8s.generator.model.*;
 import lombok.Builder;
@@ -110,8 +115,9 @@ public final class CliToSpec implements SpecConverter {
         // 5. Resolve nodes and CNI based on cluster type
         Spec spec = switch (clusterType) {
             // Single-node engines: no masters/workers, no CNI
-            case KIND, MINIKUBE -> Spec.empty();
-            case KUBEADM -> {
+            case Kind k -> Spec.empty();
+            case Minikube m -> Spec.empty();
+            case Kubeadm ku -> {
                 int[] nw = parseNodes(cmd.nodes);
                 yield Spec.builder()
                         .masters(nw[0])
@@ -120,7 +126,7 @@ public final class CliToSpec implements SpecConverter {
                         .build();
             }
             // Management VM: no nodes, no CNI
-            case NONE -> Spec.empty();
+            case NoneCluster nc -> Spec.empty();
         };
 
         return ClusterSpec.builder()
@@ -154,10 +160,10 @@ public final class CliToSpec implements SpecConverter {
         String normalized = clusterType.trim().toLowerCase(Locale.ROOT);
 
         return switch (normalized) {
-            case "kind" -> ClusterType.KIND;
-            case "minikube" -> ClusterType.MINIKUBE;
-            case "kubeadm" -> ClusterType.KUBEADM;
-            case "mgmt", "none" -> ClusterType.NONE;
+            case "kind" -> Kind.INSTANCE;
+            case "minikube" -> Minikube.INSTANCE;
+            case "kubeadm" -> Kubeadm.INSTANCE;
+            case "mgmt", "none" -> NoneCluster.INSTANCE;
             default -> throw new IllegalArgumentException(
                     String.format(
                             "Unsupported cluster type: '%s'. Supported: kind, minikube, kubeadm, mgmt",
@@ -185,7 +191,7 @@ public final class CliToSpec implements SpecConverter {
                 "clu-%s-%s-%s",
                 module.num(),
                 module.type(),
-                clusterType.name().toLowerCase(Locale.ROOT)
+                clusterType.id()
         ));
     }
 

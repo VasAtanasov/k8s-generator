@@ -3,7 +3,6 @@ package com.k8s.generator.model;
 import lombok.Builder;
 import lombok.Singular;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 

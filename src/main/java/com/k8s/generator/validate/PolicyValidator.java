@@ -1,5 +1,10 @@
 package com.k8s.generator.validate;
 
+import com.k8s.generator.model.Kind;
+import com.k8s.generator.model.Minikube;
+import com.k8s.generator.model.Kubeadm;
+import com.k8s.generator.model.NoneCluster;
+
 import com.k8s.generator.model.*;
 
 import java.util.*;
@@ -129,7 +134,7 @@ public class PolicyValidator implements ClusterSpecValidator {
      */
     private void validateCniRequirements(ClusterSpec cluster, List<ValidationError> errors) {
         switch (cluster.type()) {
-            case KUBEADM -> {
+            case Kubeadm ku -> {
                 if (cluster.cni() == null) {
                     errors.add(new ValidationError(
                             String.format("clusters[name='%s'].cni", cluster.name()),
@@ -144,24 +149,41 @@ public class PolicyValidator implements ClusterSpecValidator {
                     ));
                 }
             }
-            case KIND, MINIKUBE -> {
+            case Kind k -> {
                 if (cluster.cni() != null) {
                     errors.add(new ValidationError(
                             String.format("clusters[name='%s'].cni", cluster.name()),
                             ValidationLevel.POLICY,
                             String.format(
                                     "%s cluster should not have CNI specified (uses bundled CNI)",
-                                    cluster.type()
+                                    cluster.type().displayName()
                             ),
                             String.format(
                                     "Remove CNI specification for %s cluster '%s'. " +
                                             "%s bundles its own CNI plugin.",
-                                    cluster.type(), cluster.name(), cluster.type()
+                                    cluster.type().displayName(), cluster.name(), cluster.type().displayName()
                             )
                     ));
                 }
             }
-            case NONE -> {
+            case Minikube m -> {
+                if (cluster.cni() != null) {
+                    errors.add(new ValidationError(
+                            String.format("clusters[name='%s'].cni", cluster.name()),
+                            ValidationLevel.POLICY,
+                            String.format(
+                                    "%s cluster should not have CNI specified (uses bundled CNI)",
+                                    cluster.type().displayName()
+                            ),
+                            String.format(
+                                    "Remove CNI specification for %s cluster '%s'. " +
+                                            "%s bundles its own CNI plugin.",
+                                    cluster.type().displayName(), cluster.name(), cluster.type().displayName()
+                            )
+                    ));
+                }
+            }
+            case NoneCluster nc -> {
                 if (cluster.cni() != null) {
                     errors.add(new ValidationError(
                             String.format("clusters[name='%s'].cni", cluster.name()),
@@ -182,7 +204,7 @@ public class PolicyValidator implements ClusterSpecValidator {
      * Validates that KUBEADM clusters have at least one master node.
      */
     private void validateKubeadmMasterRequirement(ClusterSpec cluster, List<ValidationError> errors) {
-        if (cluster.type() == com.k8s.generator.model.ClusterType.KUBEADM && cluster.masters() < 1) {
+        if (cluster.type() == com.k8s.generator.model.Kubeadm.INSTANCE && cluster.masters() < 1) {
             errors.add(new ValidationError(
                     String.format("clusters[name='%s'].masters", cluster.name()),
                     ValidationLevel.POLICY,
@@ -316,8 +338,10 @@ public class PolicyValidator implements ClusterSpecValidator {
         }
 
         return switch (cluster.type()) {
-            case KIND, MINIKUBE, NONE -> 1;  // Single VM
-            case KUBEADM -> cluster.masters() + cluster.workers();
+            case Kind k -> 1;  // Single VM
+            case Minikube m -> 1;  // Single VM
+            case NoneCluster nc -> 1;  // Single VM
+            case Kubeadm ku -> cluster.masters() + cluster.workers();
         };
     }
 
@@ -336,11 +360,19 @@ public class PolicyValidator implements ClusterSpecValidator {
         var names = new HashSet<VmName>();
 
         switch (cluster.type()) {
-            case KIND, MINIKUBE, NONE -> {
+            case Kind k -> {
                 // Single VM: use cluster name directly
                 names.add(VmName.of(cluster.name().value()));
             }
-            case KUBEADM -> {
+            case Minikube m -> {
+                // Single VM: use cluster name directly
+                names.add(VmName.of(cluster.name().value()));
+            }
+            case NoneCluster nc -> {
+                // Single VM: use cluster name directly
+                names.add(VmName.of(cluster.name().value()));
+            }
+            case Kubeadm ku -> {
                 // Multi-node: prefix with cluster name to avoid conflicts
                 for (int i = 1; i <= cluster.masters(); i++) {
                     names.add(VmName.of(cluster.name().toString() + "-master-" + i));

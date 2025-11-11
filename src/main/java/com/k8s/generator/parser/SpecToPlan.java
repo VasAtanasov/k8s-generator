@@ -1,5 +1,10 @@
 package com.k8s.generator.parser;
 
+import com.k8s.generator.model.Kind;
+import com.k8s.generator.model.Minikube;
+import com.k8s.generator.model.Kubeadm;
+import com.k8s.generator.model.NoneCluster;
+
 import com.k8s.generator.ip.IpAllocator;
 import com.k8s.generator.ip.SequentialIpAllocator;
 import com.k8s.generator.model.*;
@@ -44,10 +49,10 @@ import java.util.Set;
  *
  * <p>VM Generation Rules (Phase 2):
  * <pre>
- * ClusterType.KIND      → 1 VM with NodeRole.CLUSTER, IP from IpAllocator
- * ClusterType.MINIKUBE  → 1 VM with NodeRole.CLUSTER, IP from IpAllocator
- * ClusterType.KUBEADM   → (masters + workers) VMs, IPs from IpAllocator
- * ClusterType.NONE      → 1 VM with NodeRole.MANAGEMENT, IP from IpAllocator
+ * Kind                  → 1 VM with NodeRole.CLUSTER, IP from IpAllocator
+ * Minikube              → 1 VM with NodeRole.CLUSTER, IP from IpAllocator
+ * Kubeadm               → (masters + workers) VMs, IPs from IpAllocator
+ * NoneCluster           → 1 VM with NodeRole.MANAGEMENT, IP from IpAllocator
  * </pre>
  *
  * <p>Future Phases:
@@ -178,20 +183,29 @@ public final class SpecToPlan implements PlanBuilder {
      */
     private List<VmConfig> generateVms(ClusterSpec cluster, List<IPAddress> allocatedIps) {
         return switch (cluster.type()) {
-            case KIND, MINIKUBE -> {
+            case Kind k -> {
                 if (allocatedIps.size() != 1) {
                     throw new IllegalStateException(
                             String.format("Expected 1 IP for %s cluster, got %d",
-                                    cluster.type(), allocatedIps.size())
+                                    cluster.type().displayName(), allocatedIps.size())
                     );
                 }
                 yield List.of(createSingleNodeVm(cluster, allocatedIps.getFirst()));
             }
-            case KUBEADM -> createKubeadmVms(cluster, allocatedIps);
-            case NONE -> {
+            case Minikube m -> {
                 if (allocatedIps.size() != 1) {
                     throw new IllegalStateException(
-                            String.format("Expected 1 IP for NONE (management) cluster, got %d",
+                            String.format("Expected 1 IP for %s cluster, got %d",
+                                    cluster.type().displayName(), allocatedIps.size())
+                    );
+                }
+                yield List.of(createSingleNodeVm(cluster, allocatedIps.getFirst()));
+            }
+            case Kubeadm ku -> createKubeadmVms(cluster, allocatedIps);
+            case NoneCluster nc -> {
+                if (allocatedIps.size() != 1) {
+                    throw new IllegalStateException(
+                            String.format("Expected 1 IP for Management cluster, got %d",
                                     allocatedIps.size())
                     );
                 }
@@ -226,7 +240,7 @@ public final class SpecToPlan implements PlanBuilder {
     }
 
     /**
-     * Creates a management VM (ClusterType.NONE).
+     * Creates a management VM (NoneCluster).
      *
      * <p>VM Configuration:
      * <ul>

@@ -84,7 +84,10 @@ public record Tool(String value) {
             "gcloud",
             "kube_binaries",
             "kind",
-            "k3s"
+            "k3s",
+            "docker",
+            "minikube",
+            "containerd"
     );
 
     /**
@@ -212,12 +215,30 @@ public record Tool(String value) {
     }
 
     /**
-     * Creates a Tool for k3s (Lightweight Kubernetes).
+     * Creates a Tool for docker.
      *
-     * @return Tool instance for k3s
+     * @return Tool instance for docker
      */
-    public static Tool k3s() {
-        return new Tool("k3s");
+    public static Tool docker() {
+        return new Tool("docker");
+    }
+
+    /**
+     * Creates a Tool for containerd.
+     *
+     * @return Tool instance for containerd
+     */
+    public static Tool containerd() {
+        return new Tool("containerd");
+    }
+
+    /**
+     * Creates a Tool for minikube.
+     *
+     * @return Tool instance for minikube
+     */
+    public static Tool minikube() {
+        return new Tool("minikube");
     }
 
     /**

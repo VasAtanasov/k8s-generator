@@ -147,7 +147,7 @@ final class EnvPlanner {
     private static void buildBaseGlobalEnv(Map<String, String> out, ModuleInfo module, ClusterSpec cluster) {
         out.put("CLUSTER_NAME", cluster.name().toString());
         out.put("NAMESPACE_DEFAULT", module.defaultNamespace());
-        out.put("CLUSTER_TYPE", cluster.type().name().toLowerCase(Locale.ROOT));
+        out.put("CLUSTER_TYPE", cluster.type().id().toLowerCase(Locale.ROOT));
     }
 
     /**
@@ -164,7 +164,7 @@ final class EnvPlanner {
      */
     private static void buildEngineGlobalEnv(Map<String, String> out, ClusterSpec cluster) {
         // CNI type only for kubeadm clusters
-        if (cluster.type() == ClusterType.KUBEADM) {
+        if (cluster.type() == Kubeadm.INSTANCE) {
             if (cluster.cni() != null) {
                 out.put("CNI_TYPE", cluster.cni().name().toLowerCase(Locale.ROOT));
             }
@@ -241,7 +241,7 @@ final class EnvPlanner {
      * @param vm      VM configuration
      */
     private static void buildEnginePerVmEnv(Map<String, String> out, ClusterSpec cluster, VmConfig vm) {
-        if (cluster.type() == ClusterType.KUBEADM && vm.isMaster()) {
+        if (cluster.type() == Kubeadm.INSTANCE && vm.isMaster()) {
             out.put("CONTROL_PLANE", FLAG_ENABLED);
         }
     }

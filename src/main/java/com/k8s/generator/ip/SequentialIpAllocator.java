@@ -1,5 +1,10 @@
 package com.k8s.generator.ip;
 
+import com.k8s.generator.model.Kind;
+import com.k8s.generator.model.Minikube;
+import com.k8s.generator.model.Kubeadm;
+import com.k8s.generator.model.NoneCluster;
+
 import com.k8s.generator.model.ClusterName;
 import com.k8s.generator.model.ClusterSpec;
 import com.k8s.generator.model.ClusterType;
@@ -92,7 +97,7 @@ public class SequentialIpAllocator implements IpAllocator {
         // 1. Determine base IP (mgmt has reserved default .5)
         IPAddress ipAddress = spec.firstIp() != null
                 ? spec.firstIp()
-                : (spec.type() == ClusterType.NONE ? MGMT_DEFAULT_BASE_IP : DEFAULT_BASE_IP);
+                : (spec.type() instanceof NoneCluster ? MGMT_DEFAULT_BASE_IP : DEFAULT_BASE_IP);
 
         // Guard: allocator supports IPv4-only semantics (last-octet arithmetic, /24 boundary)
         if (!ipAddress.isIPv4()) {
@@ -103,7 +108,7 @@ public class SequentialIpAllocator implements IpAllocator {
         int vmCount = calculateVmCount(spec);
 
         // 4. Allocate sequential IPs (skip reserved .5 except for mgmt)
-        Set<Integer> reserved = (spec.type() == ClusterType.NONE)
+        Set<Integer> reserved = (spec.type() instanceof NoneCluster)
                 ? Set.of(1, 2)
                 : RESERVED_HOST_IDS;
         return allocateSequential(ipAddress, vmCount, spec.name().toString(), reserved);
@@ -178,8 +183,10 @@ public class SequentialIpAllocator implements IpAllocator {
      */
     private int calculateVmCount(ClusterSpec spec) {
         return switch (spec.type()) {
-            case KIND, MINIKUBE, NONE -> 1;
-            case KUBEADM -> spec.masters() + spec.workers();
+            case Kind k -> 1;
+            case Minikube m -> 1;
+            case NoneCluster nc -> 1;
+            case Kubeadm ku -> spec.masters() + spec.workers();
         };
     }
 

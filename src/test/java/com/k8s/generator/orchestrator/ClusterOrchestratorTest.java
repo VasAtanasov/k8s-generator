@@ -48,7 +48,7 @@ class ClusterOrchestratorTest {
         // Given: KIND cluster without VMs
         var cluster = ClusterSpec.builder()
                 .name("dev")
-                .type(ClusterType.KIND)
+                .type(Kind.INSTANCE)
                 .masters(0).workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
@@ -76,7 +76,7 @@ class ClusterOrchestratorTest {
         // Given: MINIKUBE cluster with explicit IP
         var cluster = ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.MINIKUBE)
+                .type(Minikube.INSTANCE)
                 .firstIp("192.168.56.20")
                 .masters(0).workers(0)
                 .sizeProfile(SizeProfile.LARGE)
@@ -105,7 +105,7 @@ class ClusterOrchestratorTest {
         // Given: NONE (management) cluster
         var cluster = ClusterSpec.builder()
                 .name("mgmt")
-                .type(ClusterType.NONE)
+                .type(NoneCluster.INSTANCE)
                 .firstIp("192.168.56.6")
                 .masters(0).workers(0)
                 .sizeProfile(SizeProfile.SMALL)
@@ -133,7 +133,7 @@ class ClusterOrchestratorTest {
         // Given: KUBEADM cluster 1 master, 0 workers
         var cluster = ClusterSpec.builder()
                 .name("dev")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.30")
                 .masters(1).workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -162,7 +162,7 @@ class ClusterOrchestratorTest {
         // Given: KUBEADM cluster 2 masters, 3 workers
         var cluster = ClusterSpec.builder()
                 .name("prod")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.40")
                 .masters(2).workers(3)
                 .sizeProfile(SizeProfile.LARGE)
@@ -231,7 +231,7 @@ class ClusterOrchestratorTest {
 
         var cluster = ClusterSpec.builder()
                 .name("custom")
-                .type(ClusterType.KIND)
+                .type(Kind.INSTANCE)
                 .masters(0).workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of(explicitVm))
@@ -252,7 +252,7 @@ class ClusterOrchestratorTest {
         // Given: cluster with invalid IP format
         var cluster = ClusterSpec.builder()
                 .name("bad-ip")
-                .type(ClusterType.KIND)
+                .type(Kind.INSTANCE)
                 .firstIp("fe80::1")
                 .masters(0).workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -282,7 +282,7 @@ class ClusterOrchestratorTest {
     void shouldOrchestrateMultipleClustersIndependently() {
         // Given: 3 different clusters
         var kindCluster = ClusterSpec.builder()
-                .name("dev").type(ClusterType.KIND)
+                .name("dev").type(Kind.INSTANCE)
                 .firstIp("192.168.56.10")
                 .masters(0).workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -290,7 +290,7 @@ class ClusterOrchestratorTest {
                 .build();
 
         var kubeadmCluster = ClusterSpec.builder()
-                .name("staging").type(ClusterType.KUBEADM)
+                .name("staging").type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.20")
                 .masters(1).workers(2)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -299,7 +299,7 @@ class ClusterOrchestratorTest {
                 .build();
 
         var mgmtCluster = ClusterSpec.builder()
-                .name("mgmt").type(ClusterType.NONE)
+                .name("mgmt").type(NoneCluster.INSTANCE)
                 .firstIp("192.168.56.30")
                 .masters(0).workers(0)
                 .sizeProfile(SizeProfile.SMALL)
@@ -352,7 +352,7 @@ class ClusterOrchestratorTest {
     void shouldFailFastOnFirstClusterError() {
         // Given: 3 clusters, second one has invalid IP
         var cluster1 = ClusterSpec.builder()
-                .name("valid1").type(ClusterType.KIND)
+                .name("valid1").type(Kind.INSTANCE)
                 .firstIp("192.168.56.10")
                 .masters(0).workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -360,7 +360,7 @@ class ClusterOrchestratorTest {
                 .build();
 
         var cluster2 = ClusterSpec.builder()
-                .name("invalid").type(ClusterType.KIND)
+                .name("invalid").type(Kind.INSTANCE)
                 .firstIp("fe80::1")  // Invalid for IPv4 allocation
                 .masters(0).workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -368,7 +368,7 @@ class ClusterOrchestratorTest {
                 .build();
 
         var cluster3 = ClusterSpec.builder()
-                .name("valid3").type(ClusterType.KIND)
+                .name("valid3").type(Kind.INSTANCE)
                 .firstIp("192.168.56.30")
                 .masters(0).workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -398,14 +398,14 @@ class ClusterOrchestratorTest {
                 .build();
 
         var cluster1 = ClusterSpec.builder()
-                .name("explicit").type(ClusterType.NONE)
+                .name("explicit").type(NoneCluster.INSTANCE)
                 .masters(0).workers(0)
                 .sizeProfile(SizeProfile.SMALL)
                 .vms(List.of(explicitVm))
                 .build();
 
         var cluster2 = ClusterSpec.builder()
-                .name("generated").type(ClusterType.KIND)
+                .name("generated").type(Kind.INSTANCE)
                 .firstIp("192.168.56.20")
                 .masters(0).workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -445,7 +445,7 @@ class ClusterOrchestratorTest {
     void shouldSkipReservedIpsDuringAllocation() {
         // Given: cluster starting at IP that would normally use reserved .5
         var cluster = ClusterSpec.builder()
-                .name("test").type(ClusterType.KUBEADM)
+                .name("test").type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.3")
                 .masters(3).workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -470,7 +470,7 @@ class ClusterOrchestratorTest {
     void shouldHandleSubnetBoundaryViolation() {
         // Given: cluster starting at .252 needing 5 IPs (would exceed .254)
         var cluster = ClusterSpec.builder()
-                .name("boundary-test").type(ClusterType.KUBEADM)
+                .name("boundary-test").type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.252")
                 .masters(3).workers(2)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -494,10 +494,10 @@ class ClusterOrchestratorTest {
     void shouldFollowNamingConventionConsistently() {
         // Given: various cluster types
         var clusters = List.of(
-                ClusterSpec.builder().name("dev").type(ClusterType.KIND).firstIp("192.168.56.10").masters(0).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).build(),
-                ClusterSpec.builder().name("staging").type(ClusterType.MINIKUBE).firstIp("192.168.56.20").masters(0).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).build(),
-                ClusterSpec.builder().name("mgmt").type(ClusterType.NONE).firstIp("192.168.56.30").masters(0).workers(0).sizeProfile(SizeProfile.SMALL).vms(List.of()).build(),
-                ClusterSpec.builder().name("prod").type(ClusterType.KUBEADM).firstIp("192.168.56.40").masters(2).workers(3).sizeProfile(SizeProfile.LARGE).vms(List.of()).cni(CniType.CALICO).build()
+                ClusterSpec.builder().name("dev").type(Kind.INSTANCE).firstIp("192.168.56.10").masters(0).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).build(),
+                ClusterSpec.builder().name("staging").type(Minikube.INSTANCE).firstIp("192.168.56.20").masters(0).workers(0).sizeProfile(SizeProfile.MEDIUM).vms(List.of()).build(),
+                ClusterSpec.builder().name("mgmt").type(NoneCluster.INSTANCE).firstIp("192.168.56.30").masters(0).workers(0).sizeProfile(SizeProfile.SMALL).vms(List.of()).build(),
+                ClusterSpec.builder().name("prod").type(Kubeadm.INSTANCE).firstIp("192.168.56.40").masters(2).workers(3).sizeProfile(SizeProfile.LARGE).vms(List.of()).cni(CniType.CALICO).build()
         );
 
         // When: orchestrateMulti

@@ -137,6 +137,6 @@ public record ModuleInfo(String num, String type) {
      */
     public String clusterName(ClusterType engine) {
         Objects.requireNonNull(engine, "engine is required");
-        return String.format("clu-%s-%s-%s", num, type, engine.name().toLowerCase());
+        return String.format("clu-%s-%s-%s", num, type, engine.id().toLowerCase());
     }
 }

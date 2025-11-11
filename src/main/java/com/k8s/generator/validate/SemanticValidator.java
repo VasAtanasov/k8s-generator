@@ -1,9 +1,11 @@
 package com.k8s.generator.validate;
 
-import com.k8s.generator.model.ClusterSpec;
-import com.k8s.generator.model.ClusterType;
-import com.k8s.generator.model.ValidationError;
-import com.k8s.generator.model.ValidationLevel;
+import com.k8s.generator.model.Kind;
+import com.k8s.generator.model.Minikube;
+import com.k8s.generator.model.Kubeadm;
+import com.k8s.generator.model.NoneCluster;
+
+import com.k8s.generator.model.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -155,28 +157,10 @@ public class SemanticValidator implements ClusterSpecValidator {
      */
     private void validateEngineSpecificConstraints(ClusterSpec spec, List<ValidationError> errors) {
         switch (spec.type()) {
-            case KIND, MINIKUBE, NONE -> {
-                // These engines should have zero masters and workers (they use "cluster" or "management" role)
-                if (spec.masters() != 0) {
-                    errors.add(new ValidationError(
-                            String.format("clusters[name='%s'].masters", spec.name()),
-                            ValidationLevel.SEMANTIC,
-                            String.format("%s clusters do not use master nodes (uses '%s' role instead)",
-                                    spec.type(), spec.type() == ClusterType.NONE ? "management" : "cluster"),
-                            String.format("Set masters: 0 (not %d)", spec.masters())
-                    ));
-                }
-                if (spec.workers() != 0) {
-                    errors.add(new ValidationError(
-                            String.format("clusters[name='%s'].workers", spec.name()),
-                            ValidationLevel.SEMANTIC,
-                            String.format("%s clusters do not use worker nodes (uses '%s' role instead)",
-                                    spec.type(), spec.type() == ClusterType.NONE ? "management" : "cluster"),
-                            String.format("Set workers: 0 (not %d)", spec.workers())
-                    ));
-                }
-            }
-            case KUBEADM -> {
+            case Kind k -> validateSingleNodeConstraints(spec, errors, "cluster");
+            case Minikube m -> validateSingleNodeConstraints(spec, errors, "cluster");
+            case NoneCluster nc -> validateSingleNodeConstraints(spec, errors, "management");
+            case Kubeadm ku -> {
                 // KUBEADM requires at least 1 master
                 if (spec.masters() < 1) {
                     errors.add(new ValidationError(
@@ -196,6 +180,31 @@ public class SemanticValidator implements ClusterSpecValidator {
                     ));
                 }
             }
+        }
+    }
+
+    /**
+     * Validates constraints for single-node cluster types (KIND, MINIKUBE, NONE).
+     */
+    private void validateSingleNodeConstraints(ClusterSpec spec, List<ValidationError> errors, String roleType) {
+        // These engines should have zero masters and workers (they use "cluster" or "management" role)
+        if (spec.masters() != 0) {
+            errors.add(new ValidationError(
+                    String.format("clusters[name='%s'].masters", spec.name()),
+                    ValidationLevel.SEMANTIC,
+                    String.format("%s clusters do not use master nodes (uses '%s' role instead)",
+                            spec.type().displayName(), roleType),
+                    String.format("Set masters: 0 (not %d)", spec.masters())
+            ));
+        }
+        if (spec.workers() != 0) {
+            errors.add(new ValidationError(
+                    String.format("clusters[name='%s'].workers", spec.name()),
+                    ValidationLevel.SEMANTIC,
+                    String.format("%s clusters do not use worker nodes (uses '%s' role instead)",
+                            spec.type().displayName(), roleType),
+                    String.format("Set workers: 0 (not %d)", spec.workers())
+            ));
         }
     }
 

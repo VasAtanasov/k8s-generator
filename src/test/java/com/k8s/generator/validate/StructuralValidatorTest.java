@@ -18,7 +18,7 @@ class StructuralValidatorTest {
     void shouldAcceptValidClusterWithoutVms() {
         var spec = ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .masters(1)
                 .workers(2)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -39,7 +39,7 @@ class StructuralValidatorTest {
 
         var spec = ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.10")
                 .masters(1)
                 .workers(2)
@@ -76,7 +76,7 @@ class StructuralValidatorTest {
 
         var spec = ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.10")
                 .masters(2)
                 .workers(1)
@@ -101,7 +101,7 @@ class StructuralValidatorTest {
 
         var spec = ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.10")
                 .masters(1)
                 .workers(3)
@@ -131,7 +131,7 @@ class StructuralValidatorTest {
 
         var spec = ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.10")
                 .masters(1)
                 .workers(1)
@@ -152,7 +152,7 @@ class StructuralValidatorTest {
 
         var spec = ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.10")
                 .masters(2)
                 .workers(0)
@@ -179,7 +179,7 @@ class StructuralValidatorTest {
 
         var spec = ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.10")
                 .masters(1)
                 .workers(3)
@@ -203,7 +203,7 @@ class StructuralValidatorTest {
 
         var spec = ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.10")
                 .masters(3)
                 .workers(0)

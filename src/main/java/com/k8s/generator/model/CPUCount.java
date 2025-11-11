@@ -1,7 +1,5 @@
 package com.k8s.generator.model;
 
-import java.util.Objects;
-
 /**
  * Value Object representing a count of virtual CPUs.
  *
@@ -40,4 +38,3 @@ public record CPUCount(int value) {
         return Integer.toString(value);
     }
 }
-

@@ -153,7 +153,7 @@ public record ClusterSpec(
 
         // At least one node required for KUBEADM
         // (KIND/MINIKUBE/NONE allow zero masters+workers, they use "cluster"/"management" role)
-        if (type == ClusterType.KUBEADM && masters == 0 && workers == 0) {
+        if (type instanceof Kubeadm && masters == 0 && workers == 0) {
             throw new IllegalArgumentException(
                     "KUBEADM cluster requires at least one node (masters + workers > 0)"
             );

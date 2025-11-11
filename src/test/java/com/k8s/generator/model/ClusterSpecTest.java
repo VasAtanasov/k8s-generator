@@ -19,7 +19,7 @@ class ClusterSpecTest {
     void shouldCreateValidKubeadmCluster() {
         var spec = ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.10")
                 .masters(3)
                 .workers(5)
@@ -29,7 +29,7 @@ class ClusterSpecTest {
                 .build();
 
         assertThat(spec.name().toString()).isEqualTo("staging");
-        assertThat(spec.type()).isEqualTo(ClusterType.KUBEADM);
+        assertThat(spec.type()).isEqualTo(Kubeadm.INSTANCE);
         assertThat(spec.firstIp()).isNotNull();
         assertThat(spec.firstIp().toCanonicalString()).isEqualTo("192.168.56.10");
         assertThat(spec.masters()).isEqualTo(3);
@@ -42,7 +42,7 @@ class ClusterSpecTest {
     void shouldCreateValidKindCluster() {
         var spec = ClusterSpec.builder()
                 .name("dev")
-                .type(ClusterType.KIND)
+                .type(Kind.INSTANCE)
                 .masters(0)
                 .workers(0)
                 .sizeProfile(SizeProfile.SMALL)
@@ -50,7 +50,7 @@ class ClusterSpecTest {
                 .build();
 
         assertThat(spec.name().toString()).isEqualTo("dev");
-        assertThat(spec.type()).isEqualTo(ClusterType.KIND);
+        assertThat(spec.type()).isEqualTo(Kind.INSTANCE);
         assertThat(spec.firstIp()).isNull();
         assertThat(spec.masters()).isZero();
         assertThat(spec.workers()).isZero();
@@ -73,7 +73,7 @@ class ClusterSpecTest {
 
         var spec = ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .firstIp("192.168.56.10")
                 .masters(1)
                 .workers(1)
@@ -90,7 +90,7 @@ class ClusterSpecTest {
     void shouldRejectNullName() {
         assertThatThrownBy(() -> ClusterSpec.builder()
                 .name((ClusterName) null)
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .masters(1)
                 .workers(1)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -120,7 +120,7 @@ class ClusterSpecTest {
     void shouldAllowNullFirstIp() {
         var spec = ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .masters(1)
                 .workers(1)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -134,7 +134,7 @@ class ClusterSpecTest {
     void shouldRejectNullSizeProfile() {
         assertThatThrownBy(() -> ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .masters(1)
                 .workers(1)
                 .sizeProfile(null)
@@ -149,7 +149,7 @@ class ClusterSpecTest {
     void shouldRejectNullVmsList() {
         assertThatThrownBy(() -> ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .masters(1)
                 .workers(1)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -165,7 +165,7 @@ class ClusterSpecTest {
     void shouldRejectBlankName(String blank) {
         assertThatThrownBy(() -> ClusterSpec.builder()
                 .name(ClusterName.of(blank))
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .masters(1)
                 .workers(1)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -180,7 +180,7 @@ class ClusterSpecTest {
     void shouldRejectNegativeMasters() {
         assertThatThrownBy(() -> ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .masters(-1)
                 .workers(1)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -195,7 +195,7 @@ class ClusterSpecTest {
     void shouldRejectNegativeWorkers() {
         assertThatThrownBy(() -> ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .masters(1)
                 .workers(-1)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -210,7 +210,7 @@ class ClusterSpecTest {
     void shouldRejectKubeadmClusterWithZeroNodes() {
         assertThatThrownBy(() -> ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .masters(0)
                 .workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -225,7 +225,7 @@ class ClusterSpecTest {
     void shouldAllowKindClusterWithZeroNodes() {
         var spec = ClusterSpec.builder()
                 .name("dev")
-                .type(ClusterType.KIND)
+                .type(Kind.INSTANCE)
                 .masters(0)
                 .workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -240,7 +240,7 @@ class ClusterSpecTest {
     void shouldAllowMinikubeClusterWithZeroNodes() {
         var spec = ClusterSpec.builder()
                 .name("dev")
-                .type(ClusterType.MINIKUBE)
+                .type(Minikube.INSTANCE)
                 .masters(0)
                 .workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -255,7 +255,7 @@ class ClusterSpecTest {
     void shouldAllowNoneClusterWithZeroNodes() {
         var spec = ClusterSpec.builder()
                 .name("mgmt")
-                .type(ClusterType.NONE)
+                .type(NoneCluster.INSTANCE)
                 .masters(0)
                 .workers(0)
                 .sizeProfile(SizeProfile.SMALL)
@@ -282,7 +282,7 @@ class ClusterSpecTest {
 
         assertThatThrownBy(() -> ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .masters(1)
                 .workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -297,7 +297,7 @@ class ClusterSpecTest {
     void shouldCalculateTotalNodes() {
         var spec = ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .masters(3)
                 .workers(5)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -312,7 +312,7 @@ class ClusterSpecTest {
     void shouldReturnZeroTotalNodesForKind() {
         var spec = ClusterSpec.builder()
                 .name("dev")
-                .type(ClusterType.KIND)
+                .type(Kind.INSTANCE)
                 .masters(0)
                 .workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -326,7 +326,7 @@ class ClusterSpecTest {
     void shouldDetectHighAvailability() {
         var haCluster = ClusterSpec.builder()
                 .name("prod")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .masters(3)
                 .workers(5)
                 .sizeProfile(SizeProfile.LARGE)
@@ -336,7 +336,7 @@ class ClusterSpecTest {
 
         var singleMaster = ClusterSpec.builder()
                 .name("dev")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .masters(1)
                 .workers(2)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -359,7 +359,7 @@ class ClusterSpecTest {
 
         var withVms = ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .masters(1)
                 .workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -369,7 +369,7 @@ class ClusterSpecTest {
 
         var withoutVms = ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .masters(1)
                 .workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -385,7 +385,7 @@ class ClusterSpecTest {
     void shouldCreateNewInstanceWithUpdatedVms() {
         var original = ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .masters(1)
                 .workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -412,7 +412,7 @@ class ClusterSpecTest {
     void shouldRejectNullInWithVms() {
         var spec = ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .masters(1)
                 .workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -437,7 +437,7 @@ class ClusterSpecTest {
 
         var spec = ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .masters(1)
                 .workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
@@ -463,7 +463,7 @@ class ClusterSpecTest {
 
         var spec = ClusterSpec.builder()
                 .name("staging")
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .masters(1)
                 .workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)

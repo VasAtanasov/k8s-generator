@@ -47,7 +47,7 @@ public enum SizeProfile {
     /**
      * Constructs a size profile with specified resources.
      *
-     * @param cpus number of virtual CPUs
+     * @param cpus     number of virtual CPUs
      * @param memoryMb memory allocation in megabytes
      */
     SizeProfile(int cpus, int memoryMb) {
@@ -98,7 +98,7 @@ public enum SizeProfile {
             return SizeProfile.valueOf(value.toUpperCase());
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException(
-                String.format("Invalid size profile: '%s'. Valid values: small, medium, large", value)
+                    String.format("Invalid size profile: '%s'. Valid values: small, medium, large", value)
             );
         }
     }

@@ -329,6 +329,6 @@ public record ScaffoldPlan(
      * @return true if provider is in providers set
      */
     public boolean hasProvider(String providerName) {
-        return providers.contains(providerName);
+        return providers.contains(CloudProvider.of(providerName));
     }
 }

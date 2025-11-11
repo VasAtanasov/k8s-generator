@@ -37,7 +37,7 @@ class EnvPlannerTest {
     private static ClusterSpec kindCluster() {
         return ClusterSpec.builder()
                 .name(KIND_CLUSTER_NAME)
-                .type(ClusterType.KIND)
+                .type(Kind.INSTANCE)
                 .masters(0).workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
@@ -47,7 +47,7 @@ class EnvPlannerTest {
     private static ClusterSpec kubeadmCluster() {
         return ClusterSpec.builder()
                 .name(KUBEADM_CLUSTER_NAME)
-                .type(ClusterType.KUBEADM)
+                .type(Kubeadm.INSTANCE)
                 .masters(1).workers(1)
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
@@ -336,7 +336,7 @@ class EnvPlannerTest {
         // Given: Minikube cluster
         var cluster = ClusterSpec.builder()
                 .name("clu-m1-pt-minikube")
-                .type(ClusterType.MINIKUBE)
+                .type(Minikube.INSTANCE)
                 .masters(0).workers(0)
                 .sizeProfile(SizeProfile.MEDIUM)
                 .vms(List.of())
@@ -374,7 +374,7 @@ class EnvPlannerTest {
         // Given: Management-only cluster (NONE type)
         var cluster = ClusterSpec.builder()
                 .name("mgmt-m7-hw")
-                .type(ClusterType.NONE)
+                .type(NoneCluster.INSTANCE)
                 .masters(0).workers(0)
                 .sizeProfile(SizeProfile.SMALL)
                 .vms(List.of())

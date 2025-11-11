@@ -1,5 +1,10 @@
 package com.k8s.generator.orchestrator;
 
+import com.k8s.generator.model.Kind;
+import com.k8s.generator.model.Minikube;
+import com.k8s.generator.model.Kubeadm;
+import com.k8s.generator.model.NoneCluster;
+
 import com.k8s.generator.model.ClusterSpec;
 import com.k8s.generator.model.NodeRole;
 import com.k8s.generator.model.VmConfig;
@@ -48,10 +53,10 @@ public class DefaultVmGenerator implements VmGenerator {
         }
 
         return switch (cluster.type()) {
-            case KIND -> generateSingleVm(cluster, allocatedIps.getFirst(), NodeRole.CLUSTER);
-            case MINIKUBE -> generateSingleVm(cluster, allocatedIps.getFirst(), NodeRole.CLUSTER);
-            case NONE -> generateSingleVm(cluster, allocatedIps.getFirst(), NodeRole.MANAGEMENT);
-            case KUBEADM -> generateKubeadmVms(cluster, allocatedIps);
+            case Kind k -> generateSingleVm(cluster, allocatedIps.getFirst(), NodeRole.CLUSTER);
+            case Minikube m -> generateSingleVm(cluster, allocatedIps.getFirst(), NodeRole.CLUSTER);
+            case NoneCluster nc -> generateSingleVm(cluster, allocatedIps.getFirst(), NodeRole.MANAGEMENT);
+            case Kubeadm ku -> generateKubeadmVms(cluster, allocatedIps);
         };
     }
 
@@ -60,8 +65,10 @@ public class DefaultVmGenerator implements VmGenerator {
         Objects.requireNonNull(cluster, "cluster cannot be null");
 
         return switch (cluster.type()) {
-            case KIND, MINIKUBE, NONE -> 1;
-            case KUBEADM -> cluster.masters() + cluster.workers();
+            case Kind k -> 1;
+            case Minikube m -> 1;
+            case NoneCluster nc -> 1;
+            case Kubeadm ku -> cluster.masters() + cluster.workers();
         };
     }
 

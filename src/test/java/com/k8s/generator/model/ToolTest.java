@@ -100,9 +100,9 @@ class ToolTest {
         @Test
         @DisplayName("should reject unsupported tool")
         void shouldRejectUnsupportedTool() {
-            assertThatThrownBy(() -> Tool.of("docker"))
+            assertThatThrownBy(() -> Tool.of("unsupported_tool"))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Invalid tool: 'docker'")
+                    .hasMessageContaining("Invalid tool: 'unsupported_tool'")
                     .hasMessageContaining("Supported tools:");
         }
 
@@ -254,11 +254,11 @@ class ToolTest {
         }
 
         @Test
-        @DisplayName("k3s() should create k3s tool")
-        void k3sShouldCreateK3sTool() {
-            Tool tool = Tool.k3s();
-            assertThat(tool.value()).isEqualTo("k3s");
-            assertThat(tool).isEqualTo(Tool.of("k3s"));
+        @DisplayName("docker() should create docker tool")
+        void dockerShouldCreateDockerTool() {
+            Tool tool = Tool.docker();
+            assertThat(tool.value()).isEqualTo("docker");
+            assertThat(tool).isEqualTo(Tool.of("docker"));
         }
     }
 
@@ -318,7 +318,7 @@ class ToolTest {
         @Test
         @DisplayName("should return false for k3s")
         void shouldReturnFalseForK3s() {
-            Tool tool = Tool.k3s();
+            Tool tool = Tool.docker();
             assertThat(tool.requiresCloudProvider()).isFalse();
         }
     }
@@ -398,7 +398,7 @@ class ToolTest {
             assertThat(Tool.gcloud().toString()).isEqualTo("gcloud");
             assertThat(Tool.kubeBinaries().toString()).isEqualTo("kube_binaries");
             assertThat(Tool.kind().toString()).isEqualTo("kind");
-            assertThat(Tool.k3s().toString()).isEqualTo("k3s");
+            assertThat(Tool.docker().toString()).isEqualTo("docker");
         }
     }
 }
