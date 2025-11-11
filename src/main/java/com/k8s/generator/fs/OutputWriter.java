@@ -32,7 +32,6 @@ public final class OutputWriter {
      * └── bootstrap.post.local.sh
      * </pre>
      *
-     *
      * @param destination output directory containing the {@code scripts/} folder
      * @throws IOException reserved for future concrete implementation
      */

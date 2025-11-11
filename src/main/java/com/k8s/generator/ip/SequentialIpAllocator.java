@@ -1,14 +1,6 @@
 package com.k8s.generator.ip;
 
-import com.k8s.generator.model.Kind;
-import com.k8s.generator.model.Minikube;
-import com.k8s.generator.model.Kubeadm;
-import com.k8s.generator.model.NoneCluster;
-
-import com.k8s.generator.model.ClusterName;
-import com.k8s.generator.model.ClusterSpec;
-import com.k8s.generator.model.ClusterType;
-import com.k8s.generator.model.Result;
+import com.k8s.generator.model.*;
 import inet.ipaddr.IPAddress;
 import inet.ipaddr.IPAddressString;
 

@@ -1,10 +1,5 @@
 package com.k8s.generator.validate;
 
-import com.k8s.generator.model.Kind;
-import com.k8s.generator.model.Minikube;
-import com.k8s.generator.model.Kubeadm;
-import com.k8s.generator.model.NoneCluster;
-
 import com.k8s.generator.model.*;
 
 import java.util.ArrayList;
@@ -221,7 +216,7 @@ public class SemanticValidator implements ClusterSpecValidator {
                         String.format("clusters[name='%s'].firstIp", spec.name()),
                         ValidationLevel.SEMANTIC,
                         String.format("Only IPv4 addresses supported, got: %s (IPv6 or invalid)",
-                            ip.toCanonicalString()),
+                                ip.toCanonicalString()),
                         "Use IPv4 format: xxx.xxx.xxx.xxx (e.g., '192.168.56.10')"
                 ));
                 return;  // Skip further validation if not IPv4

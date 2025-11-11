@@ -24,6 +24,10 @@ public final class ResourceCopier {
                         continue;
                     }
                     Path out = targetDir.resolve(name);
+                    Path parent = out.getParent();
+                    if (parent != null) {
+                        Files.createDirectories(parent);
+                    }
                     Files.copy(in, out);
                     try {
                         Files.setPosixFilePermissions(out, Set.of(
@@ -42,4 +46,3 @@ public final class ResourceCopier {
         }
     }
 }
-

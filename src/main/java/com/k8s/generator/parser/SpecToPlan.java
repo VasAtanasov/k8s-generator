@@ -1,19 +1,12 @@
 package com.k8s.generator.parser;
 
-import com.k8s.generator.model.Kind;
-import com.k8s.generator.model.Minikube;
-import com.k8s.generator.model.Kubeadm;
-import com.k8s.generator.model.NoneCluster;
-
 import com.k8s.generator.ip.IpAllocator;
 import com.k8s.generator.ip.SequentialIpAllocator;
 import com.k8s.generator.model.*;
+import com.k8s.generator.util.ToolInstallers;
 import inet.ipaddr.IPAddress;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Converts validated GeneratorSpec to template-ready ScaffoldPlan.
@@ -162,8 +155,11 @@ public final class SpecToPlan implements PlanBuilder {
         // 4. Build environment variables (global + per-VM)
         var envSet = EnvPlanner.build(spec.module(), cluster, vms, providers);
 
-        // 5. Create ScaffoldPlan
-        return new ScaffoldPlan(spec.module(), vms, envSet.global(), envSet.perVm(), providers);
+        // 5. Compute install scripts to copy
+        List<String> scripts = computeRequiredTools(spec);
+
+        // 6. Create ScaffoldPlan
+        return new ScaffoldPlan(spec.module(), vms, envSet.global(), envSet.perVm(), providers, scripts);
     }
 
     /**
@@ -340,5 +336,37 @@ public final class SpecToPlan implements PlanBuilder {
             return Set.of();
         }
         return Set.copyOf(spec.management().providers());
+    }
+
+    /**
+     * Computes the list of resource scripts to copy into the generated workspace
+     * based on the cluster type and optional management configuration.
+     *
+     * <p>Always includes shared assets like lib.sh and dotfiles. Adds
+     * tool-specific installers derived from ClusterType.requiredTools() and
+     * Management.tools(). Missing resources are skipped gracefully by
+     * ResourceCopier.
+     */
+    private static List<String> computeRequiredTools(GeneratorSpec spec) {
+        var ordered = new LinkedHashSet<String>();
+        // Common assets
+        ordered.add("lib.sh");
+        ordered.add("install_base_packages.sh");
+        ordered.add("dotfiles/.tmux.conf");
+
+        // Cluster-required tools → install_*.sh
+        var primary = spec.primaryCluster();
+        for (var tool : primary.type().requiredTools()) {
+            ToolInstallers.mapToolToInstaller(tool).ifPresent(ordered::add);
+        }
+
+        // Management VM tools (if any)
+        if (spec.management() != null && spec.management().hasTools()) {
+            for (var tool : spec.management().tools()) {
+                ToolInstallers.mapToolToInstaller(tool).ifPresent(ordered::add);
+            }
+        }
+
+        return List.copyOf(ordered);
     }
 }

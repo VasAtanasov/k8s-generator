@@ -1,10 +1,5 @@
 package com.k8s.generator.model;
 
-import com.k8s.generator.model.Kind;
-import com.k8s.generator.model.Minikube;
-import com.k8s.generator.model.Kubeadm;
-import com.k8s.generator.model.NoneCluster;
-
 import java.util.List;
 
 /**

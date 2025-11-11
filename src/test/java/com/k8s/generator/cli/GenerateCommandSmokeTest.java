@@ -51,7 +51,7 @@ class GenerateCommandSmokeTest {
         assertThat(Files.exists(out.resolve("Vagrantfile"))).isTrue();
         assertThat(Files.exists(out.resolve("scripts/bootstrap.sh"))).isTrue();
         assertThat(Files.exists(out.resolve(".gitignore"))).isTrue();
-        assertThat(Files.exists(out.resolve("scripts/install_kind.sh"))).isTrue();
+        assertThat(Files.exists(out.resolve("scripts/install_minikube.sh"))).isTrue();
 
         String bs = Files.readString(out.resolve("scripts/bootstrap.sh"), StandardCharsets.UTF_8);
         assertThat(bs).contains("install_kubectl.sh");

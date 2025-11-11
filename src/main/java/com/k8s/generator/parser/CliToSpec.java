@@ -1,10 +1,5 @@
 package com.k8s.generator.parser;
 
-import com.k8s.generator.model.Kind;
-import com.k8s.generator.model.Minikube;
-import com.k8s.generator.model.Kubeadm;
-import com.k8s.generator.model.NoneCluster;
-
 import com.k8s.generator.cli.GenerateCommand;
 import com.k8s.generator.model.*;
 import lombok.Builder;

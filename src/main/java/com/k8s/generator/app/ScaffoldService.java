@@ -5,6 +5,7 @@ import com.k8s.generator.fs.OutputWriter;
 import com.k8s.generator.fs.ResourceCopier;
 import com.k8s.generator.model.GeneratorSpec;
 import com.k8s.generator.model.ScaffoldPlan;
+import com.k8s.generator.model.Tool;
 import com.k8s.generator.model.ValidationError;
 import com.k8s.generator.parser.CliToSpec;
 import com.k8s.generator.parser.PlanBuilder;
@@ -12,6 +13,7 @@ import com.k8s.generator.parser.SpecConverter;
 import com.k8s.generator.parser.SpecToPlan;
 import com.k8s.generator.render.JteRenderer;
 import com.k8s.generator.render.Renderer;
+import com.k8s.generator.util.ToolInstallers;
 import com.k8s.generator.validate.ClusterSpecValidator;
 import com.k8s.generator.validate.CompositeValidator;
 import com.k8s.generator.validate.StructuralValidator;
@@ -22,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Orchestrates Phase 1 scaffold generation flow using bricks-and-studs architecture.
@@ -146,7 +149,7 @@ public final class ScaffoldService {
                 log.info("Planned VMs ({}):", plan.vmCount());
                 for (var vm : plan.vms()) {
                     log.info("  - {}  role={}  ip={}  cpus={}  mem={}MB",
-                        vm.name(), vm.role().name().toLowerCase(), vm.ip(), vm.getEffectiveCpus(), vm.getEffectiveMemoryMb());
+                            vm.name(), vm.role().name().toLowerCase(), vm.ip(), vm.getEffectiveCpus(), vm.getEffectiveMemoryMb());
                 }
                 log.info("Planned files:");
                 log.info("  - Vagrantfile");
@@ -169,15 +172,8 @@ public final class ScaffoldService {
 
             // 7. Copy install scripts (resources) and make executable
             log.debug("Copying install scripts to {}/scripts", outDir);
-            resourceCopier.copyScripts(
-                    List.of(
-                            "install_kubectl.sh",
-                            "install_docker.sh",
-                            "install_kind.sh",
-                            "lib.sh"
-                    ),
-                    outDir.resolve("scripts")
-            );
+            List<String> scriptsToCopy = plan.scripts();
+            resourceCopier.copyScripts(scriptsToCopy, outDir.resolve("scripts"));
 
             log.info("✓ Generated {} (engine={}) → {}",
                     plan.getEnv("CLUSTER_NAME"),
@@ -195,6 +191,15 @@ public final class ScaffoldService {
             log.error("[Internal] Unexpected error during scaffold generation", e);
             return 1;
         }
+    }
+
+
+    /**
+     * Maps a Tool value object to a concrete installer script name in resources/scripts.
+     * Unknown tools return empty and are ignored.
+     */
+    private static Optional<String> mapToolToInstaller(Tool tool) {
+        return ToolInstallers.mapToolToInstaller(tool);
     }
 
     /**

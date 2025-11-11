@@ -1,6 +1,8 @@
 @import java.util.Map
+@import java.util.List
 
 @param Map<String, String> envVars
+@param List<String> installScripts
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -28,9 +30,7 @@ sudo bash -lc 'cat >/etc/profile.d/50-k8s-env.sh <<\'EOS'
 EOS
 chmod 0644 /etc/profile.d/50-k8s-env.sh'
 
-# Install minimal toolchain for kind/minikube path
-if [ -x /vagrant/scripts/install_docker.sh ]; then /vagrant/scripts/install_docker.sh; fi
-if [ -x /vagrant/scripts/install_kubectl.sh ]; then /vagrant/scripts/install_kubectl.sh; fi
-if [ -x /vagrant/scripts/install_kind.sh ]; then /vagrant/scripts/install_kind.sh; fi
+@for(String script : installScripts)if [ -x /vagrant/scripts/${script} ]; then /vagrant/scripts/${script}; fi
+@endfor
 
 echo "[bootstrap] Completed"

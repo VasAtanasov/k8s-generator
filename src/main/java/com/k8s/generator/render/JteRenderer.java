@@ -1,15 +1,14 @@
 package com.k8s.generator.render;
 
+import com.k8s.generator.model.ClusterType;
 import com.k8s.generator.model.ScaffoldPlan;
 import com.k8s.generator.model.VmConfig;
+import com.k8s.generator.util.ToolInstallers;
 import gg.jte.ContentType;
 import gg.jte.TemplateEngine;
 import gg.jte.output.StringOutput;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * JTE-based renderer using precompiled templates.
@@ -95,7 +94,13 @@ public final class JteRenderer implements Renderer {
      */
     private String renderBootstrap(ScaffoldPlan plan) {
         var output = new StringOutput();
-        var params = Map.<String, Object>of("envVars", plan.envVars());
+        var clusterTypeId = plan.getEnv("CLUSTER_TYPE");
+        var installScripts = clusterTypeId != null
+                ? ToolInstallers.installersForCluster(ClusterType.byId(clusterTypeId))
+                : List.<String>of();
+        var params = new HashMap<String, Object>();
+        params.put("envVars", plan.envVars());
+        params.put("installScripts", installScripts);
         try {
             engine.render("bootstrap.sh", params, output);
         } catch (RuntimeException e) {

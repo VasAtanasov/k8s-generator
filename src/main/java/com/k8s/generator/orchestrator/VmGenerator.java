@@ -87,12 +87,11 @@ public interface VmGenerator {
      *   <li>KUBEADM: masters + workers VMs</li>
      * </ul>
      *
-     * @param cluster cluster specification (must not be null)
+     * @param cluster      cluster specification (must not be null)
      * @param allocatedIps pre-allocated IP addresses (size must match VM count)
      * @return list of generated VM configurations
-     * @throws NullPointerException if cluster or allocatedIps is null
+     * @throws NullPointerException     if cluster or allocatedIps is null
      * @throws IllegalArgumentException if IP count doesn't match expected VM count
-     *
      * @see ClusterSpec#totalNodes()
      */
     List<VmConfig> generate(ClusterSpec cluster, List<IPAddress> allocatedIps);

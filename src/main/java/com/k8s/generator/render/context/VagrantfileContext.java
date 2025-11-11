@@ -9,7 +9,7 @@ import java.util.Map;
  * Typed context object for Vagrantfile/Bootstrap templates.
  */
 public record VagrantfileContext(
-    String moduleName,
-    List<VmConfig> vms,
-    Map<String, String> envVars) {}
+        String moduleName,
+        List<VmConfig> vms,
+        Map<String, String> envVars) {}
 

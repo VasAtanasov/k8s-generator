@@ -47,7 +47,7 @@ public interface Renderer {
      * @param plan complete scaffold plan with VMs, module info, and environment variables
      * @return map of relative file path → file content
      * @throws IllegalArgumentException if plan is null
-     * @throws RuntimeException if template rendering fails
+     * @throws RuntimeException         if template rendering fails
      */
     Map<String, String> render(ScaffoldPlan plan);
 }

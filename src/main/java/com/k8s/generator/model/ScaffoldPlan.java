@@ -1,10 +1,6 @@
 package com.k8s.generator.model;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Template-ready scaffold plan - represents the complete output model for rendering.
@@ -90,7 +86,8 @@ public record ScaffoldPlan(
         List<VmConfig> vms,
         Map<String, String> envVars,
         Map<VmName, Map<String, String>> vmEnv,
-        Set<CloudProvider> providers) {
+        Set<CloudProvider> providers,
+        List<String> scripts) {
     /**
      * Compact constructor with structural validation.
      *
@@ -284,7 +281,7 @@ public record ScaffoldPlan(
      */
     public ScaffoldPlan withVms(List<VmConfig> newVms) {
         Objects.requireNonNull(newVms, "newVms cannot be null");
-        return new ScaffoldPlan(module, newVms, envVars, vmEnv, providers);
+        return new ScaffoldPlan(module, newVms, envVars, vmEnv, providers, scripts);
     }
 
     /**
@@ -298,7 +295,7 @@ public record ScaffoldPlan(
      */
     public ScaffoldPlan withEnvVars(Map<String, String> newEnvVars) {
         Objects.requireNonNull(newEnvVars, "newEnvVars cannot be null");
-        return new ScaffoldPlan(module, vms, newEnvVars, vmEnv, providers);
+        return new ScaffoldPlan(module, vms, newEnvVars, vmEnv, providers, scripts);
     }
 
     /**
@@ -310,7 +307,7 @@ public record ScaffoldPlan(
      */
     public ScaffoldPlan withVmEnv(Map<VmName, Map<String, String>> newVmEnv) {
         Objects.requireNonNull(newVmEnv, "newVmEnv cannot be null");
-        return new ScaffoldPlan(module, vms, envVars, newVmEnv, providers);
+        return new ScaffoldPlan(module, vms, envVars, newVmEnv, providers, scripts);
     }
 
     /**
