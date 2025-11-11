@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
  *   <li><b>Cluster Name Format</b>: Must match [a-z][a-z0-9-]* (lowercase, alphanumeric, hyphens)</li>
  *   <li><b>Engine-Specific Constraints</b>:
  *       <ul>
- *         <li>KIND/MINIKUBE/NONE: masters=0, workers=0 (single VM with special role)</li>
+ *         <li>NONE: masters=0, workers=0 (single VM with special role)</li>
  *         <li>KUBEADM: masters≥1, workers≥0 (multi-node cluster)</li>
  *       </ul>
  *   </li>
@@ -152,25 +152,43 @@ public class SemanticValidator implements ClusterSpecValidator {
      */
     private void validateEngineSpecificConstraints(ClusterSpec spec, List<ValidationError> errors) {
         switch (spec.type()) {
-            case Kind k -> validateSingleNodeConstraints(spec, errors, "cluster");
-            case Minikube m -> validateSingleNodeConstraints(spec, errors, "cluster");
-            case NoneCluster nc -> validateSingleNodeConstraints(spec, errors, "management");
+            case NoneCluster nc -> {
+                // These engines should have zero masters and workers (they use "cluster" or "management" role)
+                if (spec.nodes().masters() != 0) {
+                    errors.add(new ValidationError(
+                            String.format("clusters[name='%s'].nodes.masters", spec.name()),
+                            ValidationLevel.SEMANTIC,
+                            String.format("%s clusters do not use master nodes (uses 'management' role instead)",
+                                    spec.type().displayName()),
+                            String.format("Set masters: 0 (not %d)", spec.nodes().masters())
+                    ));
+                }
+                if (spec.nodes().workers() != 0) {
+                    errors.add(new ValidationError(
+                            String.format("clusters[name='%s'].nodes.workers", spec.name()),
+                            ValidationLevel.SEMANTIC,
+                            String.format("%s clusters do not use worker nodes (uses 'management' role instead)",
+                                    spec.type().displayName()),
+                            String.format("Set workers: 0 (not %d)", spec.nodes().workers())
+                    ));
+                }
+            }
             case Kubeadm ku -> {
                 // KUBEADM requires at least 1 master
-                if (spec.masters() < 1) {
+                if (spec.nodes().masters() < 1) {
                     errors.add(new ValidationError(
-                            String.format("clusters[name='%s'].masters", spec.name()),
+                            String.format("clusters[name='%s'].nodes.masters", spec.name()),
                             ValidationLevel.SEMANTIC,
                             "KUBEADM clusters require at least 1 master node",
                             "Set masters: 1 (or more for HA)"
                     ));
                 }
                 // Workers are optional but should be reasonable
-                if (spec.workers() > 100) {
+                if (spec.nodes().workers() > 100) {
                     errors.add(new ValidationError(
-                            String.format("clusters[name='%s'].workers", spec.name()),
+                            String.format("clusters[name='%s'].nodes.workers", spec.name()),
                             ValidationLevel.SEMANTIC,
-                            String.format("Unusually high worker count: %d", spec.workers()),
+                            String.format("Unusually high worker count: %d", spec.nodes().workers()),
                             "Consider reducing worker count for local development (typically 1-10)"
                     ));
                 }
@@ -178,30 +196,7 @@ public class SemanticValidator implements ClusterSpecValidator {
         }
     }
 
-    /**
-     * Validates constraints for single-node cluster types (KIND, MINIKUBE, NONE).
-     */
-    private void validateSingleNodeConstraints(ClusterSpec spec, List<ValidationError> errors, String roleType) {
-        // These engines should have zero masters and workers (they use "cluster" or "management" role)
-        if (spec.masters() != 0) {
-            errors.add(new ValidationError(
-                    String.format("clusters[name='%s'].masters", spec.name()),
-                    ValidationLevel.SEMANTIC,
-                    String.format("%s clusters do not use master nodes (uses '%s' role instead)",
-                            spec.type().displayName(), roleType),
-                    String.format("Set masters: 0 (not %d)", spec.masters())
-            ));
-        }
-        if (spec.workers() != 0) {
-            errors.add(new ValidationError(
-                    String.format("clusters[name='%s'].workers", spec.name()),
-                    ValidationLevel.SEMANTIC,
-                    String.format("%s clusters do not use worker nodes (uses '%s' role instead)",
-                            spec.type().displayName(), roleType),
-                    String.format("Set workers: 0 (not %d)", spec.workers())
-            ));
-        }
-    }
+
 
     /**
      * Validates IP address format if firstIp is provided.
@@ -254,22 +249,22 @@ public class SemanticValidator implements ClusterSpecValidator {
      * HA clusters (masters > 1) should have odd number of masters for etcd quorum.
      */
     private void validateHighAvailabilityConfiguration(ClusterSpec spec, List<ValidationError> errors) {
-        if (spec.isHighAvailability() && spec.masters() % 2 == 0) {
+        if (spec.isHighAvailability() && spec.nodes().masters() % 2 == 0) {
             errors.add(new ValidationError(
-                    String.format("clusters[name='%s'].masters", spec.name()),
+                    String.format("clusters[name='%s'].nodes.masters", spec.name()),
                     ValidationLevel.SEMANTIC,
-                    String.format("HA cluster has even number of masters: %d", spec.masters()),
+                    String.format("HA cluster has even number of masters: %d", spec.nodes().masters()),
                     String.format("Use odd number of masters for etcd quorum (e.g., %d or %d)",
-                            spec.masters() - 1, spec.masters() + 1)
+                            spec.nodes().masters() - 1, spec.nodes().masters() + 1)
             ));
         }
 
         // Warn if HA cluster has very high master count
-        if (spec.masters() > 7) {
+        if (spec.nodes().masters() > 7) {
             errors.add(new ValidationError(
-                    String.format("clusters[name='%s'].masters", spec.name()),
+                    String.format("clusters[name='%s'].nodes.masters", spec.name()),
                     ValidationLevel.SEMANTIC,
-                    String.format("Unusually high master count for HA: %d", spec.masters()),
+                    String.format("Unusually high master count for HA: %d", spec.nodes().masters()),
                     "Typical HA configurations use 3 or 5 masters. Consider reducing for local development."
             ));
         }
