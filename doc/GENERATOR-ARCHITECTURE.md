@@ -1,6 +1,6 @@
 ---
 status: Normative specification for the k8s-generator CLI.
-version: 1.18.0
+version: 1.19.0
 scope: Defines CLI behavior, inputs/outputs, conventions, and validation.
 ---
 
@@ -74,6 +74,7 @@ k8s-gen --module m7 --type hw kubeadm --azure --nodes 1m,2w
 │   └── bootstrap.env.local       # Local overrides template
 └── .gitignore
 ```
+**Note**: All generated bash scripts must adhere to the standards defined in [CONTRIBUTING_BASH.md](CONTRIBUTING_BASH.md).
 
 ### Generated .gitignore
 
@@ -491,42 +492,31 @@ Implementations MAY use any stack that conforms to the CLI behavior and outputs 
 ### Package Structure
 
 ```
-ai_working/202511-kubernetes/k8s-generator/
-├── pom.xml
-├── src/main/java/com/k8s/generator/
-│   ├── cli/
-│   │   └── ScaffoldCommand.java          # Picocli entrypoint
-│   ├── model/
-│   │   ├── Module.java                   # records/enums
-│   │   ├── Cluster.java
-│   │   ├── Node.java
-│   │   ├── ClusterType.java
-│   │   ├── SizeProfile.java
-│   │   └── Tools.java
-│   ├── validate/
-│   │   ├── StructuralValidator.java      # Required fields present
-│   │   ├── SemanticValidator.java        # Business rules
-│   │   └── PolicyValidator.java          # Tool/engine compatibility
-│   ├── ip/
-│   │   └── CidrHelper.java               # IPv4 CIDR validation & overlap checks (no auto-allocation)
-│   ├── plan/
-│   │   └── ScaffoldPlan.java             # Maps inputs → template contexts
-│   ├── render/
-│   │   ├── JteRenderer.java              # JTE wrapper
-│   │   └── ContextBuilder.java           # Builds template contexts
-│   ├── fs/
-│   │   ├── SpecReader.java               # YAML spec reader
-│   │   ├── FsWriter.java                 # File writer
-│   │   └── ResourceCopier.java           # Copy install_*.sh scripts
-│   └── app/
-│       └── ScaffoldService.java          # Orchestrates: read → validate → plan → render → write
-└── src/main/resources/templates/
-    ├── Vagrantfile.jte                    # VM topology template
-    ├── bootstrap.sh.jte                   # Bootstrap template
-    └── partials/
-        ├── minikube-setup.jte
-        ├── kind-setup.jte
-        └── kubeadm-setup.jte
+com.k8s.generator/
+├── app/
+│   └── ScaffoldService.java      # Orchestrates: read → validate → plan → render → write
+├── cli/
+│   └── GenerateCommand.java      # Picocli entrypoint
+├── fs/
+│   ├── AtomicFileWriter.java     # Atomic file writer
+│   ├── OutputWriter.java         # Writes files and scaffolds hooks
+│   └── ResourceCopier.java       # Copies install scripts
+├── ip/
+│   └── IpAllocator.java          # IP allocation logic
+├── model/
+│   ├── spec/                   # Input models (GeneratorSpec, ClusterSpec)
+│   ├── plan/                   # Output models (ScaffoldPlan, VmConfig)
+│   └── shared/                 # Enums (Engine, CniType, NodeRole)
+├── parser/
+│   ├── CliToSpec.java            # Converts CLI args to GeneratorSpec
+│   └── SpecReader.java           # Reads YAML spec file
+├── render/
+│   ├── JteRenderer.java          # JTE template rendering
+│   └── context/                # Template context objects
+└── validate/
+    ├── StructuralValidator.java  # Required fields
+    ├── SemanticValidator.java    # Business rules
+    └── PolicyValidator.java      # Tool/engine compatibility
 ```
 
 ### Design Principles
@@ -1800,6 +1790,84 @@ Provider engines (future): `aks`, `eks`, `gke` — introduce only when provision
 
 ---
 
+## Atomic File Generation
+
+To prevent partial or corrupt output, all file generation operations MUST be atomic. If any part of the generation fails, the output directory must be left in its original state (or not created at all).
+
+### AtomicFileWriter Contract
+
+```java
+package com.k8s.generator.fs;
+
+import java.nio.file.Path;
+import java.util.Map;
+
+/**
+ * Writes all files atomically to ensure consistency.
+ *
+ * Contract Guarantees:
+ * - Atomic: Either all files are written successfully, or none are.
+ * - Idempotent: Multiple calls with the same input produce identical output.
+ * - No partial state: On failure, the target directory remains unchanged.
+ */
+public interface AtomicFileWriter {
+    Result<Path, String> writeAll(Path outputDir, Map<Path, String> files);
+}
+```
+
+### Implementation Strategy
+
+1.  **Create a temporary directory** inside the project's root or a system temp area (e.g., `outputDir.getParent().resolve(".tmp-" + UUID.randomUUID())`).
+2.  **Write all generated files** (Vagrantfile, scripts, etc.) into this temporary directory.
+3.  **Perform basic validation** on the generated files if necessary (e.g., syntax checking scripts).
+4.  If all files are written successfully, perform an **atomic move** of the temporary directory to the final output directory (`Files.move(tempDir, outputDir, StandardCopyOption.ATOMIC_MOVE)`).
+5.  **On any failure** (I/O error, validation failure), delete the temporary directory and its contents, ensuring the target output directory is not created or modified.
+
+---
+
+## Regeneration Strategy (Future)
+
+To support safe regeneration of environments and preserve user customizations, a metadata file will be created in the output directory.
+
+### Generation Metadata File (`.k8s-generator.yaml`)
+
+```yaml
+# .k8s-generator.yaml (created in output directory)
+generated:
+  version: 1.0.0
+  generator_version: 1.0.0-SNAPSHOT
+  timestamp: 2025-11-03T10:30:00Z
+  spec_hash: abc123def456  # SHA-256 of the input spec
+  components:
+    - file: Vagrantfile
+      regeneratable: true
+      hash: 1a2b3c4d  # File content hash
+      template: engines/kind/vagrantfile.jte
+    - file: scripts/bootstrap.sh
+      regeneratable: true
+      hash: 5e6f7g8h
+      template: engines/kind/bootstrap.jte
+    - file: assets/custom-init.sh
+      regeneratable: false  # User-authored
+      note: "User script - never overwrite"
+```
+
+### Regeneration Modes
+
+```bash
+# Default: fail if modified files are detected
+k8s-gen --module m1 --type pt kind --out pt-m1/
+# → ERROR: Generated files have been modified. Use --force to overwrite.
+
+# Force: overwrite all regeneratable files (lose custom edits)
+k8s-gen --module m1 --type pt kind --out pt-m1/ --force
+
+# Future: three-way merge (defer to v2.0)
+k8s-gen --module m1 --type pt kind --out pt-m1/ --merge
+```
+
+---
+
 ## Provisioning (Deferred Automation)
 
 ### Goals
@@ -2156,32 +2224,28 @@ if (overlaps(pod, svc)) {
 
 ## Document History
 
-| Version | Date       | Author | Changes |
-|---------|------------|--------|---------|
-| 1.16.2  | 2025-11-04 | repo-maint | History table reordered to descending version per policy |
-| 1.16.1  | 2025-11-03 | repo-maint | Semver normalization of version fields; updated YAML examples to 1.0.0; aligned frontmatter/title to 1.16.1 |
-| 1.16.0  | 2025-11-02 | spec-owner | Hybrid Architecture: CLI-First with Optional Spec Export |
-| 1.15.0  | 2025-10-31 | spec-owner | Consistency fixes: corrected CLI command examples (k8s-gen), tool name regex note, and YAML note mapping module.num to --module |
-| 1.14.0  | 2025-10-31 | spec-owner | Visual Decision Tree added; Style and Naming guidelines clarified |
-| 1.13.0  | 2025-10-31 | spec-owner | Quick Reference added; Generated .gitignore contents specified; Common Errors reference section included |
-| 1.12.0  | 2025-10-31 | spec-owner | Vagrant box defaults added (ubuntu/jammy64), overrides (per-cluster and global), and warning policy for non-ubuntu boxes |
-| 1.11.0  | 2025-10-31 | spec-owner | CIDR validation documented; ipaddress library usage clarified; CidrHelper responsibility stated (no auto-allocation) |
-| 1.10.0  | 2025-10-31 | spec-owner | Provisioner SPI moved to deferred note; removed `--list-provisioners` reference from CLI; kept manual scripts only |
-| 1.9.0   | 2025-10-31 | spec-owner | Validation error format specified (structure, levels, exit codes, aggregation behavior) |
-| 1.8.0   | 2025-10-31 | spec-owner | Azure usage clarified: user responsibilities, bootstrap.env.local example, precedence, and WARN semantics for missing values |
-| 1.7.0   | 2025-10-31 | spec-owner | Restored `management.tools` (mgmt-only extras) with clear scope; clusters remain engine-immutable |
-| 1.6.0   | 2025-10-31 | spec-owner | YAML schema completed: version field, required/optional markers, minimum viable examples |
-| 1.5.0   | 2025-10-31 | spec-owner | Terminology unified (Management Machine); Terminology: Cluster-Type vs Engine section; taxonomy/mapping/examples synchronized |
-| 1.4.0   | 2025-10-31 | spec-owner | Future: Multi-Cluster Network Separation section (scope clarification) |
-| 1.3.0   | 2025-10-31 | spec-owner | Context Building Algorithm added (ordering, env scoping, naming, pseudocode) |
-| 1.2.0   | 2025-10-31 | spec-owner | Module+type composite workspace identifier; output directory collision policy and CLI notes |
-| 1.1.0   | 2025-10-31 | spec-owner | IP allocation policy added (single-cluster default, multi-cluster first_ip requirement), reserved mgmt IP, validations, examples |
-| 1.0.0   | 2025-10-31 | spec-owner | Initial normative baseline |
-
-## Document History
-
 | Version | Date       | Author      | Changes                                                              |
 |---------|------------|-------------|----------------------------------------------------------------------|
+| 1.19.0  | 2025-11-11 | repo-maint  | Aligned with architecture reviews: added Atomic Writes, Regeneration Strategy, updated package structure. |
 | 1.18.0  | 2025-11-10 | repo-maint  | Formalized use of DDD Value Objects as a core design principle.      |
 | 1.17.0  | 2025-11-10 | repo-maint  | Updated design principles to include builder pattern for complex models. |
+| 1.16.2  | 2025-11-04 | repo-maint  | History table reordered to descending version per policy |
+| 1.16.1  | 2025-11-03 | repo-maint  | Semver normalization of version fields; updated YAML examples to 1.0.0; aligned frontmatter/title to 1.16.1 |
+| 1.16.0  | 2025-11-02 | spec-owner  | Hybrid Architecture: CLI-First with Optional Spec Export |
+| 1.15.0  | 2025-10-31 | spec-owner  | Consistency fixes: corrected CLI command examples (k8s-gen), tool name regex note, and YAML note mapping module.num to --module |
+| 1.14.0  | 2025-10-31 | spec-owner  | Visual Decision Tree added; Style and Naming guidelines clarified |
+| 1.13.0  | 2025-10-31 | spec-owner  | Quick Reference added; Generated .gitignore contents specified; Common Errors reference section included |
+| 1.12.0  | 2025-10-31 | spec-owner  | Vagrant box defaults added (ubuntu/jammy64), overrides (per-cluster and global), and warning policy for non-ubuntu boxes |
+| 1.11.0  | 2025-10-31 | spec-owner  | CIDR validation documented; ipaddress library usage clarified; CidrHelper responsibility stated (no auto-allocation) |
+| 1.10.0  | 2025-10-31 | spec-owner  | Provisioner SPI moved to deferred note; removed `--list-provisioners` reference from CLI; kept manual scripts only |
+| 1.9.0   | 2025-10-31 | spec-owner  | Validation error format specified (structure, levels, exit codes, aggregation behavior) |
+| 1.8.0   | 2025-10-31 | spec-owner  | Azure usage clarified: user responsibilities, bootstrap.env.local example, precedence, and WARN semantics for missing values |
+| 1.7.0   | 2025-10-31 | spec-owner  | Restored `management.tools` (mgmt-only extras) with clear scope; clusters remain engine-immutable |
+| 1.6.0   | 2025-10-31 | spec-owner  | YAML schema completed: version field, required/optional markers, minimum viable examples |
+| 1.5.0   | 2025-10-31 | spec-owner  | Terminology unified (Management Machine); Terminology: Cluster-Type vs Engine section; taxonomy/mapping/examples synchronized |
+| 1.4.0   | 2025-10-31 | spec-owner  | Future: Multi-Cluster Network Separation section (scope clarification) |
+| 1.3.0   | 2025-10-31 | spec-owner  | Context Building Algorithm added (ordering, env scoping, naming, pseudocode) |
+| 1.2.0   | 2025-10-31 | spec-owner  | Module+type composite workspace identifier; output directory collision policy and CLI notes |
+| 1.1.0   | 2025-10-31 | spec-owner  | IP allocation policy added (single-cluster default, multi-cluster first_ip requirement), reserved mgmt IP, validations, examples |
+| 1.0.0   | 2025-10-31 | spec-owner  | Initial normative baseline |
 
